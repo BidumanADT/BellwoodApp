@@ -1,0 +1,6 @@
+@BellwoodGlobal.API_HostAddress = http://localhost:5042
+
+GET {{BellwoodGlobal.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
