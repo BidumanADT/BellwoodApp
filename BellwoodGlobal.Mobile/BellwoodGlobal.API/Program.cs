@@ -1,5 +1,6 @@
 using BellwoodGlobal.API.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,26 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<BellwoodGlobalDbContext>(opts =>
     opts.UseSqlServer(builder.Configuration.GetConnectionString("BellwoodDatabase")));
 
+// jwt bearer authentication configuration
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "http://localhost:5036";
+        options.RequireHttpsMetadata = false;
+        options.Audience = "ride.api";
+    });
+
+// add authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireRideScope", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireClaim("scope", "ride.api"));
+    options.AddPolicy("RequireRatingScope", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireClaim("scope", "rating.api"));
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -24,6 +45,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
