@@ -1,25 +1,66 @@
-﻿namespace BellwoodGlobal.Mobile
+﻿using IdentityModel.OidcClient;
+using System.Net.Http.Headers;
+using Microsoft.Maui.Controls;  // for ContentPage, etc.
+
+namespace BellwoodGlobal.Mobile 
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
+        private readonly OidcClient _oidcClient;
 
-        public MainPage()
+        public MainPage(OidcClient oidcClient)
         {
-            InitializeComponent();
+            InitializeComponent();   // wires up your XAML fields
+            _oidcClient = oidcClient;
         }
 
-        private void OnCounterClicked(object sender, EventArgs e)
+        async void OnLoginClicked(object sender, EventArgs e)
         {
-            count++;
+            try
+            {
+                LoginButton.IsEnabled = false;
+                ResultLabel.Text = "Logging in…";
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+                var loginResult = await _oidcClient.LoginAsync(new LoginRequest());
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+                if (loginResult.IsError)
+                {
+                    ResultLabel.Text = $"Login error: {loginResult.Error}";
+                    return;
+                }
+
+                var accessToken = loginResult.AccessToken;
+
+                //using var client = new HttpClient();
+                //client.DefaultRequestHeaders.Authorization =
+                //    new AuthenticationHeaderValue("Bearer", accessToken);
+
+                //var apiUrl = "https://localhost:7299/api/rides";
+                //var apiUrl = "http://10.0.2.2:5042/api/rides";
+                var apiHandler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = 
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+                using var client = new HttpClient(apiHandler);
+
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", accessToken);
+
+                // Hit the HTTPS endpoint on 10.0.2.2
+                var apiUrl = "https://10.0.2.2:5042/api/rides";
+                var responseJson = await client.GetStringAsync(apiUrl);
+
+                ResultLabel.Text = responseJson;
+            }
+            catch (Exception ex)
+            {
+                ResultLabel.Text = $"Exception: {ex.Message}";
+            }
+            finally
+            {
+                LoginButton.IsEnabled = true;
+            }
         }
     }
-
 }

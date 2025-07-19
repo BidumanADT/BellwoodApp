@@ -1,8 +1,37 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.bellwoodglobal.mobile" android:versionCode="1">
-	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:supportsRtl="true" android:label="Bellwood Mobile"></application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.bellwoodglobal.mobile"
+          android:versionCode="1">
+
+	<!-- Permissions -->
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+	<application
+		android:usesCleartextTraffic="true"
+		android:allowBackup="true"
+		android:icon="@mipmap/appicon"
+		android:supportsRtl="true"
+		android:label="Bellwood Mobile">
+
+		<!-- Your MAUI MainActivity -->
+		<activity
+			android:name=".MainActivity"
+			android:exported="true"
+			android:launchMode="singleTop">
+
+			<!-- PKCE callback intent filter -->
+			<intent-filter android:autoVerify="true">
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
+				<data
+					android:scheme="com.bellwood.mobile"
+					android:host="callback" />
+			</intent-filter>
+		</activity>
+
+	</application>
 </manifest>

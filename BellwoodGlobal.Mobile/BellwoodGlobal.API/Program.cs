@@ -17,12 +17,18 @@ builder.Services.AddDbContext<BellwoodGlobalDbContext>(opts =>
 
 // jwt bearer authentication configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = "http://localhost:5036";
-        options.RequireHttpsMetadata = false;
-        options.Audience = "ride.api";
-    });
+  .AddJwtBearer(options =>
+  {
+      // 1) Use the HTTPS address of your AuthServer
+      options.Authority = "https://localhost:7157";
+
+      // 2) In dev you can allow HTTP metadata, but we’re using HTTPS now
+      options.RequireHttpsMetadata = true;
+
+      // 3) The API scope you defined for ride endpoints
+      options.Audience = "ride.api";
+  });
+
 
 // add authorization policies
 builder.Services.AddAuthorization(options =>
