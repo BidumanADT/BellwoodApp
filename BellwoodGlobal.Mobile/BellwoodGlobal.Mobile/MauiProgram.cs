@@ -4,9 +4,9 @@ using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using IdentityModel.Client;
-using IdentityModel.OidcClient;
-using IdentityModel.OidcClient.Browser;
+using Duende.IdentityModel.Client;
+using Duende.IdentityModel.OidcClient;
+using Duende.IdentityModel.OidcClient.Browser;
 
 namespace BellwoodGlobal.Mobile
 {
@@ -53,17 +53,7 @@ namespace BellwoodGlobal.Mobile
                     }
                 };
 
-                // 2. Disable PAR and force the classic authorize‐token endpoints
-                options.ProviderInformation = new ProviderInformation
-                {
-                    IssuerName = options.Authority,
-                    AuthorizeEndpoint = $"{options.Authority}/connect/authorize",
-                    TokenEndpoint = $"{options.Authority}/connect/token",
-                    EndSessionEndpoint = $"{options.Authority}/connect/endsession",
-                    UserInfoEndpoint = $"{options.Authority}/connect/userinfo"
-                };
-
-                // 3. Now return the configured client
+                // 2. Now return the configured client
                 return new OidcClient(options);
             });
 

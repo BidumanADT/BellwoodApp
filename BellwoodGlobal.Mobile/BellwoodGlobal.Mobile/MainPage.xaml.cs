@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net.Http.Headers;    // for AuthenticationHeaderValue
-using IdentityModel.OidcClient;
-using IdentityModel.OidcClient.Browser;
+using Duende.IdentityModel.OidcClient;
+using Duende.IdentityModel.OidcClient.Browser;
 using Microsoft.Maui.Controls;     // for ContentPage, etc.
 using System.Net.Http;             // for IHttpClientFactory
 

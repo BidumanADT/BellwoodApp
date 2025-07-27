@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using IdentityModel.OidcClient.Browser;    // for BrowserResult, BrowserOptions
+using Duende.IdentityModel.OidcClient.Browser;    // for BrowserResult, BrowserOptions
 using Microsoft.Maui.Authentication;       // for WebAuthenticatorResult
 
 namespace BellwoodGlobal.Mobile
 {
-    public class WebAuthenticatorBrowser : IdentityModel.OidcClient.Browser.IBrowser
+    public class WebAuthenticatorBrowser : Duende.IdentityModel.OidcClient.Browser.IBrowser
     {
         public async Task<BrowserResult> InvokeAsync(
-            IdentityModel.OidcClient.Browser.BrowserOptions options,
+            BrowserOptions options,
             CancellationToken cancellationToken = default)
         {
             try
             {
                 // Launch the system browser and wait for the callback
-                var mauiResult = await Microsoft.Maui.Authentication.WebAuthenticator
+                var mauiResult = await WebAuthenticator
                     .Default
                     .AuthenticateAsync(
                         new Uri(options.StartUrl),
