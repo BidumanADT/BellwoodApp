@@ -13,10 +13,10 @@ namespace BellwoodGlobal.Mobile
                     Intent.CategoryDefault,
                     Intent.CategoryBrowsable
                   },
-                  DataScheme = "com.bellwood.mobile",
+                  DataScheme = "com.bellwoodglobal.mobile",
                   DataHost = "callback")]
     public class WebAuthenticationCallbackActivity : WebAuthenticatorCallbackActivity
     {
-        // nothing else needed here—base class handles the redirect for you
+        // no overrides needed here
     }
 }

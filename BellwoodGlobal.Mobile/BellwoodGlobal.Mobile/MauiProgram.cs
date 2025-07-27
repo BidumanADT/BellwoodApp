@@ -34,7 +34,7 @@ namespace BellwoodGlobal.Mobile
                     Authority = "https://10.0.2.2:5001",
                     ClientId = "bellwood.passenger",
                     Scope = "openid profile ride.api offline_access",
-                    RedirectUri = "com.bellwood.mobile://callback",
+                    RedirectUri = "com.bellwoodglobal.mobile://callback",
                     Browser = new WebAuthenticatorBrowser(),
 
                     Policy = new Policy
