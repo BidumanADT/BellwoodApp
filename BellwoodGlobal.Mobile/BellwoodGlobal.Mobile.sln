@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36203.30 d17.14
+VisualStudioVersion = 17.14.36203.30
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BellwoodGlobal.Mobile", "BellwoodGlobal.Mobile\BellwoodGlobal.Mobile.csproj", "{0A4F27AA-3B18-4561-808B-04D8C579F88E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BellwoodGlobal.API", "BellwoodGlobal.API\BellwoodGlobal.API.csproj", "{52059215-FEBC-43C8-BA21-C58F096015F6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BellwoodGlobal.Core", "BellwoodGlobal.Core\BellwoodGlobal.Core.csproj", "{8157DFDC-21C8-4DF8-9489-E4CD90687BB3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RidesApi", "..\..\RidesApi\RidesApi\RidesApi.csproj", "{08E27F52-E7DF-4520-C6BB-AC8F0F913EC2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,10 @@ Global
 		{8157DFDC-21C8-4DF8-9489-E4CD90687BB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8157DFDC-21C8-4DF8-9489-E4CD90687BB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8157DFDC-21C8-4DF8-9489-E4CD90687BB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08E27F52-E7DF-4520-C6BB-AC8F0F913EC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08E27F52-E7DF-4520-C6BB-AC8F0F913EC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08E27F52-E7DF-4520-C6BB-AC8F0F913EC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08E27F52-E7DF-4520-C6BB-AC8F0F913EC2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

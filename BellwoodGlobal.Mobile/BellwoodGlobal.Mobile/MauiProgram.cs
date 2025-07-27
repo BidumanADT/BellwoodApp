@@ -56,8 +56,22 @@ namespace BellwoodGlobal.Mobile
                 return new OidcClient(options);
             });
 
+            builder.Services.AddHttpClient("rides", client =>
+            {
+                client.BaseAddress = new Uri("https://10.0.2.2:5005/");
+                client.DefaultRequestHeaders.Accept.Add(
+                  new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            })
+              .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+              {
+                  ServerCertificateCustomValidationCallback =
+                  HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+              });
+
+
             builder.Services.AddTransient<MainPage>();
             return builder.Build();
         }
+
     }
 }

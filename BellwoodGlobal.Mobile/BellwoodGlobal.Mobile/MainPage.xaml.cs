@@ -1,66 +1,54 @@
-﻿using IdentityModel.OidcClient;
-using System.Net.Http.Headers;
-using Microsoft.Maui.Controls;  // for ContentPage, etc.
+﻿using System;
+using System.Net.Http.Headers;    // for AuthenticationHeaderValue
+using IdentityModel.OidcClient;
+using IdentityModel.OidcClient.Browser;
+using Microsoft.Maui.Controls;     // for ContentPage, etc.
+using System.Net.Http;             // for IHttpClientFactory
 
-namespace BellwoodGlobal.Mobile 
+namespace BellwoodGlobal.Mobile;
+
+public partial class MainPage : ContentPage
 {
-    public partial class MainPage : ContentPage
-    {
-        private readonly OidcClient _oidcClient;
+    private readonly OidcClient _oidcClient;
+    private readonly IHttpClientFactory _httpFactory;
 
-        public MainPage(OidcClient oidcClient)
+    public MainPage(OidcClient oidcClient, IHttpClientFactory httpFactory)
+    {
+        InitializeComponent();
+        _oidcClient = oidcClient;
+        _httpFactory = httpFactory;
+    }
+
+    async void OnLoginClicked(object sender, EventArgs e)
+    {
+        LoginButton.IsEnabled = false;
+        ResultLabel.Text = "Logging in…";
+
+        var loginResult = await _oidcClient.LoginAsync(new LoginRequest());
+        if (loginResult.IsError)
         {
-            InitializeComponent();   // wires up your XAML fields
-            _oidcClient = oidcClient;
+            ResultLabel.Text = $"Login error: {loginResult.Error}";
+            LoginButton.IsEnabled = true;
+            return;
         }
 
-        async void OnLoginClicked(object sender, EventArgs e)
+        // get a configured HttpClient
+        var client = _httpFactory.CreateClient("rides");
+        client.DefaultRequestHeaders.Authorization =
+          new AuthenticationHeaderValue("Bearer", loginResult.AccessToken);
+
+        try
         {
-            try
-            {
-                LoginButton.IsEnabled = false;
-                ResultLabel.Text = "Logging in…";
-
-                var loginResult = await _oidcClient.LoginAsync(new LoginRequest());
-
-                if (loginResult.IsError)
-                {
-                    ResultLabel.Text = $"Login error: {loginResult.Error}";
-                    return;
-                }
-
-                var accessToken = loginResult.AccessToken;
-
-                //using var client = new HttpClient();
-                //client.DefaultRequestHeaders.Authorization =
-                //    new AuthenticationHeaderValue("Bearer", accessToken);
-
-                //var apiUrl = "https://localhost:7299/api/rides";
-                //var apiUrl = "http://10.0.2.2:5042/api/rides";
-                var apiHandler = new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback = 
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                };
-                using var client = new HttpClient(apiHandler);
-
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", accessToken);
-
-                // Hit the HTTPS endpoint on 10.0.2.2
-                var apiUrl = "https://10.0.2.2:5042/api/rides";
-                var responseJson = await client.GetStringAsync(apiUrl);
-
-                ResultLabel.Text = responseJson;
-            }
-            catch (Exception ex)
-            {
-                ResultLabel.Text = $"Exception: {ex.Message}";
-            }
-            finally
-            {
-                LoginButton.IsEnabled = true;
-            }
+            var ridesJson = await client.GetStringAsync("api/rides");
+            ResultLabel.Text = ridesJson;
+        }
+        catch (Exception ex)
+        {
+            ResultLabel.Text = $"API call failed: {ex.Message}";
+        }
+        finally
+        {
+            LoginButton.IsEnabled = true;
         }
     }
 }
