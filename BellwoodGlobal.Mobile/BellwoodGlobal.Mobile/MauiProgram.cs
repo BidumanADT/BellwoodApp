@@ -1,13 +1,12 @@
-﻿using System;                               // for TimeSpan, Func<…>, etc.
-using System.Net.Http;                      // for HttpClientHandler, HttpMessageHandler
-using Microsoft.Maui.Controls.Hosting;      // for UseMauiApp<T>
-using Microsoft.Maui.Hosting;               // for MauiAppBuilder, CreateBuilder()
+﻿using System;
+using System.Net.Http;
+using Microsoft.Maui.Controls.Hosting;
+using Microsoft.Maui.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using IdentityModel.Client;                  // for DiscoveryPolicy
-using IdentityModel.OidcClient;              // for OidcClientOptions, Policy
-using IdentityModel.OidcClient.Browser;      // for IBrowser, WebAuthenticatorBrowser
-
+using IdentityModel.Client;
+using IdentityModel.OidcClient;
+using IdentityModel.OidcClient.Browser;
 
 namespace BellwoodGlobal.Mobile
 {
@@ -29,6 +28,7 @@ namespace BellwoodGlobal.Mobile
 
             builder.Services.AddSingleton(sp =>
             {
+                // 1. Create your OidcClientOptions
                 var options = new OidcClientOptions
                 {
                     Authority = "https://10.0.2.2:5001",
@@ -53,6 +53,17 @@ namespace BellwoodGlobal.Mobile
                     }
                 };
 
+                // 2. Disable PAR and force the classic authorize‐token endpoints
+                options.ProviderInformation = new ProviderInformation
+                {
+                    IssuerName = options.Authority,
+                    AuthorizeEndpoint = $"{options.Authority}/connect/authorize",
+                    TokenEndpoint = $"{options.Authority}/connect/token",
+                    EndSessionEndpoint = $"{options.Authority}/connect/endsession",
+                    UserInfoEndpoint = $"{options.Authority}/connect/userinfo"
+                };
+
+                // 3. Now return the configured client
                 return new OidcClient(options);
             });
 
@@ -62,16 +73,14 @@ namespace BellwoodGlobal.Mobile
                 client.DefaultRequestHeaders.Accept.Add(
                   new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
             })
-              .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-              {
-                  ServerCertificateCustomValidationCallback =
-                  HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-              });
-
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
 
             builder.Services.AddTransient<MainPage>();
             return builder.Build();
         }
-
     }
 }
