@@ -16,22 +16,24 @@
 		android:supportsRtl="true"
 		android:label="Bellwood Mobile">
 
-		<!-- Your MAUI MainActivity -->
+		<!-- MAUI MainActivity -->
 		<activity
 			android:name=".MainActivity"
 			android:exported="true"
 			android:launchMode="singleTop">
 
-			<!-- PKCE callback intent filter -->
-			<!-- 
-			<intent-filter android:autoVerify="true">
+			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
-				<data
-					android:scheme="com.bellwood.mobile"
-					android:host="callback" />
-			</intent-filter> -->
+				<!--
+				  Scheme must match your RedirectUri (com.bellwood.mobile),
+				  host must match the “path” part (callback) if you include one.
+				-->
+				<data android:scheme="com.bellwood.mobile"
+					  android:host="callback" />
+			</intent-filter>
+
 		</activity>
 
 	</application>
