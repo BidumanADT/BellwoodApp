@@ -20,20 +20,7 @@
 		<activity
 			android:name=".MainActivity"
 			android:exported="true"
-			android:launchMode="singleTop">
-
-			<intent-filter>
-				<action android:name="android.intent.action.VIEW" />
-				<category android:name="android.intent.category.DEFAULT" />
-				<category android:name="android.intent.category.BROWSABLE" />
-				<!--
-				  Scheme must match your RedirectUri (com.bellwoodglobal.mobile),
-				  host must match the “path” part (callback) if you include one.
-				-->
-				<data android:scheme="com.bellwoodglobal.mobile"
-					  android:host="callback" />
-			</intent-filter>
-
+			android:launchMode="singleTop">			
 		</activity>
 
 	</application>
