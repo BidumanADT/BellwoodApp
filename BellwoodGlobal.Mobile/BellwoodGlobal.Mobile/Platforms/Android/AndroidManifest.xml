@@ -27,10 +27,10 @@
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
 				<!--
-				  Scheme must match your RedirectUri (com.bellwood.mobile),
+				  Scheme must match your RedirectUri (com.bellwoodglobal.mobile),
 				  host must match the “path” part (callback) if you include one.
 				-->
-				<data android:scheme="com.bellwood.mobile"
+				<data android:scheme="com.bellwoodglobal.mobile"
 					  android:host="callback" />
 			</intent-filter>
 
