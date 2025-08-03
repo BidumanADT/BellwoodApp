@@ -1,54 +1,67 @@
-﻿using System;
-using System.Net.Http.Headers;    // for AuthenticationHeaderValue
-using Duende.IdentityModel.OidcClient;
-using Duende.IdentityModel.OidcClient.Browser;
-using Microsoft.Maui.Controls;     // for ContentPage, etc.
-using System.Net.Http;             // for IHttpClientFactory
+﻿using System.Net.Http.Json;
+using System.Net.Http.Headers;
 
 namespace BellwoodGlobal.Mobile;
 
 public partial class MainPage : ContentPage
 {
-    private readonly OidcClient _oidcClient;
-    private readonly IHttpClientFactory _httpFactory;
+    private readonly IHttpClientFactory _factory;
 
-    public MainPage(OidcClient oidcClient, IHttpClientFactory httpFactory)
+    public MainPage(IHttpClientFactory factory)
     {
         InitializeComponent();
-        _oidcClient = oidcClient;
-        _httpFactory = httpFactory;
+        _factory = factory;
     }
 
     async void OnLoginClicked(object sender, EventArgs e)
     {
-        LoginButton.IsEnabled = false;
-        ResultLabel.Text = "Logging in…";
+        ErrorLabel.IsVisible = false;
+        RidesList.IsVisible = false;
 
-        var loginResult = await _oidcClient.LoginAsync(new LoginRequest());
-        if (loginResult.IsError)
-        {
-            ResultLabel.Text = $"Login error: {loginResult.Error}";
-            LoginButton.IsEnabled = true;
-            return;
-        }
+        var authClient = _factory.CreateClient("auth");
+        var loginReq = new { Username = UsernameEntry.Text, Password = PasswordEntry.Text };
 
-        // get a configured HttpClient
-        var client = _httpFactory.CreateClient("rides");
-        client.DefaultRequestHeaders.Authorization =
-          new AuthenticationHeaderValue("Bearer", loginResult.AccessToken);
-
+        HttpResponseMessage loginResp;
         try
         {
-            var ridesJson = await client.GetStringAsync("api/rides");
-            ResultLabel.Text = ridesJson;
+            loginResp = await authClient.PostAsJsonAsync("login", loginReq);
         }
         catch (Exception ex)
         {
-            ResultLabel.Text = $"API call failed: {ex.Message}";
+            ErrorLabel.Text = $"Login failed: {ex.Message}";
+            ErrorLabel.IsVisible = true;
+            return;
         }
-        finally
+
+        if (!loginResp.IsSuccessStatusCode)
         {
-            LoginButton.IsEnabled = true;
+            ErrorLabel.Text = "Invalid credentials";
+            ErrorLabel.IsVisible = true;
+            return;
+        }
+
+        var obj = await loginResp.Content.ReadFromJsonAsync<TokenResponse>();
+        var token = obj!.Token;
+
+        // 3) Call Rides API
+        var ridesClient = _factory.CreateClient("rides");
+        ridesClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var rides = await ridesClient.GetFromJsonAsync<List<Ride>>();
+            RidesList.ItemsSource = rides;
+            RidesList.IsVisible = true;
+        }
+        catch (Exception ex)
+        {
+            ErrorLabel.Text = $"Failed to load rides: {ex.Message}";
+            ErrorLabel.IsVisible = true;
         }
     }
+
+    // these models mirror the server:
+    class TokenResponse { public string Token { get; set; } = ""; }
+    class Ride { public DateTime Date { get; set; } public double Distance { get; set; } }
 }

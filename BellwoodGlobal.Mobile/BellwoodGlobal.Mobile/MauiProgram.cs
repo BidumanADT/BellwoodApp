@@ -1,76 +1,45 @@
-﻿using System;
-using System.Net.Http;
-using Microsoft.Maui.Controls.Hosting;
-using Microsoft.Maui.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Duende.IdentityModel.Client;
-using Duende.IdentityModel.OidcClient;
-using Duende.IdentityModel.OidcClient.Browser;
+using System.Net.Http.Headers;
 
-namespace BellwoodGlobal.Mobile
+public static class MauiProgram
 {
-    public static class MauiProgram
+    public static MauiApp CreateMauiApp()
     {
-        public static MauiApp CreateMauiApp()
-        {
-            var builder = MauiApp.CreateBuilder()
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
+        var builder = MauiApp.CreateBuilder()
+            .UseMauiApp<App>();
 
 #if DEBUG
-            builder.Logging.AddDebug();
+        builder.Logging.AddDebug();
 #endif
 
-            builder.Services.AddSingleton(sp =>
-            {
-                // 1. Create your OidcClientOptions
-                var options = new OidcClientOptions
-                {
-                    Authority = "https://10.0.2.2:5001",
-                    ClientId = "bellwood.passenger",
-                    Scope = "openid profile ride.api offline_access",
-                    RedirectUri = "com.bellwoodglobal.mobile://callback",
-                    Browser = new WebAuthenticatorBrowser(),
-
-                    Policy = new Policy
-                    {
-                        RequireIdentityTokenSignature = false,
-                        Discovery = new DiscoveryPolicy
-                        {
-                            RequireHttps = true
-                        }
-                    },
-
-                    BackchannelHandler = new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback =
-                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                    }
-                };
-
-                // 2. Now return the configured client
-                return new OidcClient(options);
-            });
-
-            builder.Services.AddHttpClient("rides", client =>
-            {
-                client.BaseAddress = new Uri("https://10.0.2.2:5005/");
-                client.DefaultRequestHeaders.Accept.Add(
-                  new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback =
+        // 1) HttpClient for AuthServer
+        builder.Services.AddHttpClient("auth", client =>
+        {
+            client.BaseAddress = new Uri("https://10.0.2.2:5001/");
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            // for emulator → localhost
+            ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            });
+        });
 
-            builder.Services.AddTransient<MainPage>();
-            return builder.Build();
-        }
+        // 2) HttpClient for RidesApi
+        builder.Services.AddHttpClient("rides", client =>
+        {
+            client.BaseAddress = new Uri("https://10.0.2.2:5005/");
+            client.DefaultRequestHeaders.Accept.Add(
+              new MediaTypeWithQualityHeaderValue("application/json"));
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        });
+
+        builder.Services.AddSingleton<MainPage>();
+
+        return builder.Build();
     }
 }

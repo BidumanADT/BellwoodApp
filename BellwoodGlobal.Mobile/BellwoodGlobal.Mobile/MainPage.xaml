@@ -1,26 +1,28 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="BellwoodGlobal.Mobile.MainPage">
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             x:Class="BellwoodGlobal.Mobile.MainPage"
+             Title="My Rides">
+    <VerticalStackLayout Padding="20" Spacing="15">
 
-    <ScrollView>
-        <VerticalStackLayout
-                Padding="30"
-                Spacing="20">
+        <Entry x:Name="UsernameEntry" Placeholder="Username" />
+        <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" />
 
-                        <!-- Login and Load Rides Button -->
-            <Button
-                    x:Name="LoginButton"
-                    Text="Log In and Load Rides"
-                    Clicked="OnLoginClicked" />
+        <Button Text="Login & Load Rides"
+            Clicked="OnLoginClicked" />
 
-            <!-- Label to display the JSON or any errors -->
-                <Label
-                    x:Name="ResultLabel"
-                    LineBreakMode="WordWrap"
-                    Text="Press the button to load rides." />
-        </VerticalStackLayout>
+        <CollectionView x:Name="RidesList" IsVisible="False">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Margin="5" Padding="10">
+                        <VerticalStackLayout>
+                            <Label Text="{Binding Date}" 
+                     FontAttributes="Bold" />
+                            <Label Text="{Binding Distance, StringFormat='Distance: {0:F1} km'}" />
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
 
-    </ScrollView>
-
+        <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
+    </VerticalStackLayout>
 </ContentPage>
