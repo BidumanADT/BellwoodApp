@@ -1,28 +1,41 @@
-﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             x:Class="BellwoodGlobal.Mobile.MainPage"
-             Title="My Rides">
-    <VerticalStackLayout Padding="20" Spacing="15">
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="BellwoodGlobal.Mobile.MainPage"
+    Title="My Rides">
 
+    <VerticalStackLayout Padding="30" Spacing="15">
+
+        <!-- Username/Password -->
         <Entry x:Name="UsernameEntry" Placeholder="Username" />
         <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" />
 
-        <Button Text="Login & Load Rides"
-            Clicked="OnLoginClicked" />
+        <!-- Login button -->
+        <Button
+      x:Name="LoginButton"
+      Text="Log in"
+      Clicked="OnLoginClicked" />
 
-        <CollectionView x:Name="RidesList" IsVisible="False">
+        <!-- Error display -->
+        <Label
+      x:Name="ErrorLabel"
+      TextColor="Red"
+      IsVisible="False" />
+
+        <!-- Rides list -->
+        <CollectionView
+      x:Name="RidesList"
+      IsVisible="False">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame Margin="5" Padding="10">
-                        <VerticalStackLayout>
-                            <Label Text="{Binding Date}" 
-                     FontAttributes="Bold" />
-                            <Label Text="{Binding Distance, StringFormat='Distance: {0:F1} km'}" />
-                        </VerticalStackLayout>
-                    </Frame>
+                    <HorizontalStackLayout Spacing="20">
+                        <Label Text="{Binding Date, StringFormat='{0:MM/dd/yyyy}'}" />
+                        <Label Text="{Binding Distance}" />
+                    </HorizontalStackLayout>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
     </VerticalStackLayout>
 </ContentPage>
