@@ -10,7 +10,8 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder()
             .UseMauiApp<App>()
-            .ConfigureFonts(fonts => {
+            .ConfigureFonts(fonts =>
+            {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
@@ -20,27 +21,38 @@ public static class MauiProgram
 #endif
 
         // Auth Server client
-        builder.Services.AddHttpClient("auth", c => {
+        builder.Services.AddHttpClient("auth", c =>
+        {
+        #if ANDROID
             c.BaseAddress = new Uri("https://10.0.2.2:5001");
+        #else
+            c.BaseAddress = new Uri("https://localhost:5001");
+        #endif
             c.DefaultRequestHeaders.Accept.Add(
-              new MediaTypeWithQualityHeaderValue("application/json"));
+                new MediaTypeWithQualityHeaderValue("application/json"));
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
+            // dev certs
             ServerCertificateCustomValidationCallback =
-              HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         });
 
         // Rides API client
-        builder.Services.AddHttpClient("rides", c => {
+        builder.Services.AddHttpClient("rides", c =>
+        {
+        #if ANDROID
             c.BaseAddress = new Uri("https://10.0.2.2:5005");
+        #else
+            c.BaseAddress = new Uri("https://localhost:5005");
+        #endif 
             c.DefaultRequestHeaders.Accept.Add(
-              new MediaTypeWithQualityHeaderValue("application/json"));
+                new MediaTypeWithQualityHeaderValue("application/json"));
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback =
-              HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         });
 
         builder.Services.AddSingleton<MainPage>();
