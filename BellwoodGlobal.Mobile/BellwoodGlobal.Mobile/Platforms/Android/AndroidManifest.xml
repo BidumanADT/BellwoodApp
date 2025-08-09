@@ -1,27 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.bellwoodglobal.mobile"
-          android:versionCode="1">
-
-	<!-- Permissions -->
-	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.bellwoodglobal.mobile">
 	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
-	<application
-		android:usesCleartextTraffic="true"
-		android:allowBackup="true"
-		android:icon="@mipmap/appicon"
-		android:supportsRtl="true"
-		android:label="Bellwood Mobile">
-
-		<!-- MAUI MainActivity -->
-		<activity
-			android:name=".MainActivity"
-			android:exported="true"
-			android:launchMode="singleTop">			
-		</activity>
-
+	<application android:usesCleartextTraffic="true"
+				 android:label="Bellwood Mobile">
 	</application>
 </manifest>

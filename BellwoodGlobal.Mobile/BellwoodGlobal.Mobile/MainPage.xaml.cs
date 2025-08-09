@@ -1,54 +1,60 @@
 ﻿using System;
-using System.Net.Http.Headers;    // for AuthenticationHeaderValue
-using Duende.IdentityModel.OidcClient;
-using Duende.IdentityModel.OidcClient.Browser;
-using Microsoft.Maui.Controls;     // for ContentPage, etc.
-using System.Net.Http;             // for IHttpClientFactory
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Net.Http.Headers;
+using Microsoft.Maui.Controls;
 
 namespace BellwoodGlobal.Mobile;
 
 public partial class MainPage : ContentPage
 {
-    private readonly OidcClient _oidcClient;
-    private readonly IHttpClientFactory _httpFactory;
+    private readonly IHttpClientFactory _factory;
 
-    public MainPage(OidcClient oidcClient, IHttpClientFactory httpFactory)
+    public MainPage(IHttpClientFactory factory)
     {
         InitializeComponent();
-        _oidcClient = oidcClient;
-        _httpFactory = httpFactory;
+        _factory = factory;
     }
 
     async void OnLoginClicked(object sender, EventArgs e)
     {
         LoginButton.IsEnabled = false;
-        ResultLabel.Text = "Logging in…";
-
-        var loginResult = await _oidcClient.LoginAsync(new LoginRequest());
-        if (loginResult.IsError)
-        {
-            ResultLabel.Text = $"Login error: {loginResult.Error}";
-            LoginButton.IsEnabled = true;
-            return;
-        }
-
-        // get a configured HttpClient
-        var client = _httpFactory.CreateClient("rides");
-        client.DefaultRequestHeaders.Authorization =
-          new AuthenticationHeaderValue("Bearer", loginResult.AccessToken);
+        ErrorLabel.IsVisible = false;
+        RidesList.IsVisible = false;
 
         try
         {
-            var ridesJson = await client.GetStringAsync("api/rides");
-            ResultLabel.Text = ridesJson;
+            // 1) Call /login
+            var auth = _factory.CreateClient("auth");
+            var creds = new { Username = UsernameEntry.Text, Password = PasswordEntry.Text };
+            var res = await auth.PostAsJsonAsync("/login", creds);
+            if (!res.IsSuccessStatusCode)
+                throw new Exception("Login failed");
+
+            var body = await res.Content.ReadFromJsonAsync<LoginResponse>();
+            if (body?.token is not string token)
+                throw new Exception("No token received");
+
+            // 2) Call rides API
+            var ridesClient = _factory.CreateClient("rides");
+            ridesClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var rides = await ridesClient.GetFromJsonAsync<Ride[]>("api/rides");
+            RidesList.ItemsSource = rides;
+            RidesList.IsVisible = true;
         }
         catch (Exception ex)
         {
-            ResultLabel.Text = $"API call failed: {ex.Message}";
+            ErrorLabel.Text = ex.Message;
+            ErrorLabel.IsVisible = true;
         }
         finally
         {
             LoginButton.IsEnabled = true;
         }
     }
+
+    record LoginResponse(string token);
+    public record Ride(DateTime Date, double Distance);
 }

@@ -1,11 +1,10 @@
-﻿namespace BellwoodGlobal.Mobile
+﻿namespace BellwoodGlobal.Mobile;
+
+public partial class App : Application
 {
-    public partial class App : Application
+    public App(MainPage mainPage)
     {
-        public App(MainPage mainPage)
-        {
-            InitializeComponent();
-            MainPage = mainPage;
-        }
+        InitializeComponent();
+        MainPage = mainPage;
     }
 }

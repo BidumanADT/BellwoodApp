@@ -1,26 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="BellwoodGlobal.Mobile.MainPage">
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="BellwoodGlobal.Mobile.MainPage"
+    Title="My Rides">
 
-    <ScrollView>
-        <VerticalStackLayout
-                Padding="30"
-                Spacing="20">
+    <VerticalStackLayout Padding="30" Spacing="15">
 
-                        <!-- Login and Load Rides Button -->
-            <Button
-                    x:Name="LoginButton"
-                    Text="Log In and Load Rides"
-                    Clicked="OnLoginClicked" />
+        <!-- Username/Password -->
+        <Entry x:Name="UsernameEntry" Placeholder="Username" />
+        <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" />
 
-            <!-- Label to display the JSON or any errors -->
-                <Label
-                    x:Name="ResultLabel"
-                    LineBreakMode="WordWrap"
-                    Text="Press the button to load rides." />
-        </VerticalStackLayout>
+        <!-- Login button -->
+        <Button
+      x:Name="LoginButton"
+      Text="Log in"
+      Clicked="OnLoginClicked" />
 
-    </ScrollView>
+        <!-- Error display -->
+        <Label
+      x:Name="ErrorLabel"
+      TextColor="Red"
+      IsVisible="False" />
 
+        <!-- Rides list -->
+        <CollectionView
+      x:Name="RidesList"
+      IsVisible="False">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <HorizontalStackLayout Spacing="20">
+                        <Label Text="{Binding Date, StringFormat='{0:MM/dd/yyyy}'}" />
+                        <Label Text="{Binding Distance}" />
+                    </HorizontalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </VerticalStackLayout>
 </ContentPage>
