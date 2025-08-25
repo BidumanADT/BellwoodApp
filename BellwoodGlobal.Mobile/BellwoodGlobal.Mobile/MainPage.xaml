@@ -1,41 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
+    x:Class="BellwoodGlobal.Mobile.MainPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="BellwoodGlobal.Mobile.MainPage"
-    Title="My Rides">
+    Title="Bellwood">
 
-    <VerticalStackLayout Padding="30" Spacing="15">
+    <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- Username/Password -->
-        <Entry x:Name="UsernameEntry" Placeholder="Username" />
-        <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" />
+        <!-- HERO -->
+        <Grid Row="0" Padding="24,28,24,18">
+            <Grid BackgroundColor="{StaticResource BellwoodCharcoal}">
+                <Grid>
+                    <!-- Subtle gradient overlay (optional) -->
+                    <Grid.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#00000000" Offset="0.0" />
+                            <GradientStop Color="#22000000" Offset="1.0" />
+                        </LinearGradientBrush>
+                    </Grid.Background>
 
-        <!-- Login button -->
-        <Button
-      x:Name="LoginButton"
-      Text="Log in"
-      Clicked="OnLoginClicked" />
+                    <VerticalStackLayout Spacing="12">
+                        <Image
+              Source="bellwood_logo.png"
+              HeightRequest="32"
+              HorizontalOptions="Start" />
 
-        <!-- Error display -->
-        <Label
-      x:Name="ErrorLabel"
-      TextColor="Red"
-      IsVisible="False" />
+                        <Label
+              Text="Your Rides"
+              FontFamily="Playfair"
+              FontSize="{StaticResource H1}"
+              TextColor="{StaticResource BellwoodCream}" />
 
-        <!-- Rides list -->
-        <CollectionView
-      x:Name="RidesList"
-      IsVisible="False">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <HorizontalStackLayout Spacing="20">
-                        <Label Text="{Binding Date, StringFormat='{0:MM/dd/yyyy}'}" />
-                        <Label Text="{Binding Distance}" />
-                    </HorizontalStackLayout>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                        <Label
+              x:Name="ErrorLabel"
+              Text=""
+              Style="{StaticResource MutedLabel}"
+              TextColor="#FF6B6B"
+              IsVisible="False" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Grid>
+        </Grid>
 
-    </VerticalStackLayout>
+        <!-- CONTENT: Rides list card -->
+        <Grid Row="1" Padding="24,0,24,0">
+            <CollectionView
+        x:Name="RidesList"
+        IsVisible="False"
+        ItemsSource="{x:Null}"
+        ItemTemplate="{StaticResource RideItemTemplate}" />
+        </Grid>
+
+        <!-- CTA FOOTER -->
+        <Grid Row="2" Padding="24,18,24,28">
+            <Button
+        x:Name="LoginButton"
+        Text="Sign in to view rides"
+        Style="{StaticResource GoldButton}"
+        Clicked="OnLoginClicked" />
+        </Grid>
+
+    </Grid>
 </ContentPage>
