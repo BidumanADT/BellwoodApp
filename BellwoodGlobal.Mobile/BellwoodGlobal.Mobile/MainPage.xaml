@@ -44,12 +44,16 @@
 
         <!-- CONTENT: Rides list card -->
         <Grid Row="1" Padding="24,0,24,0">
-            <CollectionView
-        x:Name="RidesList"
-        IsVisible="False"
-        ItemsSource="{x:Null}"
-        ItemTemplate="{StaticResource RideItemTemplate}" />
+            <Border Style="{StaticResource CardContainer}">
+                <CollectionView
+            x:Name="RidesList"
+            IsVisible="False"
+            ItemsSource="{x:Null}"
+            ItemTemplate="{StaticResource RideItemTemplate}" />
+            </Border>
         </Grid>
+
+
 
         <!-- CTA FOOTER -->
         <Grid Row="2" Padding="24,18,24,28">
