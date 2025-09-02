@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
 
 namespace BellwoodGlobal.Mobile;
 
@@ -16,31 +17,34 @@ public partial class MainPage : ContentPage
         _factory = factory;
     }
 
-    async void OnLoginClicked(object sender, EventArgs e)
+    protected override async void OnAppearing()
     {
-        LoginButton.IsEnabled = false;
-        ErrorLabel.IsVisible = false;
-        RidesList.IsVisible = false;
+        base.OnAppearing();
+        await LoadRidesAsync();
+    }
 
+    private async void OnRefreshClicked(object sender, EventArgs e)
+    {
+        await LoadRidesAsync();
+    }
+
+    private async Task LoadRidesAsync()
+    {
         try
         {
-            // 1) Call /login
-            var auth = _factory.CreateClient("auth");
-            var creds = new { Username = UsernameEntry.Text, Password = PasswordEntry.Text };
-            var res = await auth.PostAsJsonAsync("/login", creds);
-            if (!res.IsSuccessStatusCode)
-                throw new Exception("Login failed");
+            ErrorLabel.IsVisible = false;
+            RidesList.IsVisible = false;
 
-            var body = await res.Content.ReadFromJsonAsync<LoginResponse>();
-            if (body?.token is not string token)
-                throw new Exception("No token received");
+            var token = Preferences.Get("access_token", null);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                ErrorLabel.Text = "Please sign in first.";
+                ErrorLabel.IsVisible = true;
+                await Shell.Current.GoToAsync("//LoginPage");
+                return;
+            }
 
-            // 2) Call rides API
-            var ridesClient = _factory.CreateClient("rides");
-            ridesClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            var rides = await ridesClient.GetFromJsonAsync<Ride[]>("api/rides");
+            var rides = await GetRidesAsync(token);
             RidesList.ItemsSource = rides;
             RidesList.IsVisible = true;
         }
@@ -49,12 +53,16 @@ public partial class MainPage : ContentPage
             ErrorLabel.Text = ex.Message;
             ErrorLabel.IsVisible = true;
         }
-        finally
-        {
-            LoginButton.IsEnabled = true;
-        }
     }
 
-    record LoginResponse(string token);
+    private async Task<Ride[]> GetRidesAsync(string token)
+    {
+        var ridesClient = _factory.CreateClient("rides");
+        ridesClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var data = await ridesClient.GetFromJsonAsync<Ride[]>("api/rides");
+        return data ?? Array.Empty<Ride>();
+    }
+
     public record Ride(DateTime Date, double Distance);
 }

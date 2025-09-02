@@ -1,4 +1,4 @@
-﻿ using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -56,6 +56,9 @@ public static class MauiProgram
         });
 
         builder.Services.AddSingleton<MainPage>();
-        return builder.Build();
+
+        var app = builder.Build();
+        ServiceHelper.Initialize(app.Services);
+        return app;
     }
 }

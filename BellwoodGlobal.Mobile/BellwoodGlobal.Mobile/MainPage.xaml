@@ -58,10 +58,10 @@
         <!-- CTA FOOTER -->
         <Grid Row="2" Padding="24,18,24,28">
             <Button
-        x:Name="LoginButton"
-        Text="Sign in to view rides"
-        Style="{StaticResource GoldButton}"
-        Clicked="OnLoginClicked" />
+              x:Name="RefreshButton"
+              Text="Refresh rides"
+              Style="{StaticResource GoldButton}"
+              Clicked="OnRefreshClicked" /> 
         </Grid>
 
     </Grid>

@@ -85,7 +85,7 @@
             <Setter Property="FontFamily" Value="OpenSansRegular"/>
             <Setter Property="FontSize" Value="{StaticResource Body}"/>
             <Setter Property="HeightRequest" Value="48"/>
-            <Setter Property="Padding" Value="14,12"/>
+            <!-- <Setter Property="Padding" Value="14,12"/> -->
         </Style>
 
         <!-- Section header -->

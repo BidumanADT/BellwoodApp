@@ -2,14 +2,14 @@
 <Shell
     x:Class="BellwoodGlobal.Mobile.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-
-    <!-- Route registration -->
-    <ShellContent
-        Route="LoginPage"
-        ContentTemplate="{DataTemplate local:LoginPage}" />
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:BellwoodGlobal.Mobile">
 
     <ShellContent
         Route="MainPage"
         ContentTemplate="{DataTemplate local:MainPage}" />
+
+    <ShellContent
+        Route="LoginPage"
+        ContentTemplate="{DataTemplate local:LoginPage}" />
 </Shell>

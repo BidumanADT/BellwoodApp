@@ -8,7 +8,7 @@
     <Grid Padding="32" RowDefinitions="Auto,*,Auto">
 
         <!-- HEADER -->
-        <VerticalStackLayout Row="0" Spacing="12" HorizontalOptions="Center">
+        <VerticalStackLayout Grid.Row="0" Spacing="12" HorizontalOptions="Center">
             <Image
                 Source="bellwood_logo.png"
                 HeightRequest="64"

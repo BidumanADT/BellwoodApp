@@ -13,4 +13,9 @@ public partial class App : Application
             MainPage = new LoginPage(
                 ServiceHelper.GetService<IHttpClientFactory>());
     }
+
+    private void InitializeComponent()
+    {
+        throw new NotImplementedException();
+    }
 }
