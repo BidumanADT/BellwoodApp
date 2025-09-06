@@ -1,15 +1,17 @@
-<?xml version="1.0" encoding="UTF-8" ?>
 <Shell
     x:Class="BellwoodGlobal.Mobile.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:BellwoodGlobal.Mobile">
+    xmlns:local="clr-namespace:BellwoodGlobal.Mobile"
+    FlyoutBehavior="Disabled">
 
+    <!-- Register routes, but don’t show Login as a visible tab -->
     <ShellContent
         Route="MainPage"
         ContentTemplate="{DataTemplate local:MainPage}" />
 
     <ShellContent
         Route="LoginPage"
-        ContentTemplate="{DataTemplate local:LoginPage}" />
+        ContentTemplate="{DataTemplate local:LoginPage}"
+        IsVisible="False" />
 </Shell>

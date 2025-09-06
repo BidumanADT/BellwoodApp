@@ -56,6 +56,7 @@ public static class MauiProgram
         });
 
         builder.Services.AddSingleton<MainPage>();
+        builder.Services.AddSingleton<LoginPage>();
 
         var app = builder.Build();
         ServiceHelper.Initialize(app.Services);

@@ -35,7 +35,7 @@ public partial class MainPage : ContentPage
             ErrorLabel.IsVisible = false;
             RidesList.IsVisible = false;
 
-            var token = Preferences.Get("access_token", null);
+            var token = await SecureStorage.GetAsync("access_token");
             if (string.IsNullOrWhiteSpace(token))
             {
                 ErrorLabel.Text = "Please sign in first.";

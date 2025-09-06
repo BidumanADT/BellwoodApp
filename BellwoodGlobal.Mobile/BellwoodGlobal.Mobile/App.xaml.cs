@@ -1,4 +1,4 @@
-﻿using BellwoodGlobal.Mobile;
+﻿namespace BellwoodGlobal.Mobile;
 
 public partial class App : Application
 {
@@ -6,16 +6,15 @@ public partial class App : Application
     {
         InitializeComponent();
 
-        // If token exists, go straight to MainPage, else LoginPage
-        if (Preferences.ContainsKey("access_token"))
-            MainPage = new AppShell();
-        else
-            MainPage = new LoginPage(
-                ServiceHelper.GetService<IHttpClientFactory>());
-    }
+        // Use AppShell always, then control nav via routes
+        MainPage = new AppShell();
 
-    private void InitializeComponent()
-    {
-        throw new NotImplementedException();
+        // Decide initial route
+        var token = await SecureStorage.GetAsync("access_token");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Force Shell to navigate to LoginPage first
+            Shell.Current.GoToAsync("//LoginPage");
+        }
     }
 }

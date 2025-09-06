@@ -47,11 +47,14 @@ namespace BellwoodGlobal.Mobile
                     return;
                 }
 
-                // Save token globally (quick option: Preferences)
-                Preferences.Set("access_token", body.Token);
+                // Save token securely
+                await SecureStorage.SetAsync("access_token", body.Token);
 
-                // Navigate to rides screen
-                Application.Current.MainPage = new AppShell();
+
+                //// Save token
+                //Preferences.Set("access_token", body.Token);
+
+                // Navigate to main rides page within the existing Shell
                 await Shell.Current.GoToAsync("//MainPage");
             }
             catch (Exception ex)
