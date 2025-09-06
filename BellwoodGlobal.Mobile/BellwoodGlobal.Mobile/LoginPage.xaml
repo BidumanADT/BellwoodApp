@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Bellwood">
+
+    <Grid Padding="32" RowDefinitions="Auto,*,Auto">
+
+        <!-- HEADER -->
+        <VerticalStackLayout Grid.Row="0" Spacing="12" HorizontalOptions="Center">
+            <Image
+                Source="bellwood_logo.png"
+                HeightRequest="64"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Welcome to Bellwood"
+                FontFamily="Playfair"
+                FontSize="{StaticResource H1}"
+                TextColor="{StaticResource BellwoodCharcoal}"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Sign in to view your rides"
+                FontFamily="OpenSansRegular"
+                FontSize="{StaticResource Body}"
+                TextColor="{StaticResource BellwoodCharcoal}"
+                HorizontalOptions="Center" />
+        </VerticalStackLayout>
+
+		<!-- LOGIN FORM -->
+		<VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="CenterAndExpand">
+			<Border Style="{StaticResource InputBorder}">
+				<Entry x:Name="UsernameEntry"
+					   Placeholder="Username"
+					   Style="{StaticResource CardInput}" />
+			</Border>
+
+			<Border Style="{StaticResource InputBorder}">
+				<Entry x:Name="PasswordEntry"
+					   Placeholder="Password"
+					   IsPassword="True"
+					   Style="{StaticResource CardInput}" />
+			</Border>
+
+			<Label x:Name="ErrorLabel"
+				   Text=""
+				   TextColor="#FF6B6B"
+				   FontSize="{StaticResource Small}"
+				   IsVisible="False"
+				   HorizontalOptions="Center" />
+		</VerticalStackLayout>
+
+        <!-- CTA BUTTON -->
+        <Button
+            x:Name="LoginButton"
+            Grid.Row="2"
+            Text="Sign In"
+            Style="{StaticResource GoldButton}"
+            Clicked="OnLoginClicked" />
+    </Grid>
+</ContentPage>
