@@ -10,8 +10,8 @@
         Route="MainPage"
         ContentTemplate="{DataTemplate local:MainPage}" />
 
-    <ShellContent
+    <!-- <ShellContent
         Route="LoginPage"
         ContentTemplate="{DataTemplate local:LoginPage}"
-        IsVisible="False" />
+        IsVisible="False" /> -->
 </Shell>

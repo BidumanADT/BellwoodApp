@@ -19,25 +19,22 @@ public partial class App : Application
     /// Checks for an access token in SecureStorage and routes to Login if missing.
     private static async Task EnsureSignedInAsync()
     {
+        string? token = null;
         try
         {
-            var token = await SecureStorage.GetAsync("access_token");
-
-            // No token? Send the user to the login route.
-            if (string.IsNullOrEmpty(token))
-            {
-                // Use absolute route so we always land on LoginPage
-                await Shell.Current.GoToAsync("//LoginPage");
-            }
-            // else: stay on whatever your Shell’s default content is (e.g., MainPage)
+            token = await SecureStorage.GetAsync("access_token");
         }
         catch
         {
-            // SecureStorage can throw on some desktop simulators/emulators or if keychain/keystore is unavailable.
-            // Fall back to forcing a fresh sign-in.
-            await Shell.Current.DisplayAlert("Sign-in required",
-                "Secure storage is unavailable. Please sign in again.", "OK");
-            await Shell.Current.GoToAsync("//LoginPage");
+            // Don’t block on an alert here; just route to login
+            token = null;
         }
+
+        if (string.IsNullOrEmpty(token))
+        {
+            // Registered route (relative), not absolute:
+            await Shell.Current.GoToAsync(nameof(LoginPage));
+        }
+        // else: stay on MainPage
     }
 }

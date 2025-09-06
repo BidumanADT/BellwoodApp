@@ -40,7 +40,7 @@ public partial class MainPage : ContentPage
             {
                 ErrorLabel.Text = "Please sign in first.";
                 ErrorLabel.IsVisible = true;
-                await Shell.Current.GoToAsync("//LoginPage");
+                await Shell.Current.GoToAsync(nameof(LoginPage));
                 return;
             }
 
