@@ -1,40 +1,24 @@
 ﻿using Microsoft.Maui.Storage;
 using System.Threading.Tasks;
+using BellwoodGlobal.Mobile.Services;
 
 namespace BellwoodGlobal.Mobile;
 
 public partial class App : Application
 {
-    public App()
+    private readonly IAuthService _auth;
+
+    public App(IAuthService auth)
     {
         InitializeComponent();
+        _auth = auth;
 
-        // Always start with Shell (routes defined in AppShell.xaml)
         MainPage = new AppShell();
 
-        // Defer the secure token check until the UI thread is ready
-        Dispatcher.Dispatch(async () => await EnsureSignedInAsync());
-    }
-
-    /// Checks for an access token in SecureStorage and routes to Login if missing.
-    private static async Task EnsureSignedInAsync()
-    {
-        string? token = null;
-        try
+        Dispatcher.Dispatch(async () =>
         {
-            token = await SecureStorage.GetAsync("access_token");
-        }
-        catch
-        {
-            // Don’t block on an alert here; just route to login
-            token = null;
-        }
-
-        if (string.IsNullOrEmpty(token))
-        {
-            // Registered route (relative), not absolute:
-            await Shell.Current.GoToAsync(nameof(LoginPage));
-        }
-        // else: stay on MainPage
+            if (!await _auth.IsSignedInAsync())
+                await Shell.Current.GoToAsync(nameof(LoginPage));
+        });
     }
 }

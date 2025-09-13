@@ -5,6 +5,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Bellwood">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Logout"
+                     Order="Primary"
+                     Priority="0"
+                     Clicked="OnLogoutClicked" />
+    </ContentPage.ToolbarItems>
+
     <Grid RowDefinitions="Auto,*,Auto">
 
         <!-- HERO -->
@@ -52,9 +59,7 @@
             ItemTemplate="{StaticResource RideItemTemplate}" />
             </Border>
         </Grid>
-
-
-
+        
         <!-- CTA FOOTER -->
         <Grid Row="2" Padding="24,18,24,28">
             <Button

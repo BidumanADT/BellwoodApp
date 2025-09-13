@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using BellwoodGlobal.Mobile.Services;
 
 namespace BellwoodGlobal.Mobile;
 
@@ -55,9 +56,12 @@ public static class MauiProgram
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         });
 
-        builder.Services.AddSingleton<MainPage>();
-        builder.Services.AddSingleton<LoginPage>();
+        // register services
+        builder.Services.AddSingleton<IAuthService, AuthService>();
 
+        builder.Services.AddSingleton<LoginPage>();
+        builder.Services.AddSingleton<MainPage>();
+        
         var app = builder.Build();
         ServiceHelper.Initialize(app.Services);
         return app;

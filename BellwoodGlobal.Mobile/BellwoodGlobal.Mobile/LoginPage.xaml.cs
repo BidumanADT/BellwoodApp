@@ -3,17 +3,20 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
+using BellwoodGlobal.Mobile.Services;
 
 namespace BellwoodGlobal.Mobile
 {
     public partial class LoginPage : ContentPage
     {
         private readonly IHttpClientFactory _factory;
+        private readonly IAuthService _auth;
 
-        public LoginPage(IHttpClientFactory factory)
+        public LoginPage(IHttpClientFactory factory, IAuthService auth)
         {
             InitializeComponent();
             _factory = factory;
+            _auth = auth;
         }
 
         private async void OnLoginClicked(object sender, EventArgs e)
@@ -23,15 +26,10 @@ namespace BellwoodGlobal.Mobile
 
             try
             {
-                var auth = _factory.CreateClient("auth");
+                var client = _factory.CreateClient("auth");
+                var creds = new { Username = UsernameEntry.Text?.Trim(), Password = PasswordEntry.Text };
 
-                var creds = new
-                {
-                    Username = UsernameEntry.Text?.Trim(),
-                    Password = PasswordEntry.Text
-                };
-
-                var res = await auth.PostAsJsonAsync("/login", creds);
+                var res = await client.PostAsJsonAsync("/login", creds);
                 if (!res.IsSuccessStatusCode)
                 {
                     ErrorLabel.Text = "Invalid username or password";
@@ -40,21 +38,16 @@ namespace BellwoodGlobal.Mobile
                 }
 
                 var body = await res.Content.ReadFromJsonAsync<LoginResponse>();
-                if (body is null || string.IsNullOrEmpty(body.Token))
+                if (body is null || string.IsNullOrWhiteSpace(body.Token))
                 {
                     ErrorLabel.Text = "Login failed: empty token";
                     ErrorLabel.IsVisible = true;
                     return;
                 }
 
-                // Save token securely
-                await SecureStorage.SetAsync("access_token", body.Token);
+                await _auth.SetTokenAsync(body.Token);
 
-
-                //// Save token
-                //Preferences.Set("access_token", body.Token);
-
-                // Navigate to main rides page within the existing Shell
+                // go to rides
                 await Shell.Current.GoToAsync("//MainPage");
             }
             catch (Exception ex)
