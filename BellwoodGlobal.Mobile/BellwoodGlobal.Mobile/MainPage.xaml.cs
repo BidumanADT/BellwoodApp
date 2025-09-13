@@ -31,6 +31,14 @@ public partial class MainPage : ContentPage
         await LoadRidesAsync();
     }
 
+    private async Task<Ride[]> GetRidesAsync()
+    {
+        var ridesClient = _factory.CreateClient("rides");
+        // No header set here — handler injects it
+        var data = await ridesClient.GetFromJsonAsync<Ride[]>("api/rides");
+        return data ?? Array.Empty<Ride>();
+    }
+
     private async Task LoadRidesAsync()
     {
         try
@@ -39,14 +47,10 @@ public partial class MainPage : ContentPage
             RidesList.IsVisible = false;
 
             await _auth.RequireSignInAsync();
-            var token = await _auth.GetTokenAsync();
-            if (string.IsNullOrWhiteSpace(token)) return; // navigated to Login
+            if (!await _auth.IsSignedInAsync()) return; // navigated to Login
 
-            var client = _factory.CreateClient("rides");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var data = await client.GetFromJsonAsync<Ride[]>("api/rides");
-            RidesList.ItemsSource = data ?? Array.Empty<Ride>();
+            var rides = await GetRidesAsync();
+            RidesList.ItemsSource = rides;
             RidesList.IsVisible = true;
         }
         catch (Exception ex)
