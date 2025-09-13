@@ -31,14 +31,6 @@ public partial class MainPage : ContentPage
         await LoadRidesAsync();
     }
 
-    private async Task<Ride[]> GetRidesAsync()
-    {
-        var ridesClient = _factory.CreateClient("rides");
-        // No header set here — handler injects it
-        var data = await ridesClient.GetFromJsonAsync<Ride[]>("api/rides");
-        return data ?? Array.Empty<Ride>();
-    }
-
     private async Task LoadRidesAsync()
     {
         try
@@ -46,18 +38,44 @@ public partial class MainPage : ContentPage
             ErrorLabel.IsVisible = false;
             RidesList.IsVisible = false;
 
+            // If RequireSignInAsync navigates, bail out gracefully
             await _auth.RequireSignInAsync();
-            if (!await _auth.IsSignedInAsync()) return; // navigated to Login
+            if (!await _auth.IsSignedInAsync()) return;
 
-            var rides = await GetRidesAsync();
+            var rides = await GetRidesAsyncDetailed();
             RidesList.ItemsSource = rides;
             RidesList.IsVisible = true;
         }
         catch (Exception ex)
         {
-            ErrorLabel.Text = ex.Message;
+            ErrorLabel.Text = $"ERR: {ex.GetType().Name}: {ex.Message}";
             ErrorLabel.IsVisible = true;
         }
+    }
+
+    private async Task<Ride[]> GetRidesAsyncDetailed()
+    {
+        var client = _factory.CreateClient("rides"); // AuthHttpHandler should add Bearer
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, "api/rides");
+        using var res = await client.SendAsync(req);
+
+        if (!res.IsSuccessStatusCode)
+        {
+            var body = await res.Content.ReadAsStringAsync();
+            // Show precise HTTP info (temporary)
+            throw new InvalidOperationException(
+                $"HTTP {(int)res.StatusCode} {res.StatusCode}. Body: {Truncate(body, 300)}");
+        }
+
+        var stream = await res.Content.ReadAsStreamAsync();
+        var data = await System.Text.Json.JsonSerializer.DeserializeAsync<Ride[]>(
+            stream, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        return data ?? Array.Empty<Ride>();
+
+        static string Truncate(string s, int max) =>
+            string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s.Substring(0, max) + "…");
     }
 
     private async void OnLogoutClicked(object sender, EventArgs e)

@@ -31,8 +31,10 @@ namespace BellwoodGlobal.Mobile.Services
             // go to login if 401
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                // Non-blocking redirect; don’t throw away the response
-                _ = _auth.LogoutAsync();
+                Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await _auth.LogoutAsync();
+                });
             }
 
             return response;

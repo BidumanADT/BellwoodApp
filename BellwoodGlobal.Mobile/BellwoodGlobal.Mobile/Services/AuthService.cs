@@ -63,7 +63,8 @@ public sealed class AuthService : IAuthService
 
     private static bool IsExpired(string jwt)
     {
-        if (!TryReadExp(jwt, out var exp)) return true; // treat unreadable as expired
+        // If we can’t read exp, assume NOT expired and let the server 401 if needed.
+        if (!TryReadExp(jwt, out var exp)) return false;
         var now = DateTimeOffset.UtcNow.AddSeconds(ClockSkewSeconds);
         return now >= exp;
     }
