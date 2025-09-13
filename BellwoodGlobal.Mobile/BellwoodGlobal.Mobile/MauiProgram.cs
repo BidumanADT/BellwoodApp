@@ -20,6 +20,9 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
+        // register services
+        builder.Services.AddSingleton<IAuthService, AuthService>();
+        builder.Services.AddTransient<AuthHttpHandler>();
 
         // Auth Server client
         builder.Services.AddHttpClient("auth", c =>
@@ -46,18 +49,11 @@ public static class MauiProgram
             c.BaseAddress = new Uri("https://10.0.2.2:5005");
         #else
             c.BaseAddress = new Uri("https://localhost:5005");
-        #endif 
+        #endif
             c.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
+                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        });
-
-        // register services
-        builder.Services.AddSingleton<IAuthService, AuthService>();
+        .AddHttpMessageHandler<AuthHttpHandler>();
 
         builder.Services.AddSingleton<LoginPage>();
         builder.Services.AddSingleton<MainPage>();
