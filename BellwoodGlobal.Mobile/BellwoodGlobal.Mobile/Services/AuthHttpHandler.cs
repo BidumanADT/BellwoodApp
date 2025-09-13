@@ -18,7 +18,7 @@ namespace BellwoodGlobal.Mobile.Services
             // only add if not set already
             if (request.Headers.Authorization is null)
             {
-                var token = await _auth.GetTokenAsync();
+                var token = await _auth.GetValidTokenAsync();
                 if (!string.IsNullOrWhiteSpace(token))
                 {
                     request.Headers.Authorization =

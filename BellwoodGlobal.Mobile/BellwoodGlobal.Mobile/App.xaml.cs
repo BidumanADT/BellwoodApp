@@ -17,8 +17,9 @@ public partial class App : Application
 
         Dispatcher.Dispatch(async () =>
         {
-            if (!await _auth.IsSignedInAsync())
-                await Shell.Current.GoToAsync(nameof(LoginPage));
+            var token = await _auth.GetValidTokenAsync(); // will route to Login if missing/expired
+            if (string.IsNullOrEmpty(token))
+                return; // already navigated
         });
     }
 }
