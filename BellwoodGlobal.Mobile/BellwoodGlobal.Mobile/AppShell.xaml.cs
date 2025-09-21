@@ -8,7 +8,9 @@ public partial class AppShell : Shell
     {
         InitializeComponent();
 
-        // Register non-visual routes
-        Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
+        // Register the other pages as routes (not visible as tabs)
+        Routing.RegisterRoute("QuotePage", typeof(Pages.QuotePage));
+        Routing.RegisterRoute("RideHistoryPage", typeof(Pages.RideHistoryPage));
+        Routing.RegisterRoute("LoginPage", typeof(LoginPage));
     }
 }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.RideHistoryPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Ride History">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="16">
+        <Label Text="Your Past Rides" FontSize="{StaticResource H2}" TextColor="{StaticResource BellwoodGold}" />
+        <ActivityIndicator x:Name="Busy" Grid.Row="1" IsRunning="False" IsVisible="False" Color="{StaticResource BellwoodGold}" />
+
+        <CollectionView x:Name="HistoryList" Grid.Row="2" Margin="0,8,0,0" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="12" Margin="0,6" HasShadow="False" BackgroundColor="{StaticResource BellwoodCharcoal}" BorderColor="{StaticResource BellwoodGold}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding PickupTime, StringFormat='{}{0:MMM dd, yyyy h:mm tt}'}" TextColor="{StaticResource BellwoodCream}" FontAttributes="Bold"/>
+                            <Label Text="{Binding PickupAddress}" TextColor="{StaticResource BellwoodCream}" />
+                            <Label Text="{Binding DropoffAddress}" TextColor="{StaticResource BellwoodCream}" />
+                            <HorizontalStackLayout>
+                                <Label Text="{Binding Status}" TextColor="{StaticResource BellwoodGold}" />
+                                <Label Text="&#x2022;" TextColor="{StaticResource BellwoodCream}" />
+                                <Label Text="{Binding Price, StringFormat='${0:F2}'}" TextColor="{StaticResource BellwoodCream}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <Label Text="No rides yet." TextColor="{StaticResource BellwoodCream}" Margin="12" />
+            </CollectionView.EmptyView>
+        </CollectionView>
+    </Grid>
+</ContentPage>
