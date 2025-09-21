@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.QuotePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Get a Quote">
+
+    <ScrollView>
+        <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="*">
+            <Label Text="Request a Quote" FontSize="{StaticResource H2}" TextColor="{StaticResource BellwoodGold}" />
+
+            <VerticalStackLayout Grid.Row="1" Spacing="8" Margin="0,8,0,0">
+                <Entry x:Name="PickupEntry" Placeholder="Pickup address" TextColor="{StaticResource BellwoodCream}" PlaceholderColor="#9aa3ab"/>
+                <Entry x:Name="DropoffEntry" Placeholder="Drop-off address" TextColor="{StaticResource BellwoodCream}" PlaceholderColor="#9aa3ab"/>
+            </VerticalStackLayout>
+
+            <HorizontalStackLayout Grid.Row="2" Spacing="12" Margin="0,8,0,0">
+                <DatePicker x:Name="DatePick" />
+                <TimePicker x:Name="TimePick" />
+            </HorizontalStackLayout>
+
+            <Button Grid.Row="3"
+                Text="Get Quote"
+                FontSize="{StaticResource H2}"
+                TextColor="{StaticResource BellwoodInk}"
+                BackgroundColor="{StaticResource BellwoodGold}"
+                CornerRadius="14"
+                HeightRequest="52"
+                Clicked="OnGetQuote" />
+
+            <Frame Grid.Row="4" Margin="0,12,0,0" Padding="14" HasShadow="False"
+               BackgroundColor="{StaticResource BellwoodCharcoal}" BorderColor="{StaticResource BellwoodGold}">
+                <VerticalStackLayout Spacing="6">
+                    <Label x:Name="ResultHeader" Text="Estimate" FontAttributes="Bold" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="ResultVehicle" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="ResultFare" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="ResultEta" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Label Grid.Row="5" Margin="0,16,0,0"
+               Text="(Placeholder: LA Customer/Operator API integration in a later milestone)"
+               TextColor="{StaticResource BellwoodCream}" Opacity="0.6" FontSize="{StaticResource Small}" />
+        </Grid>
+    </ScrollView>
+</ContentPage>

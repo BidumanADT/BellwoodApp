@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using BellwoodGlobal.Mobile.Pages;
 using BellwoodGlobal.Mobile.Services;
 
 namespace BellwoodGlobal.Mobile;
@@ -20,49 +21,66 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-        // register services
+
+        // Pages (DI-friendly even if we now use parameterless ctors)
+        builder.Services.AddSingleton<LoginPage>();
+        builder.Services.AddTransient<MainPage>();
+        builder.Services.AddTransient<RideHistoryPage>();
+        builder.Services.AddTransient<QuotePage>();
+
+        // Services
         builder.Services.AddSingleton<IAuthService, AuthService>();
+        builder.Services.AddSingleton<IRideService, RideService>();
+        builder.Services.AddSingleton<IQuoteService, QuoteService>();
+
+        // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();
+
+        // -------- HttpClients --------
 
         // Auth Server client
         builder.Services.AddHttpClient("auth", c =>
         {
-        #if ANDROID
+#if ANDROID
             c.BaseAddress = new Uri("https://10.0.2.2:5001");
-        #else
+#else
             c.BaseAddress = new Uri("https://localhost:5001");
-        #endif
-            c.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
+#endif
+            c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         })
+#if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
-            // dev certs
+            // DEV ONLY: trust local dev certs
             ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         });
+#else
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler());
+#endif
 
-        // Rides API client
+        // Rides API client (protected)
         builder.Services.AddHttpClient("rides", c =>
         {
-        #if ANDROID
-                    c.BaseAddress = new Uri("https://10.0.2.2:5005");
-        #else
+#if ANDROID
+            c.BaseAddress = new Uri("https://10.0.2.2:5005");
+#else
             c.BaseAddress = new Uri("https://localhost:5005");
-        #endif
-                    c.DefaultRequestHeaders.Accept.Add(
-                        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-                })
+#endif
+            c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        })
         .AddHttpMessageHandler<AuthHttpHandler>()
+#if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
+            // DEV ONLY: trust local dev certs
             ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         });
+#else
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler());
+#endif
 
-        builder.Services.AddSingleton<LoginPage>();
-        builder.Services.AddSingleton<MainPage>();
-        
         var app = builder.Build();
         ServiceHelper.Initialize(app.Services);
         return app;
