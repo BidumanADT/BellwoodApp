@@ -11,7 +11,7 @@
         <VerticalStackLayout Grid.Row="0" Spacing="12" HorizontalOptions="Center">
             <Image
                 Source="bellwood_logo.png"
-                HeightRequest="64"
+                HeightRequest="200"
                 HorizontalOptions="Center" />
 
             <Label

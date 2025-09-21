@@ -29,7 +29,7 @@
                     <VerticalStackLayout Spacing="12">
                         <Image
               Source="bellwood_logo.png"
-              HeightRequest="32"
+              HeightRequest="200"
               HorizontalOptions="Start" />
 
                         <Label
