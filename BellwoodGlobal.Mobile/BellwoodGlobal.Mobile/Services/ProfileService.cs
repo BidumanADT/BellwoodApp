@@ -6,10 +6,10 @@ public class ProfileService : IProfileService
 {
     private readonly Passenger _booker = new()
     {
-        FirstName = "Alex",
+        FirstName = "Alice",
         LastName = "Morgan",
         PhoneNumber = "312-555-7777",
-        EmailAddress = "alex.morgan@example.com"
+        EmailAddress = "alice.morgan@example.com"
     };
 
     private readonly List<Passenger> _passengers = new()

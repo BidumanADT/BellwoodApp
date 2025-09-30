@@ -65,6 +65,10 @@ public partial class QuotePage : ContentPage
         var now = DateTime.Now.AddMinutes(30);
         PickupDate.Date = now.Date;
         PickupTime.Time = now.TimeOfDay;
+
+        // default return = same day, +2h (easy to change by user)
+        ReturnDatePicker.Date = PickupDate.Date;
+        ReturnTimePicker.Time = PickupTime.Time.Add(TimeSpan.FromHours(2));
     }
 
     private void OnPassengerChanged(object? sender, EventArgs e)
@@ -101,11 +105,22 @@ public partial class QuotePage : ContentPage
     {
         var sel = DropoffPicker.SelectedItem?.ToString();
         var isAsDirected = sel == AsDirected;
+
         AsDirectedHoursGrid.IsVisible = isAsDirected;
         RoundTripGrid.IsVisible = !isAsDirected;
-        ReturnTimeGrid.IsVisible = !isAsDirected && RoundTripCheck.IsChecked;
         DropoffNewGrid.IsVisible = sel == LocationNew;
+
+        // keep return time in sync with current checkbox state
+        ReturnWhenGrid.IsVisible = !isAsDirected && RoundTripCheck.IsChecked;
     }
+
+
+    private void OnRoundTripChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        var isAsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected;
+        ReturnWhenGrid.IsVisible = !isAsDirected && e.Value;
+    }
+
 
     private void OnAddAdditionalPassenger(object? sender, EventArgs e)
     {
@@ -136,6 +151,21 @@ public partial class QuotePage : ContentPage
             return;
         }
 
+        var pickupDateTime = PickupDate.Date + PickupTime.Time;
+
+        DateTime? returnDateTime = null;
+        if (RoundTripGrid.IsVisible && RoundTripCheck.IsChecked)
+        {
+            returnDateTime = ReturnDatePicker.Date + ReturnTimePicker.Time;
+
+            if (returnDateTime <= pickupDateTime)
+            {
+                await DisplayAlert("Return must be later",
+                    "Please choose a return date/time after the pickup.", "OK");
+                return;
+            }
+        }
+
         var draft = new QuoteDraft
         {
             Booker = new Passenger
@@ -154,15 +184,14 @@ public partial class QuotePage : ContentPage
             },
             AdditionalPassengers = _additionalPassengers.ToList(),
             VehicleClass = VehiclePicker.SelectedItem?.ToString() ?? "Sedan",
-            PickupDateTime = PickupDate.Date + PickupTime.Time,
+            PickupDateTime = pickupDateTime,
             PickupLocation = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress),
             AsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected,
             Hours = (DropoffPicker.SelectedItem?.ToString() == AsDirected) ? (int?)Math.Max(1, (int)HoursStepper.Value) : null,
             DropoffLocation = DropoffPicker.SelectedItem?.ToString() == AsDirected ? null
                               : ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress),
             RoundTrip = RoundTripGrid.IsVisible && RoundTripCheck.IsChecked,
-            ReturnPickupTime = (RoundTripGrid.IsVisible && RoundTripCheck.IsChecked)
-                ? (DateTime?)(PickupDate.Date + ReturnTimePicker.Time) : null,
+            ReturnPickupTime = returnDateTime,
             AdditionalRequest = RequestsPicker.SelectedItem?.ToString(),
             AdditionalRequestOtherText = RequestOtherGrid.IsVisible ? (RequestOtherEntry.Text ?? "") : null
         };
