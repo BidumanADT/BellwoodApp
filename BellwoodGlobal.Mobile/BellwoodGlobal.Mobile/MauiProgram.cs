@@ -32,6 +32,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAuthService, AuthService>();
         builder.Services.AddSingleton<IRideService, RideService>();
         builder.Services.AddSingleton<IQuoteService, QuoteService>();
+        builder.Services.AddSingleton<IProfileService, ProfileService>();
+
 
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();
