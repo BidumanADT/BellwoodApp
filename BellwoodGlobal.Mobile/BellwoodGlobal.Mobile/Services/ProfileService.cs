@@ -22,7 +22,8 @@ public class ProfileService : IProfileService
     {
         new Models.Location { Label = "Home",   Address = "123 Wacker Dr, Chicago, IL" },
         new Models.Location { Label = "O'Hare", Address = "O'Hare International Airport, Chicago, IL" },
-        new Models.Location { Label = "Langham", Address = "330 N Wabash Ave, Chicago, IL" }
+        new Models.Location { Label = "Langham", Address = "330 N Wabash Ave, Chicago, IL" },
+        new Models.Location { Label = "Signature FBO (ORD)", Address = "825 Patton Drive, Chicago, IL 60666" }
     };
 
     public Passenger GetBooker() => _booker;
