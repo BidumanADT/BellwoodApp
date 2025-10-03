@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Bellwood">
 
-    <Grid Padding="32" RowDefinitions="Auto,*,Auto">
+    <Grid Padding="24" RowDefinitions="Auto,*,Auto">
 
         <!-- HEADER -->
         <VerticalStackLayout Grid.Row="0" Spacing="12" HorizontalOptions="Center">
@@ -22,7 +22,7 @@
                 HorizontalOptions="Center" />
 
             <Label
-                Text="Sign in to view your rides"
+                Text="Sign in to Bellwood Elite"
                 FontFamily="OpenSansRegular"
                 FontSize="{StaticResource Body}"
                 TextColor="{StaticResource BellwoodCharcoal}"

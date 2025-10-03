@@ -9,6 +9,10 @@ public class QuoteDraft
 
     public DateTime PickupDateTime { get; set; }
     public string PickupLocation { get; set; } = "";
+    public string? FlightType { get; set; }     // "Commercial" or "Private"
+    public string? FlightNumber { get; set; }   // e.g., AA1234 (Commercial)
+    public string? TailNumber { get; set; }     // e.g., N123AB (Private)
+
 
     public bool AsDirected { get; set; }
     public int? Hours { get; set; } // As Directed only

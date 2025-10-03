@@ -6,10 +6,10 @@ public class ProfileService : IProfileService
 {
     private readonly Passenger _booker = new()
     {
-        FirstName = "Alex",
+        FirstName = "Alice",
         LastName = "Morgan",
         PhoneNumber = "312-555-7777",
-        EmailAddress = "alex.morgan@example.com"
+        EmailAddress = "alice.morgan@example.com"
     };
 
     private readonly List<Passenger> _passengers = new()
@@ -22,7 +22,8 @@ public class ProfileService : IProfileService
     {
         new Models.Location { Label = "Home",   Address = "123 Wacker Dr, Chicago, IL" },
         new Models.Location { Label = "O'Hare", Address = "O'Hare International Airport, Chicago, IL" },
-        new Models.Location { Label = "Langham", Address = "330 N Wabash Ave, Chicago, IL" }
+        new Models.Location { Label = "Langham", Address = "330 N Wabash Ave, Chicago, IL" },
+        new Models.Location { Label = "Signature FBO (ORD)", Address = "825 Patton Drive, Chicago, IL 60666" }
     };
 
     public Passenger GetBooker() => _booker;

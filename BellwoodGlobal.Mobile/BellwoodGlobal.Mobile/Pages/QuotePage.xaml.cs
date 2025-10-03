@@ -48,6 +48,13 @@ public partial class QuotePage : ContentPage
         foreach (var loc in _savedLocations) PickupLocationPicker.Items.Add(loc.ToString());
         PickupLocationPicker.Items.Add(LocationNew);
         PickupLocationPicker.SelectedIndexChanged += OnPickupLocationChanged;
+        
+        // Flight picker items + handler
+        FlightInfoPicker.Items.Add("None");
+        FlightInfoPicker.Items.Add("Commercial Flight");
+        FlightInfoPicker.Items.Add("Private Tail Number");
+        FlightInfoPicker.SelectedIndexChanged += OnFlightInfoChanged;
+        FlightInfoPicker.SelectedIndex = 0; // default None
 
         // Dropoff
         DropoffPicker.Items.Add(AsDirected);
@@ -65,6 +72,13 @@ public partial class QuotePage : ContentPage
         var now = DateTime.Now.AddMinutes(30);
         PickupDate.Date = now.Date;
         PickupTime.Time = now.TimeOfDay;
+
+        // Keep return in sync with pickup and validate changes
+        PickupDate.DateSelected += (_, __) => SyncReturnMinAndSuggest();
+        PickupTime.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TimePicker.Time)) SyncReturnMinAndSuggest(); };
+
+        ReturnDatePicker.DateSelected += (_, __) => EnsureReturnAfterPickup();
+        ReturnTimePicker.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TimePicker.Time)) EnsureReturnAfterPickup(); };
     }
 
     private void OnPassengerChanged(object? sender, EventArgs e)
@@ -101,11 +115,81 @@ public partial class QuotePage : ContentPage
     {
         var sel = DropoffPicker.SelectedItem?.ToString();
         var isAsDirected = sel == AsDirected;
+
         AsDirectedHoursGrid.IsVisible = isAsDirected;
         RoundTripGrid.IsVisible = !isAsDirected;
-        ReturnTimeGrid.IsVisible = !isAsDirected && RoundTripCheck.IsChecked;
         DropoffNewGrid.IsVisible = sel == LocationNew;
+
+        if (isAsDirected) RoundTripCheck.IsChecked = false;
+
+        ReturnSection.IsVisible = !isAsDirected && RoundTripCheck.IsChecked;
+        if (ReturnSection.IsVisible) SyncReturnMinAndSuggest();
     }
+
+    private void OnRoundTripChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        var isAsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected;
+        ReturnSection.IsVisible = !isAsDirected && e.Value;
+
+        if (ReturnSection.IsVisible)
+        {
+            // Default return to the pickup’s date/time; user can adjust (Fri → Sun, etc.)
+            ReturnDatePicker.Date = PickupDate.Date;
+            ReturnTimePicker.Time = PickupTime.Time;
+            SyncReturnMinAndSuggest();
+        }
+    }
+
+    private void SyncReturnMinAndSuggest()
+    {
+        // Enforce that return date can't be before pickup date
+        ReturnDatePicker.MinimumDate = PickupDate.Date;
+
+        if (ReturnSection.IsVisible)
+        {
+            if (ReturnDatePicker.Date < ReturnDatePicker.MinimumDate)
+                ReturnDatePicker.Date = PickupDate.Date;
+
+            EnsureReturnAfterPickup(suggestIfInvalid: true);
+        }
+    }
+
+    private void EnsureReturnAfterPickup(bool suggestIfInvalid = false)
+    {
+        var pickup = PickupDate.Date + PickupTime.Time;
+        var ret = ReturnDatePicker.Date + ReturnTimePicker.Time;
+
+        if (ret <= pickup && suggestIfInvalid)
+        {
+            // Suggest a valid default
+            var suggested = pickup.AddHours(2);
+            ReturnDatePicker.Date = suggested.Date;
+            ReturnTimePicker.Time = suggested.TimeOfDay;
+        }
+    }
+
+    private void OnFlightInfoChanged(object? sender, EventArgs e)
+    {
+        var sel = FlightInfoPicker.SelectedItem?.ToString();
+        if (sel == "Commercial Flight")
+        {
+            FlightInfoGrid.IsVisible = true;
+            FlightInfoLabel.Text = "Flight number";
+            FlightInfoEntry.Placeholder = "e.g., AA1234";
+        }
+        else if (sel == "Private Flight")
+        {
+            FlightInfoGrid.IsVisible = true;
+            FlightInfoLabel.Text = "Tail number";
+            FlightInfoEntry.Placeholder = "e.g., N123AB";
+        }
+        else
+        {
+            FlightInfoGrid.IsVisible = false;
+            FlightInfoEntry.Text = string.Empty;
+        }
+    }
+
 
     private void OnAddAdditionalPassenger(object? sender, EventArgs e)
     {
@@ -136,7 +220,42 @@ public partial class QuotePage : ContentPage
             return;
         }
 
-        var draft = new QuoteDraft
+        var pickupDT = PickupDate.Date + PickupTime.Time;
+        var isAsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected;
+
+        DateTime? retDT = null;
+        if (!isAsDirected && RoundTripGrid.IsVisible && RoundTripCheck.IsChecked)
+        {
+            retDT = ReturnDatePicker.Date + ReturnTimePicker.Time;
+            if (retDT <= pickupDT)
+            {
+                await DisplayAlert("Return time", "Return must be after pickup. Please adjust the date/time.", "OK");
+                return;
+            }
+        }
+
+        // Resolve locations
+        var pickupLoc = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress);
+        string? dropLoc = isAsDirected ? null : ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress);
+
+        // Flight info (optional)
+        string? flightType = null, flightNumber = null, tailNumber = null;
+        var fi = FlightInfoPicker.SelectedItem?.ToString();
+        if (fi == "Commercial Flight")
+        {
+            flightType = "Commercial";
+            flightNumber = (FlightInfoEntry.Text ?? "").Trim();
+            if (string.IsNullOrEmpty(flightNumber)) flightNumber = null;
+        }
+        else if (fi == "Private Flight")
+        {
+            flightType = "Private";
+            tailNumber = (FlightInfoEntry.Text ?? "").Trim();
+            if (string.IsNullOrEmpty(tailNumber)) tailNumber = null;
+        }
+
+        // Outbound (first reservation)
+        var outbound = new QuoteDraft
         {
             Booker = new Passenger
             {
@@ -154,24 +273,65 @@ public partial class QuotePage : ContentPage
             },
             AdditionalPassengers = _additionalPassengers.ToList(),
             VehicleClass = VehiclePicker.SelectedItem?.ToString() ?? "Sedan",
-            PickupDateTime = PickupDate.Date + PickupTime.Time,
-            PickupLocation = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress),
-            AsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected,
-            Hours = (DropoffPicker.SelectedItem?.ToString() == AsDirected) ? (int?)Math.Max(1, (int)HoursStepper.Value) : null,
-            DropoffLocation = DropoffPicker.SelectedItem?.ToString() == AsDirected ? null
-                              : ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress),
-            RoundTrip = RoundTripGrid.IsVisible && RoundTripCheck.IsChecked,
-            ReturnPickupTime = (RoundTripGrid.IsVisible && RoundTripCheck.IsChecked)
-                ? (DateTime?)(PickupDate.Date + ReturnTimePicker.Time) : null,
+            PickupDateTime = pickupDT,
+            PickupLocation = pickupLoc,
+            AsDirected = isAsDirected,
+            Hours = isAsDirected ? (int?)Math.Max(1, (int)HoursStepper.Value) : null,
+            DropoffLocation = dropLoc,
+            RoundTrip = !isAsDirected && RoundTripCheck.IsChecked,
+            ReturnPickupTime = retDT, //  now set when round trip
             AdditionalRequest = RequestsPicker.SelectedItem?.ToString(),
-            AdditionalRequestOtherText = RequestOtherGrid.IsVisible ? (RequestOtherEntry.Text ?? "") : null
+            AdditionalRequestOtherText = RequestOtherGrid.IsVisible ? (RequestOtherEntry.Text ?? "") : null,
+
+            // Flight info on the outbound leg
+            FlightType = flightType,
+            FlightNumber = flightNumber,
+            TailNumber = tailNumber
         };
 
-        var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions { WriteIndented = true });
+        var requests = new List<QuoteDraft> { outbound };
+
+        // Return leg (second reservation) if round trip (not As Directed)
+        if (!isAsDirected && RoundTripGrid.IsVisible && RoundTripCheck.IsChecked && retDT is not null)
+        {
+            var returnLeg = new QuoteDraft
+            {
+                Booker = outbound.Booker,
+                Passenger = outbound.Passenger,
+                AdditionalPassengers = outbound.AdditionalPassengers.ToList(),
+                VehicleClass = outbound.VehicleClass,
+
+                PickupDateTime = retDT.Value,
+                PickupLocation = outbound.DropoffLocation ?? outbound.PickupLocation,
+                AsDirected = false,
+                Hours = null,
+                DropoffLocation = outbound.PickupLocation,
+
+                RoundTrip = false,
+                ReturnPickupTime = null,
+
+                AdditionalRequest = outbound.AdditionalRequest,
+                AdditionalRequestOtherText = outbound.AdditionalRequestOtherText,
+
+                // Mirror flight fields (you can omit if you prefer them only on inbound)
+                // TODO add option to change in case of different flight info
+                FlightType = flightType,
+                FlightNumber = flightNumber,
+                TailNumber = tailNumber
+            };
+
+            requests.Add(returnLeg);
+        }
+
+        var wrapper = new { requestCount = requests.Count, requests };
+        var json = System.Text.Json.JsonSerializer.Serialize(wrapper,
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
         JsonEditor.Text = json;
         JsonFrame.IsVisible = true;
         await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
     }
+
 
     private static string ResolveLocation(Picker picker, Entry label, Entry address)
     {

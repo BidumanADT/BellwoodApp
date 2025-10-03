@@ -6,12 +6,72 @@
     BackgroundColor="{StaticResource BellwoodInk}"
     Title="Get a Quote">
 
+    <ContentPage.Resources>
+        <!-- High-contrast, page-local overrides -->
+        <Color x:Key="BellwoodInk">#0F1217</Color>
+        <Color x:Key="BellwoodCharcoal">#171B21</Color>
+        <Color x:Key="BellwoodCream">#F5F7FA</Color>
+        <Color x:Key="BellwoodGold">#FFD166</Color>
+        <Color x:Key="BellwoodPlaceholder">#9AA3AF</Color>
+
+        <!-- Base styles with keys (so we can BasedOn them later) -->
+        <Style x:Key="BaseEntryStyle" TargetType="Entry">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource BellwoodPlaceholder}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="HorizontalOptions" Value="Fill" />
+        </Style>
+
+        <Style x:Key="BasePickerStyle" TargetType="Picker">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="TitleColor" Value="{StaticResource BellwoodPlaceholder}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <!-- Apply styles -->
+        <Style TargetType="Entry" BasedOn="{StaticResource BaseEntryStyle}" />
+
+        <!-- Editor doesn't support PlaceholderColor; reuse only common setters -->
+        <Style TargetType="Editor">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <Style TargetType="Picker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="DatePicker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="TimePicker" BasedOn="{StaticResource BasePickerStyle}" />
+
+        <Style TargetType="Label">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodGold}" />
+            <Setter Property="TextColor" Value="{StaticResource BellwoodInk}" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="14,10" />
+        </Style>
+
+        <!-- Optional card style for section separation -->
+        <Style TargetType="Frame" x:Key="Card">
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="HasShadow" Value="True" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="0,8" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+        </Style>
+    </ContentPage.Resources>
+
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="14">
 
             <!-- Booker (read only) -->
             <Label Text="Booker" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" 
+                  RowDefinitions="Auto,Auto,Auto,Auto" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
                 <Label Text="First Name" Grid.Row="0" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="BookerFirst" Grid.Row="0" Grid.Column="1" IsReadOnly="True" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="Last Name" Grid.Row="1" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
@@ -25,7 +85,9 @@
             <!-- Passenger selection -->
             <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <Picker x:Name="PassengerPicker" Title="Select passenger" TitleColor="#9aa3ab" />
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" x:Name="PassengerNewGrid" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" 
+                  RowDefinitions="Auto,Auto,Auto,Auto" x:Name="PassengerNewGrid" 
+                  IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
                 <Label Text="First Name" Grid.Row="0" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="PassengerFirst" Grid.Row="0" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="Last Name" Grid.Row="1" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
@@ -63,8 +125,8 @@
             <!-- Pickup -->
             <Label Text="Pickup" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <HorizontalStackLayout Spacing="10">
-                <DatePicker x:Name="PickupDate" />
-                <TimePicker x:Name="PickupTime" />
+                <DatePicker x:Name="PickupDate" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
+                <TimePicker x:Name="PickupTime" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
             </HorizontalStackLayout>
             <Picker x:Name="PickupLocationPicker" Title="Select pickup location" />
             <Grid ColumnDefinitions="*,*" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
@@ -72,6 +134,30 @@
                 <Entry x:Name="PickupNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
+            </Grid>
+
+            <!-- Flight info (optional) -->
+            <Label Text="Flight Info (optional)"
+           TextColor="{StaticResource BellwoodGold}"
+           FontSize="20" />
+
+                <Picker x:Name="FlightInfoPicker"
+            Title="None"
+            TitleColor="{StaticResource BellwoodPlaceholder}" />
+
+            <Grid x:Name="FlightInfoGrid"
+          ColumnDefinitions="Auto,*"
+          ColumnSpacing="12"
+          IsVisible="False"
+          BackgroundColor="{StaticResource BellwoodCharcoal}"
+          Padding="12">
+                <Label x:Name="FlightInfoLabel"
+             Text="Flight number"
+             TextColor="{StaticResource BellwoodCream}" />
+                <Entry x:Name="FlightInfoEntry"
+             Grid.Column="1"
+             Placeholder="e.g., AA1234"
+             TextColor="{StaticResource BellwoodCream}" />
             </Grid>
 
             <!-- Dropoff -->
@@ -84,16 +170,51 @@
                 <Entry x:Name="DropoffNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
             </Grid>
 
-            <!-- As Directed / Round Trip logic -->
-            <Grid ColumnDefinitions="Auto,*" x:Name="RoundTripGrid" IsVisible="True">
-                <CheckBox x:Name="RoundTripCheck" />
-                <Label Text="Round Trip" VerticalTextAlignment="Center" TextColor="{StaticResource BellwoodCream}" />
+            <!-- Round Trip toggle -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" x:Name="RoundTripGrid" IsVisible="True">
+            <CheckBox x:Name="RoundTripCheck"
+                VerticalOptions="Center"
+                CheckedChanged="OnRoundTripChanged" />
+            <Label Grid.Column="1"
+                 Text="Round Trip"
+                 VerticalOptions="Center"
+                 TextColor="{StaticResource BellwoodCream}" />
             </Grid>
 
-            <Grid ColumnDefinitions="*,*" x:Name="ReturnTimeGrid" IsVisible="False">
-                <Label Text="Return pickup time" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <TimePicker x:Name="ReturnTimePicker" Grid.Column="1" />
-            </Grid>
+            <!-- Return (second ride) -->
+            <VerticalStackLayout x:Name="ReturnSection"
+                     IsVisible="False"
+                     Spacing="6"
+                     Margin="0,6,0,0">
+                <Label Text="Return (second ride)"
+                 FontAttributes="Bold"
+                 TextColor="{StaticResource BellwoodGold}" />
+                <Label Text="Select return date and time"
+                 FontSize="12"
+                 TextColor="{StaticResource BellwoodCream}" />
+
+                <!-- Date + Time in one row -->
+                <Grid x:Name="ReturnDTGrid"
+                ColumnDefinitions="Auto,*,Auto,*"
+                ColumnSpacing="10">
+                    <Label Grid.Column="0"
+                   Text="Return date"
+                   VerticalOptions="Center"
+                   TextColor="{StaticResource BellwoodCream}" />
+                    <DatePicker x:Name="ReturnDatePicker"
+                Grid.Column="1"
+                TextColor="{StaticResource BellwoodCream}"
+                BackgroundColor="{StaticResource BellwoodCharcoal}" />
+                    <Label Grid.Column="2"
+                   Text="Time"
+                   VerticalOptions="Center"
+                   TextColor="{StaticResource BellwoodCream}" />
+                    <TimePicker x:Name="ReturnTimePicker"
+                Grid.Column="3"
+                TextColor="{StaticResource BellwoodCream}"
+                BackgroundColor="{StaticResource BellwoodCharcoal}" />
+                </Grid>
+            </VerticalStackLayout>
 
             <Grid ColumnDefinitions="*,Auto" x:Name="AsDirectedHoursGrid" IsVisible="False">
                 <Label Text="Hours (As Directed)" TextColor="{StaticResource BellwoodCream}" />
