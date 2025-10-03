@@ -161,7 +161,7 @@ public partial class QuotePage : ContentPage
 
         if (ret <= pickup && suggestIfInvalid)
         {
-            // Suggest a valid default; change to 24h if you prefer
+            // Suggest a valid default
             var suggested = pickup.AddHours(2);
             ReturnDatePicker.Date = suggested.Date;
             ReturnTimePicker.Time = suggested.TimeOfDay;
@@ -177,7 +177,7 @@ public partial class QuotePage : ContentPage
             FlightInfoLabel.Text = "Flight number";
             FlightInfoEntry.Placeholder = "e.g., AA1234";
         }
-        else if (sel == "Private Tail Number")
+        else if (sel == "Private Flight")
         {
             FlightInfoGrid.IsVisible = true;
             FlightInfoLabel.Text = "Tail number";
@@ -247,7 +247,7 @@ public partial class QuotePage : ContentPage
             flightNumber = (FlightInfoEntry.Text ?? "").Trim();
             if (string.IsNullOrEmpty(flightNumber)) flightNumber = null;
         }
-        else if (fi == "Private Tail Number")
+        else if (fi == "Private Flight")
         {
             flightType = "Private";
             tailNumber = (FlightInfoEntry.Text ?? "").Trim();
