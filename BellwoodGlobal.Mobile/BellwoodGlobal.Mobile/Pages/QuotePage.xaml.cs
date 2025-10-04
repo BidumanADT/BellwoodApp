@@ -9,19 +9,28 @@ public partial class QuotePage : ContentPage
 {
     private readonly IProfileService _profile;
     private readonly ObservableCollection<string> _additionalPassengers = new();
-
+    private readonly IQuoteDraftBuilder _draftBuilder;
+    // --- passenger/location UI constants (avoid string typos) ---
     private const string PassengerSelf = "Booker (you)";
     private const string PassengerNew = "New Passenger";
     private const string LocationNew = "New Location";
     private const string AsDirected = "As Directed";
+    // --- flight UI constants (avoid string typos) ---
+    private const string FlightOptionTBD = "TBD";
+    private const string FlightOptionCommercial = "Commercial Flight";
+    private const string FlightOptionPrivate = "Private Tail Number";
+    // -----------------------------------------------
 
     private List<Passenger> _savedPassengers = new();
     private List<Models.Location> _savedLocations = new();
+    // --- flight state for return logic ---
+    private bool _allowReturnTailChange;     // private only
 
     public QuotePage()
     {
         InitializeComponent();
         _profile = ServiceHelper.GetRequiredService<IProfileService>();
+        _draftBuilder = ServiceHelper.GetRequiredService<IQuoteDraftBuilder>();
 
         // Booker
         var booker = _profile.GetBooker();
@@ -50,11 +59,11 @@ public partial class QuotePage : ContentPage
         PickupLocationPicker.SelectedIndexChanged += OnPickupLocationChanged;
         
         // Flight picker items + handler
-        FlightInfoPicker.Items.Add("None");
+        FlightInfoPicker.Items.Add("TBD");
         FlightInfoPicker.Items.Add("Commercial Flight");
         FlightInfoPicker.Items.Add("Private Tail Number");
         FlightInfoPicker.SelectedIndexChanged += OnFlightInfoChanged;
-        FlightInfoPicker.SelectedIndex = 0; // default None
+        FlightInfoPicker.SelectedIndex = 0; // default TBD
 
         // Dropoff
         DropoffPicker.Items.Add(AsDirected);
@@ -79,6 +88,8 @@ public partial class QuotePage : ContentPage
 
         ReturnDatePicker.DateSelected += (_, __) => EnsureReturnAfterPickup();
         ReturnTimePicker.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TimePicker.Time)) EnsureReturnAfterPickup(); };
+
+        UpdateReturnFlightUx();
     }
 
     private void OnPassengerChanged(object? sender, EventArgs e)
@@ -124,6 +135,8 @@ public partial class QuotePage : ContentPage
 
         ReturnSection.IsVisible = !isAsDirected && RoundTripCheck.IsChecked;
         if (ReturnSection.IsVisible) SyncReturnMinAndSuggest();
+
+        UpdateReturnFlightUx();
     }
 
     private void OnRoundTripChanged(object? sender, CheckedChangedEventArgs e)
@@ -133,12 +146,15 @@ public partial class QuotePage : ContentPage
 
         if (ReturnSection.IsVisible)
         {
-            // Default return to the pickup’s date/time; user can adjust (Fri → Sun, etc.)
+            // Default return to the pickup’s date/time; user can adjust
             ReturnDatePicker.Date = PickupDate.Date;
             ReturnTimePicker.Time = PickupTime.Time;
             SyncReturnMinAndSuggest();
         }
+
+        UpdateReturnFlightUx();
     }
+
 
     private void SyncReturnMinAndSuggest()
     {
@@ -171,25 +187,61 @@ public partial class QuotePage : ContentPage
     private void OnFlightInfoChanged(object? sender, EventArgs e)
     {
         var sel = FlightInfoPicker.SelectedItem?.ToString();
-        if (sel == "Commercial Flight")
+
+        if (sel == FlightOptionCommercial)
         {
+            // Outbound
             FlightInfoGrid.IsVisible = true;
             FlightInfoLabel.Text = "Flight number";
             FlightInfoEntry.Placeholder = "e.g., AA1234";
         }
-        else if (sel == "Private Flight")
+        else if (sel == FlightOptionPrivate)
         {
+            // Outbound
             FlightInfoGrid.IsVisible = true;
             FlightInfoLabel.Text = "Tail number";
             FlightInfoEntry.Placeholder = "e.g., N123AB";
         }
-        else
+        else // TBA
         {
             FlightInfoGrid.IsVisible = false;
             FlightInfoEntry.Text = string.Empty;
         }
-    }
 
+        UpdateReturnFlightUx();
+    }
+    private void UpdateReturnFlightUx()
+    {
+        var isRoundTrip = ReturnSection.IsVisible && RoundTripCheck.IsChecked;
+        var sel = FlightInfoPicker.SelectedItem?.ToString();
+
+        var isCommercial = sel == FlightOptionCommercial;
+        var isPrivate = sel == FlightOptionPrivate;
+
+        // Show/hide the "change aircraft?" row (Private only)
+        ReturnTailChangeRow.IsVisible = isRoundTrip && isPrivate;
+
+        // Show the return entry when:
+        // - Commercial (always requires its own return flight number), OR
+        // - Private and the switch is ON (changing aircraft)
+        if (isRoundTrip && (isCommercial || (isPrivate && _allowReturnTailChange)))
+        {
+            ReturnFlightGrid.IsVisible = true;
+            ReturnFlightLabel.Text = isPrivate ? "Return tail number" : "Return flight number";
+            if (string.IsNullOrWhiteSpace(ReturnFlightEntry.Text))
+                ReturnFlightEntry.Placeholder = isPrivate ? "e.g., N987CD" : "e.g., UA4321";
+        }
+        else
+        {
+            ReturnFlightGrid.IsVisible = false;
+            // Optional: ReturnFlightEntry.Text = string.Empty;
+        }
+    }
+    private void OnReturnTailChangeToggled(object? sender, ToggledEventArgs e)
+    {
+        _allowReturnTailChange = e.Value;
+        UpdateReturnFlightUx(); // show/hide the return entry accordingly
+    }
 
     private void OnAddAdditionalPassenger(object? sender, EventArgs e)
     {
@@ -209,6 +261,7 @@ public partial class QuotePage : ContentPage
 
     private async void OnBuildJson(object? sender, EventArgs e)
     {
+        // ---- Basic required fields
         if (string.IsNullOrWhiteSpace(BookerPhone.Text) || string.IsNullOrWhiteSpace(BookerEmail.Text))
         {
             await DisplayAlert("Required", "Booker phone and email are required.", "OK");
@@ -222,6 +275,13 @@ public partial class QuotePage : ContentPage
 
         var pickupDT = PickupDate.Date + PickupTime.Time;
         var isAsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected;
+
+        // Enforce pickup isn’t in the past / too soon (nice UX default)
+        if (pickupDT <= DateTime.Now.AddMinutes(15))
+        {
+            await DisplayAlert("Pickup time", "Pickup should be at least 15 minutes from now.", "OK");
+            return;
+        }
 
         DateTime? retDT = null;
         if (!isAsDirected && RoundTripGrid.IsVisible && RoundTripCheck.IsChecked)
@@ -238,24 +298,68 @@ public partial class QuotePage : ContentPage
         var pickupLoc = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress);
         string? dropLoc = isAsDirected ? null : ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress);
 
-        // Flight info (optional)
-        string? flightType = null, flightNumber = null, tailNumber = null;
-        var fi = FlightInfoPicker.SelectedItem?.ToString();
-        if (fi == "Commercial Flight")
+        // Pickup must exist; Dropoff required when not As Directed
+        if (string.IsNullOrWhiteSpace(pickupLoc))
         {
-            flightType = "Commercial";
-            flightNumber = (FlightInfoEntry.Text ?? "").Trim();
-            if (string.IsNullOrEmpty(flightNumber)) flightNumber = null;
+            await DisplayAlert("Pickup", "Please select or enter a pickup location.", "OK");
+            return;
         }
-        else if (fi == "Private Flight")
+        if (!isAsDirected && string.IsNullOrWhiteSpace(dropLoc))
         {
-            flightType = "Private";
-            tailNumber = (FlightInfoEntry.Text ?? "").Trim();
-            if (string.IsNullOrEmpty(tailNumber)) tailNumber = null;
+            await DisplayAlert("Dropoff", "Please select or enter a dropoff location.", "OK");
+            return;
         }
 
-        // Outbound (first reservation)
-        var outbound = new QuoteDraft
+        // 1) Decide flight mode from picker
+        var flightSel = FlightInfoPicker.SelectedItem?.ToString();
+        var mode = flightSel == FlightOptionCommercial
+            ? FlightMode.Commercial
+            : flightSel == FlightOptionPrivate
+                ? FlightMode.Private
+                : FlightMode.None;
+
+        // --- Enforce per-leg flight rules BEFORE building state ---
+        if (mode == FlightMode.Commercial)
+        {
+            var outboundFlight = (FlightInfoEntry.Text ?? "").Trim();
+            if (string.IsNullOrEmpty(outboundFlight))
+            {
+                await DisplayAlert("Flight info", "Outbound flight number is required for commercial flights.", "OK");
+                return;
+            }
+
+            if (retDT is not null)
+            {
+                var returnFlight = (ReturnFlightEntry.Text ?? "").Trim();
+                if (string.IsNullOrEmpty(returnFlight))
+                {
+                    await DisplayAlert("Flight info", "Return flight number is required for the return leg (commercial).", "OK");
+                    return;
+                }
+            }
+        }
+        else if (mode == FlightMode.Private)
+        {
+            var outboundTail = (FlightInfoEntry.Text ?? "").Trim();
+            if (string.IsNullOrEmpty(outboundTail))
+            {
+                await DisplayAlert("Flight info", "Outbound tail number is required for private flights.", "OK");
+                return;
+            }
+
+            if (retDT is not null && _allowReturnTailChange)
+            {
+                var returnTail = (ReturnFlightEntry.Text ?? "").Trim();
+                if (string.IsNullOrEmpty(returnTail))
+                {
+                    await DisplayAlert("Flight info", "Return tail number is required when changing aircraft for the return leg.", "OK");
+                    return;
+                }
+            }
+        }
+
+        // 2) Build the state (use your validated values)
+        var state = new QuoteFormState
         {
             Booker = new Passenger
             {
@@ -272,66 +376,42 @@ public partial class QuotePage : ContentPage
                 EmailAddress = string.IsNullOrWhiteSpace(PassengerEmail.Text) ? BookerEmail.Text : PassengerEmail.Text
             },
             AdditionalPassengers = _additionalPassengers.ToList(),
+
             VehicleClass = VehiclePicker.SelectedItem?.ToString() ?? "Sedan",
             PickupDateTime = pickupDT,
             PickupLocation = pickupLoc,
+
             AsDirected = isAsDirected,
             Hours = isAsDirected ? (int?)Math.Max(1, (int)HoursStepper.Value) : null,
-            DropoffLocation = dropLoc,
+            DropoffLocation = isAsDirected ? null : dropLoc,
+
             RoundTrip = !isAsDirected && RoundTripCheck.IsChecked,
-            ReturnPickupTime = retDT, //  now set when round trip
+            ReturnPickupTime = retDT,
+
             AdditionalRequest = RequestsPicker.SelectedItem?.ToString(),
             AdditionalRequestOtherText = RequestOtherGrid.IsVisible ? (RequestOtherEntry.Text ?? "") : null,
 
-            // Flight info on the outbound leg
-            FlightType = flightType,
-            FlightNumber = flightNumber,
-            TailNumber = tailNumber
+            FlightMode = mode,
+
+            // outbound flight inputs from the outbound field
+            OutboundFlightNumber = (mode == FlightMode.Commercial) ? (FlightInfoEntry.Text ?? "").Trim() : null,
+            OutboundTailNumber = (mode == FlightMode.Private) ? (FlightInfoEntry.Text ?? "").Trim() : null,
+
+            // return flight inputs (from return controls)
+            AllowReturnTailChange = _allowReturnTailChange,
+            ReturnFlightNumber = (mode == FlightMode.Commercial && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null,
+            ReturnTailNumber = (mode == FlightMode.Private && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null
         };
 
-        var requests = new List<QuoteDraft> { outbound };
+        // 3) Build the QuoteDraft via the service
+        var draft = _draftBuilder.Build(state);
 
-        // Return leg (second reservation) if round trip (not As Directed)
-        if (!isAsDirected && RoundTripGrid.IsVisible && RoundTripCheck.IsChecked && retDT is not null)
-        {
-            var returnLeg = new QuoteDraft
-            {
-                Booker = outbound.Booker,
-                Passenger = outbound.Passenger,
-                AdditionalPassengers = outbound.AdditionalPassengers.ToList(),
-                VehicleClass = outbound.VehicleClass,
-
-                PickupDateTime = retDT.Value,
-                PickupLocation = outbound.DropoffLocation ?? outbound.PickupLocation,
-                AsDirected = false,
-                Hours = null,
-                DropoffLocation = outbound.PickupLocation,
-
-                RoundTrip = false,
-                ReturnPickupTime = null,
-
-                AdditionalRequest = outbound.AdditionalRequest,
-                AdditionalRequestOtherText = outbound.AdditionalRequestOtherText,
-
-                // Mirror flight fields (you can omit if you prefer them only on inbound)
-                // TODO add option to change in case of different flight info
-                FlightType = flightType,
-                FlightNumber = flightNumber,
-                TailNumber = tailNumber
-            };
-
-            requests.Add(returnLeg);
-        }
-
-        var wrapper = new { requestCount = requests.Count, requests };
-        var json = System.Text.Json.JsonSerializer.Serialize(wrapper,
-            new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-
+        // 4) Show JSON
+        var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions { WriteIndented = true });
         JsonEditor.Text = json;
         JsonFrame.IsVisible = true;
         await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
     }
-
 
     private static string ResolveLocation(Picker picker, Entry label, Entry address)
     {
