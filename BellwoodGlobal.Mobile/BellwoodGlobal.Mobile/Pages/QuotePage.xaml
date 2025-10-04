@@ -141,23 +141,23 @@
            TextColor="{StaticResource BellwoodGold}"
            FontSize="20" />
 
-                <Picker x:Name="FlightInfoPicker"
-            Title="None"
+            <Picker x:Name="FlightInfoPicker"
+            Title="TBD"
             TitleColor="{StaticResource BellwoodPlaceholder}" />
 
             <Grid x:Name="FlightInfoGrid"
-          ColumnDefinitions="Auto,*"
-          ColumnSpacing="12"
-          IsVisible="False"
-          BackgroundColor="{StaticResource BellwoodCharcoal}"
-          Padding="12">
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="12"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
                 <Label x:Name="FlightInfoLabel"
-             Text="Flight number"
-             TextColor="{StaticResource BellwoodCream}" />
+                 Text="Flight number"
+                 TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="FlightInfoEntry"
-             Grid.Column="1"
-             Placeholder="e.g., AA1234"
-             TextColor="{StaticResource BellwoodCream}" />
+                 Grid.Column="1"
+                 Placeholder="e.g., AA1234"
+                 TextColor="{StaticResource BellwoodCream}" />
             </Grid>
 
             <!-- Dropoff -->
@@ -213,6 +213,37 @@
                 Grid.Column="3"
                 TextColor="{StaticResource BellwoodCream}"
                 BackgroundColor="{StaticResource BellwoodCharcoal}" />
+                </Grid>
+                <!-- Private flight: "change aircraft for return?" row -->
+                <Grid x:Name="ReturnTailChangeRow"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="12"
+                  IsVisible="False"
+                  BackgroundColor="{StaticResource BellwoodCharcoal}"
+                  Padding="12">
+                    <Label Text="Change aircraft for return?"
+                     VerticalOptions="Center"
+                     TextColor="{StaticResource BellwoodCream}" />
+                    <Switch x:Name="ReturnTailChangeSwitch"
+                      Grid.Column="1"
+                      VerticalOptions="Center"
+                      Toggled="OnReturnTailChangeToggled" />
+                </Grid>
+
+                <!-- Return flight input (used for Commercial new flight #, or Private new tail if switch is ON) -->
+                <Grid x:Name="ReturnFlightGrid"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="12"
+                  IsVisible="False"
+                  BackgroundColor="{StaticResource BellwoodCharcoal}"
+                  Padding="12">
+                    <Label x:Name="ReturnFlightLabel"
+                     Text="Return flight number"
+                     TextColor="{StaticResource BellwoodCream}" />
+                    <Entry x:Name="ReturnFlightEntry"
+                     Grid.Column="1"
+                     Placeholder="e.g., UA4321"
+                     TextColor="{StaticResource BellwoodCream}" />
                 </Grid>
             </VerticalStackLayout>
 

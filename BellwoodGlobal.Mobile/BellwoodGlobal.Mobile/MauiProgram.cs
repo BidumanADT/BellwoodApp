@@ -33,6 +33,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IRideService, RideService>();
         builder.Services.AddSingleton<IQuoteService, QuoteService>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
+        builder.Services.AddSingleton<IQuoteDraftBuilder, QuoteDraftBuilder>();
+
 
 
         // Auth handler for protected API calls
