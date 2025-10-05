@@ -29,6 +29,7 @@ public partial class QuotePage : ContentPage
     // --- flight state for return logic ---
     private bool _allowReturnTailChange;     // private only
     private bool _requestsHasMeetOption;
+    private bool _passengerCountDirty;
 
     private static bool IsAirportText(string? text)
     {
@@ -99,6 +100,13 @@ public partial class QuotePage : ContentPage
         var now = DateTime.Now.AddMinutes(30);
         PickupDate.Date = now.Date;
         PickupTime.Time = now.TimeOfDay;
+
+        // Initialize capacity defaults
+        PassengerCountStepper.Value = Math.Max(1, _additionalPassengers.Count + 1);
+        PassengerCountValueLabel.Text = $"{(int)PassengerCountStepper.Value}";
+        CheckedBagsValueLabel.Text = $"{(int)CheckedBagsStepper.Value}";
+        CarryOnBagsValueLabel.Text = $"{(int)CarryOnBagsStepper.Value}";
+        HoursValueLabel.Text = $"{(int)HoursStepper.Value}";
 
         // Keep return in sync with pickup and validate changes
         PickupDate.DateSelected += (_, __) => SyncReturnMinAndSuggest();
@@ -284,12 +292,17 @@ public partial class QuotePage : ContentPage
             _additionalPassengers.Add(name);
             AdditionalPassengerEntry.Text = "";
         }
+        SetDefaultPassengerCountFromList();
+
     }
 
     private void OnRemoveAdditionalPassenger(object? sender, EventArgs e)
     {
         if (sender is Button b && b.CommandParameter is string name)
             _additionalPassengers.Remove(name);
+        
+        SetDefaultPassengerCountFromList();
+
     }
     private void EnsureRequestsMeetOptionVisible(bool visible)
     {
@@ -357,7 +370,28 @@ public partial class QuotePage : ContentPage
             ReturnPickupSignGrid.IsVisible = meetSelected;
         }
     }
+    private void SetDefaultPassengerCountFromList()
+    {
+        if (_passengerCountDirty) return; // user set it manually
+        var suggested = Math.Max(1, _additionalPassengers.Count + 1);
+        PassengerCountStepper.Value = suggested;
+        PassengerCountValueLabel.Text = $"{suggested}";
+    }
 
+    private void OnPassengerCountChanged(object? sender, ValueChangedEventArgs e)
+    {
+        _passengerCountDirty = true;
+        PassengerCountValueLabel.Text = $"{(int)e.NewValue}";
+    }
+
+    private void OnCheckedBagsChanged(object? sender, ValueChangedEventArgs e)
+        => CheckedBagsValueLabel.Text = $"{(int)e.NewValue}";
+
+    private void OnCarryOnBagsChanged(object? sender, ValueChangedEventArgs e)
+        => CarryOnBagsValueLabel.Text = $"{(int)e.NewValue}";
+
+    private void OnHoursChanged(object? sender, ValueChangedEventArgs e)
+        => HoursValueLabel.Text = $"{(int)e.NewValue}";
 
     private async void OnBuildJson(object? sender, EventArgs e)
     {
@@ -550,6 +584,10 @@ public partial class QuotePage : ContentPage
         };
 
         // 3) Build the QuoteDraft via the service
+        state.PassengerCount = (int)PassengerCountStepper.Value;
+        state.CheckedBags = (int)CheckedBagsStepper.Value;
+        state.CarryOnBags = (int)CarryOnBagsStepper.Value;
+
         var draft = _draftBuilder.Build(state);
 
         // 4) Show JSON

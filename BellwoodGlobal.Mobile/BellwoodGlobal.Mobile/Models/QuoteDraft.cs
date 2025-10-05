@@ -19,6 +19,9 @@ public sealed class QuoteDraft
     public DateTime? ReturnPickupTime { get; set; }
     public FlightInfo OutboundFlight { get; set; } = new();
     public FlightInfo? ReturnFlight { get; set; } // only required if RoundTrip
+    public int PassengerCount { get; set; }
+    public int? CheckedBags { get; set; }
+    public int? CarryOnBags { get; set; }
     public string? AdditionalRequest { get; set; }
     public string? AdditionalRequestOtherText { get; set; }
 }

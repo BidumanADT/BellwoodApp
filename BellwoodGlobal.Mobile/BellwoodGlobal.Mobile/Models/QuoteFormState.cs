@@ -48,5 +48,10 @@ namespace BellwoodGlobal.Mobile.Models
         public bool AllowReturnTailChange { get; set; }   // private
         public string? ReturnFlightNumber { get; set; }   // commercial
         public string? ReturnTailNumber { get; set; }     // private
+        
+        // capacity inputs
+        public int PassengerCount { get; set; }
+        public int? CheckedBags { get; set; }
+        public int? CarryOnBags { get; set; }
     }
 }

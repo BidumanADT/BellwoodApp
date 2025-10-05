@@ -118,6 +118,32 @@
                 </CollectionView.EmptyView>
             </CollectionView>
 
+            <!-- Total Passengers -->
+            <Label Text="Total Passengers" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="12" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Count" VerticalOptions="Center" />
+                <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                    <Label x:Name="PassengerCountValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="PassengerCountStepper" Minimum="1" Maximum="14" Increment="1" ValueChanged="OnPassengerCountChanged" />
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Luggage -->
+            <Label Text="Luggage" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Checked bags" Grid.Row="0" />
+                <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8">
+                    <Label x:Name="CheckedBagsValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="CheckedBagsStepper" Minimum="0" Maximum="12" Increment="1" ValueChanged="OnCheckedBagsChanged" />
+                </HorizontalStackLayout>
+
+                <Label Text="Carry-ons" Grid.Row="1" />
+                <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="8">
+                    <Label x:Name="CarryOnBagsValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="CarryOnBagsStepper" Minimum="0" Maximum="12" Increment="1" ValueChanged="OnCarryOnBagsChanged" />
+                </HorizontalStackLayout>
+            </Grid>
+
             <!-- Vehicle -->
             <Label Text="Vehicle Type" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <Picker x:Name="VehiclePicker" Title="Select vehicle" />
@@ -135,6 +161,7 @@
                 <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
             </Grid>
+            
             <!-- Airport pickup style -->
             <Grid x:Name="PickupStyleRow"
               ColumnDefinitions="Auto,*"
@@ -301,9 +328,13 @@
                 </Grid>
             </VerticalStackLayout>
 
-            <Grid ColumnDefinitions="*,Auto" x:Name="AsDirectedHoursGrid" IsVisible="False">
-                <Label Text="Hours (As Directed)" TextColor="{StaticResource BellwoodCream}" />
-                <Stepper x:Name="HoursStepper" Minimum="1" Maximum="12" Increment="1" Value="2" />
+            <!-- As Directed -->
+            <Grid ColumnDefinitions="Auto,Auto" x:Name="AsDirectedHoursGrid" IsVisible="False" ColumnSpacing="12">
+                <Label Text="Hours (As Directed)" VerticalOptions="Center" TextColor="{StaticResource BellwoodCream}" />
+                <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                    <Label x:Name="HoursValueLabel" VerticalOptions="Center" TextColor="{StaticResource BellwoodCream}" />
+                    <Stepper x:Name="HoursStepper" Minimum="1" Maximum="12" Increment="1" Value="2" ValueChanged="OnHoursChanged" />
+                </HorizontalStackLayout>
             </Grid>
 
             <!-- Additional requests -->
