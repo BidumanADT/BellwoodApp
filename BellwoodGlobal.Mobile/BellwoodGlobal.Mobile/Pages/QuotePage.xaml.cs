@@ -22,11 +22,20 @@ public partial class QuotePage : ContentPage
     private const string FlightOptionCommercial = "Commercial Flight";
     private const string FlightOptionPrivate = "Private Tail Number";
     // -----------------------------------------------
+    private const string ReqMeetAndGreet = "Meet & Greet";
 
     private List<Passenger> _savedPassengers = new();
     private List<Models.Location> _savedLocations = new();
     // --- flight state for return logic ---
     private bool _allowReturnTailChange;     // private only
+    private bool _requestsHasMeetOption;
+
+    private static bool IsAirportText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var t = text.ToLowerInvariant();
+        return t.Contains("airport") || t.Contains("fbo"); // extend as needed
+    }
 
     public QuotePage()
     {
@@ -59,7 +68,10 @@ public partial class QuotePage : ContentPage
         foreach (var loc in _savedLocations) PickupLocationPicker.Items.Add(loc.ToString());
         PickupLocationPicker.Items.Add(LocationNew);
         PickupLocationPicker.SelectedIndexChanged += OnPickupLocationChanged;
-        
+
+        PickupStylePicker.SelectedIndexChanged += (_, __) => UpdatePickupStyleAirportUx();
+        ReturnPickupStylePicker.SelectedIndexChanged += (_, __) => UpdateReturnPickupStyleAirportUx();
+
         // Flight picker items + handler
         FlightInfoPicker.Items.Add("TBD");
         FlightInfoPicker.Items.Add("Commercial Flight");
@@ -76,7 +88,11 @@ public partial class QuotePage : ContentPage
         // Requests
         foreach (var r in new[] { "Child Seats", "Accessible Vehicle", "Other" }) RequestsPicker.Items.Add(r);
         RequestsPicker.SelectedIndexChanged += (_, __) =>
-            RequestOtherGrid.IsVisible = RequestsPicker.SelectedItem?.ToString() == "Other";
+        {
+            var sel = RequestsPicker.SelectedItem?.ToString();
+            RequestOtherGrid.IsVisible = sel == "Other";
+            NonAirportMeetGrid.IsVisible = sel == ReqMeetAndGreet;
+        };
 
         AdditionalPassengersList.ItemsSource = _additionalPassengers;
 
@@ -92,6 +108,8 @@ public partial class QuotePage : ContentPage
         ReturnTimePicker.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TimePicker.Time)) EnsureReturnAfterPickup(); };
 
         UpdateReturnFlightUx();
+        UpdatePickupStyleAirportUx();
+        UpdateReturnPickupStyleAirportUx();
     }
 
     private void OnPassengerChanged(object? sender, EventArgs e)
@@ -121,8 +139,11 @@ public partial class QuotePage : ContentPage
         }
     }
 
-    private void OnPickupLocationChanged(object? sender, EventArgs e)
-        => PickupNewGrid.IsVisible = PickupLocationPicker.SelectedItem?.ToString() == LocationNew;
+    private void OnPickupLocationChanged(object? s, EventArgs e)
+    {
+        PickupNewGrid.IsVisible = PickupLocationPicker.SelectedItem?.ToString() == LocationNew;
+        UpdatePickupStyleAirportUx();
+    }
 
     private void OnDropoffChanged(object? sender, EventArgs e)
     {
@@ -139,6 +160,8 @@ public partial class QuotePage : ContentPage
         if (ReturnSection.IsVisible) SyncReturnMinAndSuggest();
 
         UpdateReturnFlightUx();
+        UpdatePickupStyleAirportUx();
+        UpdateReturnPickupStyleAirportUx();
     }
 
     private void OnRoundTripChanged(object? sender, CheckedChangedEventArgs e)
@@ -155,6 +178,8 @@ public partial class QuotePage : ContentPage
         }
 
         UpdateReturnFlightUx();
+        UpdatePickupStyleAirportUx();
+        UpdateReturnPickupStyleAirportUx();
     }
 
     private void SyncReturnMinAndSuggest()
@@ -266,6 +291,73 @@ public partial class QuotePage : ContentPage
         if (sender is Button b && b.CommandParameter is string name)
             _additionalPassengers.Remove(name);
     }
+    private void EnsureRequestsMeetOptionVisible(bool visible)
+    {
+        if (visible && !_requestsHasMeetOption)
+        {
+            RequestsPicker.Items.Insert(0, ReqMeetAndGreet); // stick it near the top
+            _requestsHasMeetOption = true;
+        }
+        else if (!visible && _requestsHasMeetOption)
+        {
+            // clear selection if it was selected
+            if (RequestsPicker.SelectedItem?.ToString() == ReqMeetAndGreet)
+            {
+                RequestsPicker.SelectedIndex = -1;
+                NonAirportMeetGrid.IsVisible = false;
+                NonAirportMeetSignEntry.Text = string.Empty;
+            }
+            // remove from items
+            var idx = RequestsPicker.Items.IndexOf(ReqMeetAndGreet);
+            if (idx >= 0) RequestsPicker.Items.RemoveAt(idx);
+            _requestsHasMeetOption = false;
+        }
+    }
+    private void UpdatePickupStyleAirportUx()
+    {
+        var pickupLoc = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress);
+        var isAirportPickup = IsAirportText(pickupLoc);
+
+        // Airport → show style picker; Non-airport → hide style picker and use Additional Requests option
+        PickupStyleRow.IsVisible = isAirportPickup;
+        if (!isAirportPickup)
+        {
+            PickupSignGrid.IsVisible = false;
+            PickupStylePicker.SelectedIndex = 0; // curbside by default (hidden)
+        }
+        EnsureRequestsMeetOptionVisible(!isAirportPickup);
+
+        // Show/hide sign for airport Meet & Greet
+        var meetSelected = PickupStylePicker.SelectedItem?.ToString() == "Meet & Greet";
+        PickupSignGrid.IsVisible = isAirportPickup && meetSelected;
+    }
+
+    private void UpdateReturnPickupStyleAirportUx()
+    {
+        if (!ReturnSection.IsVisible)
+        {
+            ReturnPickupStyleRow.IsVisible = false;
+            ReturnPickupSignGrid.IsVisible = false;
+            return;
+        }
+
+        // Return pickup location is the current Dropoff (or new dropoff)
+        var dropLoc = ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress);
+        var isAirportReturnPickup = IsAirportText(dropLoc);
+
+        ReturnPickupStyleRow.IsVisible = isAirportReturnPickup;
+        if (!isAirportReturnPickup)
+        {
+            ReturnPickupSignGrid.IsVisible = false;
+            ReturnPickupStylePicker.SelectedIndex = 0;
+        }
+        else
+        {
+            var meetSelected = ReturnPickupStylePicker.SelectedItem?.ToString() == "Meet & Greet";
+            ReturnPickupSignGrid.IsVisible = meetSelected;
+        }
+    }
+
 
     private async void OnBuildJson(object? sender, EventArgs e)
     {
@@ -305,6 +397,47 @@ public partial class QuotePage : ContentPage
         // Resolve locations
         var pickupLoc = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress);
         string? dropLoc = isAsDirected ? null : ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress);
+
+        var isAirportPickup = IsAirportText(pickupLoc);
+
+        var outboundStyle = PickupStyle.Curbside;
+        string? outboundSign = null;
+
+        if (isAirportPickup)
+        {
+            outboundStyle = (PickupStylePicker.SelectedItem?.ToString() == "Meet & Greet")
+                ? PickupStyle.MeetAndGreet : PickupStyle.Curbside;
+            outboundSign = (outboundStyle == PickupStyle.MeetAndGreet) ? (PickupSignEntry.Text ?? "").Trim() : null;
+        }
+        else
+        {
+            var wantsMeet = RequestsPicker.SelectedItem?.ToString() == ReqMeetAndGreet;
+            outboundStyle = wantsMeet ? PickupStyle.MeetAndGreet : PickupStyle.Curbside;
+            outboundSign = wantsMeet ? (NonAirportMeetSignEntry.Text ?? "").Trim() : null;
+        }
+
+        // Determine return pickup style/sign (if applicable)
+        PickupStyle? returnStyle = null;
+        string? returnSign = null;
+        if (retDT is not null)
+        {
+            var retPickupLoc = dropLoc ?? pickupLoc;
+            var isAirportReturnPickup = IsAirportText(retPickupLoc);
+
+            if (isAirportReturnPickup)
+            {
+                returnStyle = (ReturnPickupStylePicker.SelectedItem?.ToString() == "Meet & Greet")
+                    ? PickupStyle.MeetAndGreet : PickupStyle.Curbside;
+                returnSign = (returnStyle == PickupStyle.MeetAndGreet) ? (ReturnPickupSignEntry.Text ?? "").Trim() : null;
+            }
+            else
+            {
+                // (Optional) expose another Additional Request for return meet & greet
+                // For now default to Curbside unless you add a separate toggle for return.
+                returnStyle = PickupStyle.Curbside;
+                returnSign = null;
+            }
+        }
 
         // Pickup must exist; Dropoff required when not As Directed
         if (string.IsNullOrWhiteSpace(pickupLoc))
@@ -388,6 +521,11 @@ public partial class QuotePage : ContentPage
             VehicleClass = VehiclePicker.SelectedItem?.ToString() ?? "Sedan",
             PickupDateTime = pickupDT,
             PickupLocation = pickupLoc,
+
+            PickupStyle = outboundStyle,
+            PickupSignText = outboundSign,
+            ReturnPickupStyle = returnStyle,
+            ReturnPickupSignText = returnSign,
 
             AsDirected = isAsDirected,
             Hours = isAsDirected ? (int?)Math.Max(1, (int)HoursStepper.Value) : null,

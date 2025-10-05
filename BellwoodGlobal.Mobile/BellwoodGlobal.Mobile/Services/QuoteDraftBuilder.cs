@@ -18,6 +18,11 @@ namespace BellwoodGlobal.Mobile.Services
                 PickupDateTime = s.PickupDateTime,
                 PickupLocation = s.PickupLocation ?? "",
 
+                PickupStyle = s.PickupStyle,
+                PickupSignText = s.PickupStyle == PickupStyle.MeetAndGreet ? s.PickupSignText : null,
+                ReturnPickupStyle = s.RoundTrip ? s.ReturnPickupStyle : null,
+                ReturnPickupSignText = (s.RoundTrip && s.ReturnPickupStyle == PickupStyle.MeetAndGreet) ? s.ReturnPickupSignText : null,
+
                 AsDirected = s.AsDirected,
                 Hours = s.AsDirected ? s.Hours : null,
                 DropoffLocation = s.AsDirected ? null : s.DropoffLocation,
