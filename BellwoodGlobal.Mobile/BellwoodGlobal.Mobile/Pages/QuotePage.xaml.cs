@@ -1,7 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.Text.Json;
+using System.Linq;
 using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Mobile.Services;
+using System.Text.Json.Serialization;
 
 namespace BellwoodGlobal.Mobile.Pages;
 
@@ -101,8 +103,8 @@ public partial class QuotePage : ContentPage
         {
             PassengerFirst.Text = BookerFirst.Text;
             PassengerLast.Text = BookerLast.Text;
-            PassengerPhone.Text = BookerPhone.Text;
-            PassengerEmail.Text = BookerEmail.Text;
+            PassengerPhone.Text = "";
+            PassengerEmail.Text = "";
             PassengerNewGrid.IsVisible = true;
         }
         else if (sel != PassengerNew && !string.IsNullOrEmpty(sel))
@@ -155,7 +157,6 @@ public partial class QuotePage : ContentPage
         UpdateReturnFlightUx();
     }
 
-
     private void SyncReturnMinAndSuggest()
     {
         // Enforce that return date can't be before pickup date
@@ -194,6 +195,9 @@ public partial class QuotePage : ContentPage
             FlightInfoGrid.IsVisible = true;
             FlightInfoLabel.Text = "Flight number";
             FlightInfoEntry.Placeholder = "e.g., AA1234";
+            // reset private-only toggle
+            if (ReturnTailChangeSwitch.IsToggled) ReturnTailChangeSwitch.IsToggled = false;
+            _allowReturnTailChange = false;
         }
         else if (sel == FlightOptionPrivate)
         {
@@ -202,10 +206,14 @@ public partial class QuotePage : ContentPage
             FlightInfoLabel.Text = "Tail number";
             FlightInfoEntry.Placeholder = "e.g., N123AB";
         }
-        else // TBA
+        else // TBD
         {
             FlightInfoGrid.IsVisible = false;
             FlightInfoEntry.Text = string.Empty;
+            ReturnFlightEntry.Text = "To be determined";
+
+            if (ReturnTailChangeSwitch.IsToggled) ReturnTailChangeSwitch.IsToggled = false;
+            _allowReturnTailChange = false;
         }
 
         UpdateReturnFlightUx();
@@ -234,7 +242,7 @@ public partial class QuotePage : ContentPage
         else
         {
             ReturnFlightGrid.IsVisible = false;
-            // Optional: ReturnFlightEntry.Text = string.Empty;
+            ReturnFlightEntry.Text = string.Empty;
         }
     }
     private void OnReturnTailChangeToggled(object? sender, ToggledEventArgs e)
@@ -372,8 +380,8 @@ public partial class QuotePage : ContentPage
             {
                 FirstName = PassengerFirst.Text ?? "",
                 LastName = PassengerLast.Text ?? "",
-                PhoneNumber = string.IsNullOrWhiteSpace(PassengerPhone.Text) ? BookerPhone.Text : PassengerPhone.Text,
-                EmailAddress = string.IsNullOrWhiteSpace(PassengerEmail.Text) ? BookerEmail.Text : PassengerEmail.Text
+                PhoneNumber = string.IsNullOrWhiteSpace(PassengerPhone.Text) ? "" : PassengerPhone.Text,
+                EmailAddress = string.IsNullOrWhiteSpace(PassengerEmail.Text) ? "" : PassengerEmail.Text
             },
             AdditionalPassengers = _additionalPassengers.ToList(),
 
@@ -407,7 +415,11 @@ public partial class QuotePage : ContentPage
         var draft = _draftBuilder.Build(state);
 
         // 4) Show JSON
-        var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        });
         JsonEditor.Text = json;
         JsonFrame.IsVisible = true;
         await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
