@@ -34,8 +34,13 @@ namespace BellwoodGlobal.Mobile.Services
                 AdditionalRequestOtherText = s.AdditionalRequestOtherText,
 
                 OutboundFlight = BuildOutboundFlight(s),
-                ReturnFlight = BuildReturnFlight(s)
+                ReturnFlight = BuildReturnFlight(s),
             };
+
+            // Capacity fields (pass-through)
+            draft.PassengerCount = s.PassengerCount;
+            draft.CheckedBags = s.CheckedBags;
+            draft.CarryOnBags = s.CarryOnBags;
 
             return draft;
         }
