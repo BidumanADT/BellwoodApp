@@ -21,6 +21,10 @@ namespace BellwoodGlobal.Mobile.Models
         public string VehicleClass { get; set; } = "Sedan";
         public DateTime PickupDateTime { get; set; }
         public string PickupLocation { get; set; } = "";
+        public PickupStyle PickupStyle { get; set; } = PickupStyle.Curbside;
+        public string? PickupSignText { get; set; }
+        public PickupStyle? ReturnPickupStyle { get; set; }
+        public string? ReturnPickupSignText { get; set; }
         public bool AsDirected { get; set; }
         public int? Hours { get; set; }
         public string? DropoffLocation { get; set; }

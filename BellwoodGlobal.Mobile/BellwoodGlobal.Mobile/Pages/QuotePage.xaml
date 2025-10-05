@@ -135,6 +135,32 @@
                 <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
             </Grid>
+            <!-- Airport pickup style -->
+            <Grid x:Name="PickupStyleRow"
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="12"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
+                <Label Text="Pickup style" VerticalOptions="Center"/>
+                <Picker x:Name="PickupStylePicker" Grid.Column="1">
+                    <Picker.Items>
+                        <x:String>Curbside</x:String>
+                        <x:String>Meet &amp; Greet</x:String>
+                    </Picker.Items>
+                </Picker>
+            </Grid>
+
+            <!-- Sign text for Meet & Greet -->
+            <Grid x:Name="PickupSignGrid"
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="12"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
+                <Label Text="Sign text" VerticalOptions="Center"/>
+                <Entry x:Name="PickupSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
+            </Grid>
 
             <!-- Flight info (optional) -->
             <Label Text="Flight Info (optional)"
@@ -214,6 +240,34 @@
                 TextColor="{StaticResource BellwoodCream}"
                 BackgroundColor="{StaticResource BellwoodCharcoal}" />
                 </Grid>
+                
+                <!-- Return pickup style (when return pickup is an airport) -->
+                <Grid x:Name="ReturnPickupStyleRow"
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="12"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
+                    <Label Text="Return pickup style" VerticalOptions="Center"/>
+                    <Picker x:Name="ReturnPickupStylePicker" Grid.Column="1">
+                        <Picker.Items>
+                            <x:String>Curbside</x:String>
+                            <x:String>Meet &amp; Greet</x:String>
+                        </Picker.Items>
+                    </Picker>
+                </Grid>
+
+                <!-- Return sign text -->
+                <Grid x:Name="ReturnPickupSignGrid"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="12"
+                  IsVisible="False"
+                  BackgroundColor="{StaticResource BellwoodCharcoal}"
+                  Padding="12">
+                    <Label Text="Return sign text" VerticalOptions="Center"/>
+                    <Entry x:Name="ReturnPickupSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
+                </Grid>
+                
                 <!-- Private flight: "change aircraft for return?" row -->
                 <Grid x:Name="ReturnTailChangeRow"
                   ColumnDefinitions="Auto,*"
@@ -258,6 +312,15 @@
             <Grid ColumnDefinitions="*,*" x:Name="RequestOtherGrid" IsVisible="False">
                 <Label Text="Please describe" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="RequestOtherEntry" TextColor="{StaticResource BellwoodCream}" />
+            </Grid>
+            <Grid x:Name="NonAirportMeetGrid"
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="12"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
+                <Label Text="Sign text" VerticalOptions="Center"/>
+                <Entry x:Name="NonAirportMeetSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
             </Grid>
 
             <!-- Build JSON -->
