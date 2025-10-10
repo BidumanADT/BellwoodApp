@@ -93,9 +93,10 @@
                 <Label Text="Last Name" Grid.Row="1" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="PassengerLast" Grid.Row="1" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="Phone (optional)" Grid.Row="2" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PassengerPhone" Grid.Row="2" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" Placeholder="defaults to booker" />
+                <Entry x:Name="PassengerPhone" Grid.Row="2" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" Placeholder="optional" />
                 <Label Text="Email (optional)" Grid.Row="3" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" Placeholder="defaults to booker" />
+                <Entry x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" Placeholder="optional" />
+                <Button Grid.Row="4" Grid.ColumnSpan="2" Text="Save Passenger" Clicked="OnSaveNewPassenger"/>
             </Grid>
 
             <!-- Additional passengers -->
@@ -160,6 +161,7 @@
                 <Entry x:Name="PickupNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Pickup Location" Clicked="OnSaveNewPickup"/>
             </Grid>
             
             <!-- Airport pickup style -->
@@ -221,6 +223,7 @@
                 <Entry x:Name="DropoffNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New dropoff address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="DropoffNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Dropoff Location" Clicked="OnSaveNewDropoff"/>
             </Grid>
 
             <!-- Round Trip toggle -->

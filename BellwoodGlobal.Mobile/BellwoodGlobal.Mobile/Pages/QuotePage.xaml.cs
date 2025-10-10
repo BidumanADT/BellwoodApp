@@ -251,6 +251,7 @@ public partial class QuotePage : ContentPage
 
         UpdateReturnFlightUx();
     }
+
     private void UpdateReturnFlightUx()
     {
         var isRoundTrip = ReturnSection.IsVisible && RoundTripCheck.IsChecked;
@@ -278,6 +279,7 @@ public partial class QuotePage : ContentPage
             ReturnFlightEntry.Text = string.Empty;
         }
     }
+
     private void OnReturnTailChangeToggled(object? sender, ToggledEventArgs e)
     {
         _allowReturnTailChange = e.Value;
@@ -304,6 +306,7 @@ public partial class QuotePage : ContentPage
         SetDefaultPassengerCountFromList();
 
     }
+
     private void EnsureRequestsMeetOptionVisible(bool visible)
     {
         if (visible && !_requestsHasMeetOption)
@@ -326,6 +329,7 @@ public partial class QuotePage : ContentPage
             _requestsHasMeetOption = false;
         }
     }
+
     private void UpdatePickupStyleAirportUx()
     {
         var pickupLoc = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress);
@@ -370,6 +374,7 @@ public partial class QuotePage : ContentPage
             ReturnPickupSignGrid.IsVisible = meetSelected;
         }
     }
+
     private void SetDefaultPassengerCountFromList()
     {
         if (_passengerCountDirty) return; // user set it manually
@@ -392,6 +397,79 @@ public partial class QuotePage : ContentPage
 
     private void OnHoursChanged(object? sender, ValueChangedEventArgs e)
         => HoursValueLabel.Text = $"{(int)e.NewValue}";
+
+    private async void OnSaveNewPassenger(object? sender, EventArgs e)
+    {
+        var first = (PassengerFirst.Text ?? "").Trim();
+        var last = (PassengerLast.Text ?? "").Trim();
+        if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(last))
+        {
+            await DisplayAlert("Passenger", "First and last name are required.", "OK");
+            return;
+        }
+        var p = new Passenger
+        {
+            FirstName = first,
+            LastName = last,
+            PhoneNumber = (PassengerPhone.Text ?? "").Trim(),
+            EmailAddress = (PassengerEmail.Text ?? "").Trim()
+        };
+        _savedPassengers.Add(p);
+        // Insert before "New Passenger"
+        var insertAt = Math.Max(1, PassengerPicker.Items.Count - 1);
+        PassengerPicker.Items.Insert(insertAt, p.ToString());
+        PassengerPicker.SelectedIndex = insertAt;
+        PassengerNewGrid.IsVisible = false;
+        await DisplayAlert("Saved", "Passenger added.", "OK");
+    }
+
+    private async void OnSaveNewPickup(object? sender, EventArgs e)
+    {
+        var label = (PickupNewLabel.Text ?? "").Trim();
+        var addr = (PickupNewAddress.Text ?? "").Trim();
+        if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(addr))
+        {
+            await DisplayAlert("Pickup", "Label and address are required.", "OK");
+            return;
+        }
+        var loc = new Models.Location { Label = label, Address = addr };
+        _savedLocations.Add(loc);
+        var display = loc.ToString();
+        var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
+        PickupLocationPicker.Items.Insert(insertAt, display);
+        PickupLocationPicker.SelectedIndex = insertAt;
+        PickupNewGrid.IsVisible = false;
+        await DisplayAlert("Saved", "Pickup location added.", "OK");
+        UpdatePickupStyleAirportUx(); // re-evaluate airport logic
+    }
+
+    private async void OnSaveNewDropoff(object? sender, EventArgs e)
+    {
+        var label = (DropoffNewLabel.Text ?? "").Trim();
+        var addr = (DropoffNewAddress.Text ?? "").Trim();
+        if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(addr))
+        {
+            await DisplayAlert("Dropoff", "Label and address are required.", "OK");
+            return;
+        }
+        var loc = new Models.Location { Label = label, Address = addr };
+        _savedLocations.Add(loc);
+        var display = loc.ToString();
+        var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1); // after "As Directed"
+        DropoffPicker.Items.Insert(insertAt, display);
+        DropoffPicker.SelectedIndex = insertAt;
+        DropoffNewGrid.IsVisible = false;
+        await DisplayAlert("Saved", "Dropoff location added.", "OK");
+        UpdateReturnPickupStyleAirportUx(); // re-evaluate airport logic for return
+    }
+
+    private static string ResolveLocation(Picker picker, Entry label, Entry address)
+    {
+        var sel = picker.SelectedItem?.ToString();
+        if (sel == LocationNew)
+            return $"{(label.Text ?? "").Trim()} - {(address.Text ?? "").Trim()}".Trim(' ', '-');
+        return sel ?? "";
+    }
 
     private async void OnBuildJson(object? sender, EventArgs e)
     {
@@ -601,15 +679,7 @@ public partial class QuotePage : ContentPage
         await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
     }
 
-    private static string ResolveLocation(Picker picker, Entry label, Entry address)
-    {
-        var sel = picker.SelectedItem?.ToString();
-        if (sel == LocationNew)
-            return $"{(label.Text ?? "").Trim()} - {(address.Text ?? "").Trim()}".Trim(' ', '-');
-        return sel ?? "";
-    }
-
-    private async void OnCopyJson(object? sender, EventArgs e)
+   private async void OnCopyJson(object? sender, EventArgs e)
     {
         await Clipboard.SetTextAsync(JsonEditor.Text ?? "");
         await DisplayAlert("Copied", "Quote JSON copied to clipboard.", "OK");
