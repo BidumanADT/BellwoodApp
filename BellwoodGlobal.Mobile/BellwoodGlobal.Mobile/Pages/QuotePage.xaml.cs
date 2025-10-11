@@ -12,6 +12,8 @@ public partial class QuotePage : ContentPage
     private readonly IProfileService _profile;
     private readonly ObservableCollection<string> _additionalPassengers = new();
     private readonly IQuoteDraftBuilder _draftBuilder;
+    private readonly IAdminApi _adminApi;
+
     // --- passenger/location UI constants (avoid string typos) ---
     private const string PassengerSelf = "Booker (you)";
     private const string PassengerNew = "New Passenger";
@@ -43,6 +45,8 @@ public partial class QuotePage : ContentPage
         InitializeComponent();
         _profile = ServiceHelper.GetRequiredService<IProfileService>();
         _draftBuilder = ServiceHelper.GetRequiredService<IQuoteDraftBuilder>();
+        _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
+
 
         // Booker
         var booker = _profile.GetBooker();
@@ -667,6 +671,14 @@ public partial class QuotePage : ContentPage
         state.CarryOnBags = (int)CarryOnBagsStepper.Value;
 
         var draft = _draftBuilder.Build(state);
+        try
+        {
+            await _adminApi.SubmitQuoteAsync(draft);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Network", $"Could not submit to Admin: {ex.Message}", "OK");
+        }
 
         // 4) Show JSON
         var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions
