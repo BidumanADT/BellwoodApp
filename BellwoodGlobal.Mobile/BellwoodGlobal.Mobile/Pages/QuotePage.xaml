@@ -85,18 +85,32 @@
             <!-- Passenger selection -->
             <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <Picker x:Name="PassengerPicker" Title="Select passenger" TitleColor="#9aa3ab" />
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" 
-                  RowDefinitions="Auto,Auto,Auto,Auto" x:Name="PassengerNewGrid" 
-                  IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
-                <Label Text="First Name" Grid.Row="0" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PassengerFirst" Grid.Row="0" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
-                <Label Text="Last Name" Grid.Row="1" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PassengerLast" Grid.Row="1" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
-                <Label Text="Phone (optional)" Grid.Row="2" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PassengerPhone" Grid.Row="2" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" Placeholder="optional" />
-                <Label Text="Email (optional)" Grid.Row="3" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" Placeholder="optional" />
-                <Button Grid.Row="4" Grid.ColumnSpan="2" Text="Save Passenger" Clicked="OnSaveNewPassenger"/>
+            <Grid x:Name="PassengerNewGrid"
+                  ColumnDefinitions="Auto,*"
+                  RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                  ColumnSpacing="12"
+                  IsVisible="False"
+                  BackgroundColor="{StaticResource BellwoodCharcoal}"
+                  Padding="12">
+
+                <Label Text="First Name" Grid.Row="0" Grid.Column="0" />
+                <Entry  x:Name="PassengerFirst" Grid.Row="0" Grid.Column="1" />
+
+                <Label Text="Last Name" Grid.Row="1" Grid.Column="0" />
+                <Entry  x:Name="PassengerLast"  Grid.Row="1" Grid.Column="1" />
+
+                <Label Text="Phone (optional)" Grid.Row="2" Grid.Column="0" />
+                <Entry  x:Name="PassengerPhone" Grid.Row="2" Grid.Column="1" Placeholder="optional" />
+
+                <Label Text="Email (optional)" Grid.Row="3" Grid.Column="0" />
+                <Entry  x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" Placeholder="optional" />
+
+                <!-- Only visible when creating a new passenger -->
+            <Button x:Name="SavePassengerButton"
+          Grid.Row="4" Grid.ColumnSpan="2"
+          Text="Save Passenger"
+          IsVisible="False"
+          Clicked="OnSaveNewPassenger" />
             </Grid>
 
             <!-- Additional passengers -->
