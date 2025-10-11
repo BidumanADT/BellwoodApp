@@ -127,7 +127,25 @@ public partial class QuotePage : ContentPage
     private void OnPassengerChanged(object? sender, EventArgs e)
     {
         var sel = PassengerPicker.SelectedItem?.ToString();
-        PassengerNewGrid.IsVisible = sel == PassengerNew;
+
+        if (sel == PassengerNew)
+        {
+            // Show edit grid + Save button for a brand new passenger
+            PassengerNewGrid.IsVisible = true;
+            SavePassengerButton.IsVisible = true;
+
+            // Start blank for new entries
+            PassengerFirst.Text = "";
+            PassengerLast.Text = "";
+            PassengerPhone.Text = "";
+            PassengerEmail.Text = "";
+            return;
+        }
+
+        // For existing/self passengers: show grid for viewing/editing,
+        // but hide the Save button (not creating a contact here)
+        SavePassengerButton.IsVisible = false;
+        PassengerNewGrid.IsVisible = true;
 
         if (sel == PassengerSelf)
         {
@@ -135,9 +153,8 @@ public partial class QuotePage : ContentPage
             PassengerLast.Text = BookerLast.Text;
             PassengerPhone.Text = "";
             PassengerEmail.Text = "";
-            PassengerNewGrid.IsVisible = true;
         }
-        else if (sel != PassengerNew && !string.IsNullOrEmpty(sel))
+        else if (!string.IsNullOrEmpty(sel))
         {
             var p = _savedPassengers.FirstOrDefault(x => x.ToString() == sel);
             if (p != null)
@@ -146,9 +163,9 @@ public partial class QuotePage : ContentPage
                 PassengerLast.Text = p.LastName;
                 PassengerPhone.Text = p.PhoneNumber;
                 PassengerEmail.Text = p.EmailAddress;
-                PassengerNewGrid.IsVisible = true;
             }
         }
+        SavePassengerButton.IsVisible = false;
     }
 
     private void OnPickupLocationChanged(object? s, EventArgs e)
