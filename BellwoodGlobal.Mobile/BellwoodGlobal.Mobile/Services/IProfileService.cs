@@ -7,5 +7,4 @@ public interface IProfileService
     Passenger GetBooker();
     IReadOnlyList<Passenger> GetSavedPassengers();
     IReadOnlyList<Models.Location> GetSavedLocations();
-    // Methods to add, update, and remove passengers and locations
 }
