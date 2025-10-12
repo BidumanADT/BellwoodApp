@@ -423,11 +423,13 @@ public partial class QuotePage : ContentPage
     {
         var first = (PassengerFirst.Text ?? "").Trim();
         var last = (PassengerLast.Text ?? "").Trim();
+
         if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(last))
         {
-            await DisplayAlert("Passenger", "First and last name are required.", "OK");
+            await DisplayAlert("Missing info", "First and last name are required.", "OK");
             return;
         }
+
         var p = new Passenger
         {
             FirstName = first,
@@ -435,53 +437,100 @@ public partial class QuotePage : ContentPage
             PhoneNumber = (PassengerPhone.Text ?? "").Trim(),
             EmailAddress = (PassengerEmail.Text ?? "").Trim()
         };
-        _savedPassengers.Add(p);
-        // Insert before "New Passenger"
-        var insertAt = Math.Max(1, PassengerPicker.Items.Count - 1);
-        PassengerPicker.Items.Insert(insertAt, p.ToString());
-        PassengerPicker.SelectedIndex = insertAt;
-        PassengerNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Passenger added.", "OK");
+
+        if (_profile.AddPassenger(p))
+        {
+            // refresh the picker with the new list
+            _savedPassengers = _profile.GetSavedPassengers().ToList();
+
+            // rebuild items: self + saved + new
+            PassengerPicker.Items.Clear();
+            PassengerPicker.Items.Add(PassengerSelf);
+            foreach (var sp in _savedPassengers) PassengerPicker.Items.Add(sp.ToString());
+            PassengerPicker.Items.Add(PassengerNew);
+
+            // select the one we just saved
+            var idx = _savedPassengers.FindIndex(x => x.ToString() == p.ToString());
+            PassengerPicker.SelectedIndex = (idx >= 0) ? (1 + idx) : 0; // +1 for "self" at index 0
+
+            await DisplayAlert("Saved", "Passenger saved.", "OK");
+            SavePassengerButton.IsVisible = false;
+        }
+        else
+        {
+            await DisplayAlert("Duplicate", "A passenger with the same name and contact already exists.", "OK");
+        }
     }
 
-    private async void OnSaveNewPickup(object? sender, EventArgs e)
+    private async void OnSaveNewPickupLocation(object? sender, EventArgs e)
     {
         var label = (PickupNewLabel.Text ?? "").Trim();
         var addr = (PickupNewAddress.Text ?? "").Trim();
+
         if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(addr))
         {
-            await DisplayAlert("Pickup", "Label and address are required.", "OK");
+            await DisplayAlert("Missing info", "Pickup label and address are required.", "OK");
             return;
         }
+
         var loc = new Models.Location { Label = label, Address = addr };
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
-        var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
-        PickupLocationPicker.Items.Insert(insertAt, display);
-        PickupLocationPicker.SelectedIndex = insertAt;
-        PickupNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Pickup location added.", "OK");
-        UpdatePickupStyleAirportUx(); // re-evaluate airport logic
+
+        if (_profile.AddLocation(loc))
+        {
+            _savedLocations = _profile.GetSavedLocations().ToList();
+
+            // rebuild pickup picker
+            PickupLocationPicker.Items.Clear();
+            foreach (var l in _savedLocations) PickupLocationPicker.Items.Add(l.ToString());
+            PickupLocationPicker.Items.Add(LocationNew);
+
+            // select the one we just saved
+            var idx = _savedLocations.FindIndex(x => x.ToString() == loc.ToString());
+            PickupLocationPicker.SelectedIndex = (idx >= 0) ? idx : 0;
+
+            await DisplayAlert("Saved", "Pickup location saved.", "OK");
+            PickupNewGrid.IsVisible = false;
+        }
+        else
+        {
+            await DisplayAlert("Duplicate", "That pickup location is already saved.", "OK");
+        }
     }
 
-    private async void OnSaveNewDropoff(object? sender, EventArgs e)
+    private async void OnSaveNewDropoffLocation(object? sender, EventArgs e)
     {
         var label = (DropoffNewLabel.Text ?? "").Trim();
         var addr = (DropoffNewAddress.Text ?? "").Trim();
+
         if (string.IsNullOrEmpty(label) || string.IsNullOrEmpty(addr))
         {
-            await DisplayAlert("Dropoff", "Label and address are required.", "OK");
+            await DisplayAlert("Missing info", "Dropoff label and address are required.", "OK");
             return;
         }
+
         var loc = new Models.Location { Label = label, Address = addr };
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
-        var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1); // after "As Directed"
-        DropoffPicker.Items.Insert(insertAt, display);
-        DropoffPicker.SelectedIndex = insertAt;
-        DropoffNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Dropoff location added.", "OK");
-        UpdateReturnPickupStyleAirportUx(); // re-evaluate airport logic for return
+
+        if (_profile.AddLocation(loc))
+        {
+            _savedLocations = _profile.GetSavedLocations().ToList();
+
+            // rebuild dropoff picker
+            DropoffPicker.Items.Clear();
+            DropoffPicker.Items.Add(AsDirected);
+            foreach (var l in _savedLocations) DropoffPicker.Items.Add(l.ToString());
+            DropoffPicker.Items.Add(LocationNew);
+
+            // select the one we just saved (after "As Directed")
+            var idx = _savedLocations.FindIndex(x => x.ToString() == loc.ToString());
+            DropoffPicker.SelectedIndex = (idx >= 0) ? (1 + idx) : 0;
+
+            await DisplayAlert("Saved", "Dropoff location saved.", "OK");
+            DropoffNewGrid.IsVisible = false;
+        }
+        else
+        {
+            await DisplayAlert("Duplicate", "That dropoff location is already saved.", "OK");
+        }
     }
 
     private static string ResolveLocation(Picker picker, Entry label, Entry address)

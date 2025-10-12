@@ -170,14 +170,25 @@
                 <TimePicker x:Name="PickupTime" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
             </HorizontalStackLayout>
             <Picker x:Name="PickupLocationPicker" Title="Select pickup location" />
-            <Grid ColumnDefinitions="*,*" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
-                <Label Text="New pickup label" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PickupNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
-                <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Pickup Location" Clicked="OnSaveNewPickup"/>
+            <Grid x:Name="PickupNewGrid"
+              ColumnDefinitions="*,*"
+              RowDefinitions="Auto,Auto,Auto"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
+                <Label Text="New pickup label" />
+                <Entry x:Name="PickupNewLabel" Grid.Column="1" />
+
+                <Label Text="New pickup address" Grid.Row="1" />
+                <Entry x:Name="PickupNewAddress" Grid.Row="1" Grid.Column="1" />
+
+                <Button x:Name="SavePickupLocationButton"
+              Grid.Row="2" Grid.ColumnSpan="2"
+              Text="Save Pickup Location"
+              Clicked="OnSaveNewPickupLocation" />
             </Grid>
-            
+
+
             <!-- Airport pickup style -->
             <Grid x:Name="PickupStyleRow"
               ColumnDefinitions="Auto,*"
@@ -232,13 +243,24 @@
             <!-- Dropoff -->
             <Label Text="Dropoff" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <Picker x:Name="DropoffPicker" Title="Select dropoff (or As Directed)" />
-            <Grid ColumnDefinitions="*,*" IsVisible="False" x:Name="DropoffNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
-                <Label Text="New dropoff label" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="DropoffNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
-                <Label Text="New dropoff address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Entry x:Name="DropoffNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Dropoff Location" Clicked="OnSaveNewDropoff"/>
+            <Grid x:Name="DropoffNewGrid"
+              ColumnDefinitions="*,*"
+              RowDefinitions="Auto,Auto,Auto"
+              IsVisible="False"
+              BackgroundColor="{StaticResource BellwoodCharcoal}"
+              Padding="12">
+                <Label Text="New dropoff label" />
+                <Entry x:Name="DropoffNewLabel" Grid.Column="1" />
+
+                <Label Text="New dropoff address" Grid.Row="1" />
+                <Entry x:Name="DropoffNewAddress" Grid.Row="1" Grid.Column="1" />
+
+                <Button x:Name="SaveDropoffLocationButton"
+                  Grid.Row="2" Grid.ColumnSpan="2"
+                  Text="Save Dropoff Location"
+                  Clicked="OnSaveNewDropoffLocation" />
             </Grid>
+
 
             <!-- Round Trip toggle -->
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" x:Name="RoundTripGrid" IsVisible="True">
