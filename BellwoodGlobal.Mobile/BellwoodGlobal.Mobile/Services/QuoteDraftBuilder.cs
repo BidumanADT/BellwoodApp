@@ -43,6 +43,7 @@ namespace BellwoodGlobal.Mobile.Services
             draft.CarryOnBags = s.CarryOnBags;
             draft.CapacityWithinLimits = s.CapacityWithinLimits;
             draft.CapacityNote = s.CapacityNote;
+            draft.SuggestedVehicle = s.SuggestedVehicle;
 
             return draft;
         }

@@ -24,6 +24,7 @@ public sealed class QuoteDraft
     public int? CarryOnBags { get; set; }
     public bool CapacityWithinLimits { get; set; }
     public string? CapacityNote { get; set; }
+    public string? SuggestedVehicle { get; set; }
     public string? AdditionalRequest { get; set; }
     public string? AdditionalRequestOtherText { get; set; }
 }

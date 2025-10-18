@@ -57,5 +57,6 @@ namespace BellwoodGlobal.Mobile.Models
         // capacity evaluation outcome
         public bool CapacityWithinLimits { get; set; }  // computed in UI before building draft
         public string? CapacityNote { get; set; }       // e.g., "User kept Sedan; suggested SUV"
+        public string? SuggestedVehicle { get; set; } // based on capacity
     }
 }

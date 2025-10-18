@@ -106,19 +106,28 @@
                 <Entry  x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" Placeholder="optional" />
 
                 <!-- Only visible when creating a new passenger -->
-            <Button x:Name="SavePassengerButton"
-          Grid.Row="4" Grid.ColumnSpan="2"
-          Text="Save Passenger"
-          IsVisible="False"
-          Clicked="OnSaveNewPassenger" />
+                <Button x:Name="SavePassengerButton"
+                  Grid.Row="4" Grid.ColumnSpan="2"
+                  Text="Save Passenger"
+                  IsVisible="False"
+                  Clicked="OnSaveNewPassenger" />
             </Grid>
 
             <!-- Additional passengers -->
             <Label Text="Additional Passengers" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
-            <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="AdditionalPassengerEntry" Placeholder="First Last" TextColor="{StaticResource BellwoodCream}" />
-                <Button Text="Add" Clicked="OnAddAdditionalPassenger" />
-            </HorizontalStackLayout>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry
+                x:Name="AdditionalPassengerEntry"
+                Placeholder="First Last"
+                TextColor="{StaticResource BellwoodCream}" 
+                Grid.Column="0" />
+                <Button
+                Text="Add"
+                Clicked="OnAddAdditionalPassenger"
+                Grid.Column="1" />
+            </Grid>
+
             <CollectionView x:Name="AdditionalPassengersList" HeightRequest="100" SelectionMode="None">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
