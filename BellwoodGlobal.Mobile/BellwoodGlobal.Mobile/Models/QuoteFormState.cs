@@ -53,5 +53,11 @@ namespace BellwoodGlobal.Mobile.Models
         public int PassengerCount { get; set; }
         public int? CheckedBags { get; set; }
         public int? CarryOnBags { get; set; }
+
+        // capacity evaluation outcome
+        public bool CapacityWithinLimits { get; set; }  // computed in UI before building draft
+        public string? CapacityNote { get; set; }       // e.g., "User kept Sedan; suggested SUV"
+        public string? SuggestedVehicle { get; set; } // based on capacity
+        public bool CapacityOverrideByUser { get; set; } // true if user pressed "Keep Current"
     }
 }

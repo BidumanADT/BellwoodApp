@@ -106,19 +106,28 @@
                 <Entry  x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" Placeholder="optional" />
 
                 <!-- Only visible when creating a new passenger -->
-            <Button x:Name="SavePassengerButton"
-          Grid.Row="4" Grid.ColumnSpan="2"
-          Text="Save Passenger"
-          IsVisible="False"
-          Clicked="OnSaveNewPassenger" />
+                <Button x:Name="SavePassengerButton"
+                  Grid.Row="4" Grid.ColumnSpan="2"
+                  Text="Save Passenger"
+                  IsVisible="False"
+                  Clicked="OnSaveNewPassenger" />
             </Grid>
 
             <!-- Additional passengers -->
             <Label Text="Additional Passengers" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
-            <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="AdditionalPassengerEntry" Placeholder="First Last" TextColor="{StaticResource BellwoodCream}" />
-                <Button Text="Add" Clicked="OnAddAdditionalPassenger" />
-            </HorizontalStackLayout>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry
+                x:Name="AdditionalPassengerEntry"
+                Placeholder="First Last"
+                TextColor="{StaticResource BellwoodCream}" 
+                Grid.Column="0" />
+                <Button
+                Text="Add"
+                Clicked="OnAddAdditionalPassenger"
+                Grid.Column="1" />
+            </Grid>
+
             <CollectionView x:Name="AdditionalPassengersList" HeightRequest="100" SelectionMode="None">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
@@ -369,6 +378,25 @@
               Padding="12">
                 <Label Text="Sign text" VerticalOptions="Center"/>
                 <Entry x:Name="NonAirportMeetSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
+            </Grid>
+
+            <!-- Capacity suggestion banner -->
+            <Grid x:Name="CapacityBanner"
+              IsVisible="False"
+              Padding="12"
+              BackgroundColor="#2B2F36"
+              RowDefinitions="Auto,Auto"
+              ColumnDefinitions="*"
+              Margin="0,6,0,6">
+                <Label x:Name="CapacityBannerText"
+                Grid.Row="0"
+                TextColor="{StaticResource BellwoodCream}"
+                FontAttributes="Bold"
+                LineBreakMode="WordWrap" />
+                <HorizontalStackLayout Grid.Row="1" Spacing="8" Margin="0,8,0,0">
+                    <Button Text="Switch to Suggested" Clicked="OnAcceptCapacitySuggestion" />
+                    <Button Text="Keep Current" Clicked="OnKeepCurrentVehicle" />
+                </HorizontalStackLayout>
             </Grid>
 
             <!-- Build JSON -->
