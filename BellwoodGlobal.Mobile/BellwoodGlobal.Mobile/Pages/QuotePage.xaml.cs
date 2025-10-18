@@ -857,6 +857,7 @@ public partial class QuotePage : ContentPage
             state.CapacityWithinLimits = within;
             state.CapacityNote = note;
             state.SuggestedVehicle = suggestion;
+            state.CapacityOverrideByUser = _userChoseToKeep;
         }
 
         var draft = _draftBuilder.Build(state);

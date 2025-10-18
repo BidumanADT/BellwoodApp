@@ -44,6 +44,7 @@ namespace BellwoodGlobal.Mobile.Services
             draft.CapacityWithinLimits = s.CapacityWithinLimits;
             draft.CapacityNote = s.CapacityNote;
             draft.SuggestedVehicle = s.SuggestedVehicle;
+            draft.CapacityOverrideByUser = s.CapacityOverrideByUser;
 
             return draft;
         }
