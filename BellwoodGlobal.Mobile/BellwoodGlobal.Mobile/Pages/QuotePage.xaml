@@ -371,6 +371,25 @@
                 <Entry x:Name="NonAirportMeetSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
             </Grid>
 
+            <!-- Capacity suggestion banner -->
+            <Grid x:Name="CapacityBanner"
+              IsVisible="False"
+              Padding="12"
+              BackgroundColor="#2B2F36"
+              RowDefinitions="Auto,Auto"
+              ColumnDefinitions="*"
+              Margin="0,6,0,6">
+                <Label x:Name="CapacityBannerText"
+                Grid.Row="0"
+                TextColor="{StaticResource BellwoodCream}"
+                FontAttributes="Bold"
+                LineBreakMode="WordWrap" />
+                <HorizontalStackLayout Grid.Row="1" Spacing="8" Margin="0,8,0,0">
+                    <Button Text="Switch to Suggested" Clicked="OnAcceptCapacitySuggestion" />
+                    <Button Text="Keep Current" Clicked="OnKeepCurrentVehicle" />
+                </HorizontalStackLayout>
+            </Grid>
+
             <!-- Build JSON -->
             <Button Text="Build Quote JSON" Clicked="OnBuildJson" />
             <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False" x:Name="JsonFrame">

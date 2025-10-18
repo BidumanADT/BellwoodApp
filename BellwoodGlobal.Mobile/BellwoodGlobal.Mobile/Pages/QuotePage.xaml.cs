@@ -33,6 +33,94 @@ public partial class QuotePage : ContentPage
     private bool _requestsHasMeetOption;
     private bool _passengerCountDirty;
 
+    // --- capacity evaluation ----
+    private string? _suggestedVehicleClass;   
+    private bool _userChoseToKeep;    // true if they pressed "Keep Current"
+
+    // pax, checked, carry-on limits per class
+    private readonly Dictionary<string, (int pax, int checkedBags, int carryOns)> _vehicleCaps = new()
+    {
+        { "Sedan",    (2, 2, 4) },
+        { "S-Class",  (2, 2, 4) },
+        { "SUV",      (4, 4, 8) },
+        { "Sprinter", (8,10,20) },
+    };
+
+    private (bool within, string? note, string? suggestion) EvaluateCapacity(
+    int pax, int checkedBags, int carryOns, string vehicleClass)
+    {
+        if (!_vehicleCaps.TryGetValue(vehicleClass, out var caps))
+        {
+            // Unknown class → assume OK
+            return (true, null, null);
+        }
+
+        var overPax = pax > caps.pax;
+        var overCheck = checkedBags > caps.checkedBags;
+        var overCarry = carryOns > caps.carryOns;
+
+        if (!overPax && !overCheck && !overCarry)
+            return (true, null, null);
+
+        // Build a short note for JSON/email
+        var reasons = new List<string>();
+        if (overPax) reasons.Add($"pax {pax}/{caps.pax}");
+        if (overCheck) reasons.Add($"checked {checkedBags}/{caps.checkedBags}");
+        if (overCarry) reasons.Add($"carry-on {carryOns}/{caps.carryOns}");
+
+        var suggestion = SuggestVehicle(pax, checkedBags, carryOns, vehicleClass);
+
+        var note = $"Over capacity for {vehicleClass}: {string.Join(", ", reasons)}." +
+                   (suggestion is not null ? $" Suggest {suggestion}." : "");
+
+        return (false, note, suggestion);
+    }
+
+    private string? SuggestVehicle(int pax, int checkedBags, int carryOns, string current)
+    {
+        // try “next sizes up” 
+        var order = new[] { "Sedan", "S-Class", "SUV", "Sprinter" };
+
+        // start from the next class above current, if possible
+        var start = Math.Max(0, Array.IndexOf(order, current) + 1);
+
+        for (int i = start; i < order.Length; i++)
+        {
+            var cls = order[i];
+            if (!_vehicleCaps.TryGetValue(cls, out var caps)) continue;
+
+            if (pax <= caps.pax && checkedBags <= caps.checkedBags && carryOns <= caps.carryOns)
+                return cls;
+        }
+
+        return null; // nothing fits (rare)
+    }
+
+    private void RecomputeCapacityBanner()
+    {
+        var pax = (int)PassengerCountStepper.Value;
+        var chk = (int)CheckedBagsStepper.Value;
+        var carry = (int)CarryOnBagsStepper.Value;
+        var cls = VehiclePicker.SelectedItem?.ToString() ?? "Sedan";
+
+        var (within, note, suggestion) = EvaluateCapacity(pax, chk, carry, cls);
+
+        _suggestedVehicleClass = suggestion;
+
+        if (within || suggestion is null)
+        {
+            CapacityBanner.IsVisible = false;
+            CapacityBannerText.Text = "";
+            return;
+        }
+
+        // Respect prior “Keep Current” choice, but still show info
+        var keepTag = _userChoseToKeep ? " (user chose to keep current vehicle)" : "";
+        CapacityBannerText.Text = $"{note}{keepTag}";
+        CapacityBanner.IsVisible = true;
+    }
+
+
     private static bool IsAirportText(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
@@ -68,6 +156,7 @@ public partial class QuotePage : ContentPage
         // Vehicle
         foreach (var v in new[] { "Sedan", "SUV", "Sprinter", "S-Class" }) VehiclePicker.Items.Add(v);
         VehiclePicker.SelectedIndex = 0;
+        VehiclePicker.SelectedIndexChanged += (_, __) => { _userChoseToKeep = false; RecomputeCapacityBanner(); };
 
         // Pickup
         foreach (var loc in _savedLocations) PickupLocationPicker.Items.Add(loc.ToString());
@@ -107,9 +196,12 @@ public partial class QuotePage : ContentPage
 
         // Initialize capacity defaults
         PassengerCountStepper.Value = Math.Max(1, _additionalPassengers.Count + 1);
+        PassengerCountStepper.ValueChanged += (_, __) => { _userChoseToKeep = false; RecomputeCapacityBanner(); };
         PassengerCountValueLabel.Text = $"{(int)PassengerCountStepper.Value}";
         CheckedBagsValueLabel.Text = $"{(int)CheckedBagsStepper.Value}";
+        CheckedBagsStepper.ValueChanged += (_, __) => { _userChoseToKeep = false; RecomputeCapacityBanner(); };
         CarryOnBagsValueLabel.Text = $"{(int)CarryOnBagsStepper.Value}";
+        CarryOnBagsStepper.ValueChanged += (_, __) => { _userChoseToKeep = false; RecomputeCapacityBanner(); };
         HoursValueLabel.Text = $"{(int)HoursStepper.Value}";
 
         // Keep return in sync with pickup and validate changes
@@ -122,6 +214,8 @@ public partial class QuotePage : ContentPage
         UpdateReturnFlightUx();
         UpdatePickupStyleAirportUx();
         UpdateReturnPickupStyleAirportUx();
+        RecomputeCapacityBanner();
+
     }
 
     private void OnPassengerChanged(object? sender, EventArgs e)
@@ -492,6 +586,23 @@ public partial class QuotePage : ContentPage
         return sel ?? "";
     }
 
+    private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(_suggestedVehicleClass))
+        {
+            var idx = VehiclePicker.Items.IndexOf(_suggestedVehicleClass);
+            if (idx >= 0) VehiclePicker.SelectedIndex = idx;
+            _userChoseToKeep = false;
+        }
+        CapacityBanner.IsVisible = false;
+    }
+
+    private void OnKeepCurrentVehicle(object? sender, EventArgs e)
+    {
+        _userChoseToKeep = true;
+        CapacityBanner.IsVisible = false;
+    }
+
     private async void OnBuildJson(object? sender, EventArgs e)
     {
         // ---- Basic required fields
@@ -686,6 +797,22 @@ public partial class QuotePage : ContentPage
         state.PassengerCount = (int)PassengerCountStepper.Value;
         state.CheckedBags = (int)CheckedBagsStepper.Value;
         state.CarryOnBags = (int)CarryOnBagsStepper.Value;
+
+        // Compute capacity flags for json/email
+        {
+            var cls = VehiclePicker.SelectedItem?.ToString() ?? "Sedan";
+            var chk = state.CheckedBags ?? 0;
+            var carry = state.CarryOnBags ?? 0;
+
+            var (within, note, suggestion) = EvaluateCapacity(
+                state.PassengerCount, chk, carry, cls);
+
+            if (!within && _userChoseToKeep)
+                note = (note ?? "Over capacity.") + " User chose to keep current vehicle.";
+
+            state.CapacityWithinLimits = within;
+            state.CapacityNote = note;
+        }
 
         var draft = _draftBuilder.Build(state);
         try
