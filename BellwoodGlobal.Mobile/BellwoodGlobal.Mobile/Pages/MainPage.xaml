@@ -7,7 +7,10 @@
     Title="Bellwood">
 
     <ContentPage.ToolbarItems>
+        <!-- Logout -->
         <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" />
+        <!-- Quotes menu (dropdown via ActionSheet) -->
+        <ToolbarItem Text="Quotes ▾" Priority="0" Order="Primary" Clicked="OnQuotesMenuClicked" />
     </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="24">
@@ -17,7 +20,7 @@
         </VerticalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="Center">
-            <Button Text="Get a Quote"
+            <Button Text="Reservation Placeholder"
                     FontSize="{StaticResource H2}"
                     TextColor="{StaticResource BellwoodInk}"
                     BackgroundColor="{StaticResource BellwoodGold}"
