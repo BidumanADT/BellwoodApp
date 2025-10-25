@@ -35,30 +35,29 @@ public static class MauiProgram
         builder.Services.AddSingleton<IProfileService, ProfileService>();
         builder.Services.AddSingleton<IQuoteDraftBuilder, QuoteDraftBuilder>();
 
-        // Admin API client (unprotected; uses X-Admin-ApiKey header)
-        builder.Services.AddHttpClient<IAdminApi, AdminApi>(c =>
+        builder.Services.AddHttpClient("admin", c =>
         {
-#if ANDROID
-    // Android emulator reaches the host via 10.0.2.2
-    c.BaseAddress = new Uri("https://10.0.2.2:5206");
-#else
+        #if ANDROID
+                    c.BaseAddress = new Uri("https://10.0.2.2:5206");
+        #else
             c.BaseAddress = new Uri("https://localhost:5206");
-#endif
-            // Keep this in sync with appsettings.Development.json -> Email:ApiKey
+        #endif
+                    c.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/json"));
             c.DefaultRequestHeaders.Add("X-Admin-ApiKey", "dev-secret-123");
         })
-#if DEBUG
+        #if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
-            // DEV ONLY:
-            //  - Trust untrusted ASP.NET Core dev certs
-            //  - Ignore hostname mismatch (cert is for "localhost", but Android hits "10.0.2.2")
+            // DEV ONLY: trust local dev certs
             ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         });
 #else
-.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler());
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler());
 #endif
+
+        builder.Services.AddSingleton<IAdminApi, AdminApi>();
 
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();

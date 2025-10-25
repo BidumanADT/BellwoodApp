@@ -8,12 +8,24 @@ namespace BellwoodGlobal.Mobile.Services
     public sealed class AdminApi : IAdminApi
     {
         private readonly HttpClient _http;
-        public AdminApi(HttpClient http) => _http = http;
+
+        public AdminApi(IHttpClientFactory httpFactory)
+            => _http = httpFactory.CreateClient("admin");
 
         public async Task SubmitQuoteAsync(QuoteDraft draft)
         {
-            var resp = await _http.PostAsJsonAsync("/quotes", draft);
-            resp.EnsureSuccessStatusCode();
+            using var res = await _http.PostAsJsonAsync("/quotes", draft);
+            res.EnsureSuccessStatusCode();
         }
+
+        public async Task<IReadOnlyList<QuoteListItem>> GetQuotesAsync(int take = 50)
+        {
+            var items = await _http.GetFromJsonAsync<List<QuoteListItem>>($"/quotes/list?take={take}")
+                        ?? new List<QuoteListItem>();
+            return items;
+        }
+
+        public async Task<QuoteDetail?> GetQuoteAsync(string id)
+            => await _http.GetFromJsonAsync<QuoteDetail>($"/quotes/{id}");
     }
 }
