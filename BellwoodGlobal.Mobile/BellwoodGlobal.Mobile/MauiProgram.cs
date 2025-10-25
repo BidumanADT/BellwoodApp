@@ -44,7 +44,8 @@ public static class MauiProgram
         #endif
                     c.DefaultRequestHeaders.Accept.Add(
                         new MediaTypeWithQualityHeaderValue("application/json"));
-                })
+            c.DefaultRequestHeaders.Add("X-Admin-ApiKey", "dev-secret-123");
+        })
         #if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {

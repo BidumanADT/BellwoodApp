@@ -6,12 +6,28 @@
     BackgroundColor="{StaticResource BellwoodInk}"
     Title="Bellwood">
 
+    <!-- Right-aligned toolbar (logout only) -->
     <ContentPage.ToolbarItems>
-        <!-- Logout -->
         <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" />
-        <!-- Quotes menu (dropdown via ActionSheet) -->
-        <ToolbarItem Text="Quotes ▾" Priority="0" Order="Primary" Clicked="OnQuotesMenuClicked" />
     </ContentPage.ToolbarItems>
+
+    <!-- Left-aligned TitleView with a Quotes menu button -->
+    <Shell.TitleView>
+        <!-- Grid trick to keep content left-aligned across platforms -->
+        <Grid ColumnDefinitions="Auto,*" Padding="0" VerticalOptions="Center" HeightRequest="44">
+            <HorizontalStackLayout Grid.Column="0" Spacing="12" VerticalOptions="Center">
+                <Button x:Name="QuotesMenuButton"
+                    Text="Quotes ▾"
+                    Clicked="OnQuotesMenuClicked"
+                    BackgroundColor="Transparent"
+                    Padding="0"
+                    TextColor="{StaticResource BellwoodCream}"
+                    FontSize="{StaticResource Body}"/>
+            </HorizontalStackLayout>
+            <!-- spacer column -->
+            <BoxView Grid.Column="1" WidthRequest="0" />
+        </Grid>
+    </Shell.TitleView>
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="24">
         <VerticalStackLayout Spacing="8" Margin="0,36,0,16">
@@ -20,7 +36,7 @@
         </VerticalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="Center">
-            <Button Text="Reservation Placeholder"
+            <Button Text="Get a Quote"
                     FontSize="{StaticResource H2}"
                     TextColor="{StaticResource BellwoodInk}"
                     BackgroundColor="{StaticResource BellwoodGold}"

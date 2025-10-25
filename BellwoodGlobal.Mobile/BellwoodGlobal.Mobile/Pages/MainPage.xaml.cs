@@ -24,13 +24,10 @@ public partial class MainPage : ContentPage
 
     private async void OnQuotesMenuClicked(object? sender, EventArgs e)
     {
-        // ActionSheet is the most native-feeling cross-platform dropdown
         var choice = await DisplayActionSheet(
-            "Quotes",               // title
-            "Cancel",               // cancel
-            null,                   // destruction
+            "Quotes", "Cancel", null,
             "New Quote",
-            "Quote Dashboard"       // routes to current RideHistoryPage
+            "Quote Dashboard" // (your inbox/history page)
         );
 
         switch (choice)
@@ -38,17 +35,11 @@ public partial class MainPage : ContentPage
             case "New Quote":
                 await Shell.Current.GoToAsync(nameof(QuotePage));
                 break;
-
             case "Quote Dashboard":
                 await Shell.Current.GoToAsync(nameof(RideHistoryPage));
                 break;
-
-            default:
-                // Cancel or outside tap — do nothing
-                break;
         }
     }
-
     private async void OnRideHistory(object sender, EventArgs e)
         => await Shell.Current.GoToAsync(nameof(RideHistoryPage));  // relative push
 
