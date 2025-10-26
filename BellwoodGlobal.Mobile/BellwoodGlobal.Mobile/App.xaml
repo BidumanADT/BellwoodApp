@@ -12,6 +12,12 @@
         <Color x:Key="BellwoodCream">#F5F1EB</Color>
         <Color x:Key="BellwoodInk">#0D1B2A</Color>
 
+        <!-- Quote status chip colors -->
+        <Color x:Key="ChipPending">#FFD166</Color> <!-- gold -->
+        <Color x:Key="ChipPriced">#34D399</Color> <!-- emerald-ish -->
+        <Color x:Key="ChipDeclined">#F87171</Color> <!-- soft red -->
+        <Color x:Key="ChipOther">#9AA3AF</Color> <!-- slate/placeholder -->
+
         <!-- Text sizes -->
         <x:Double x:Key="H1">28</x:Double>
         <x:Double x:Key="H2">22</x:Double>

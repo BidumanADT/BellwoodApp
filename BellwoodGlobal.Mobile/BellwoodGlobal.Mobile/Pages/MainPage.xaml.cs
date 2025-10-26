@@ -36,7 +36,7 @@ public partial class MainPage : ContentPage
                 await Shell.Current.GoToAsync(nameof(QuotePage));
                 break;
             case "Quote Dashboard":
-                await Shell.Current.GoToAsync(nameof(RideHistoryPage));
+                await Shell.Current.GoToAsync(nameof(QuoteDashboardPage));
                 break;
         }
     }
