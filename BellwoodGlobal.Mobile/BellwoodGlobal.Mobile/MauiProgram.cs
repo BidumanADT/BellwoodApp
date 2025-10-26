@@ -27,6 +27,7 @@ public static class MauiProgram
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<RideHistoryPage>();
         builder.Services.AddTransient<QuotePage>();
+        builder.Services.AddTransient<QuoteDashboardPage>();
 
         // Services
         builder.Services.AddSingleton<IAuthService, AuthService>();

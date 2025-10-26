@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.QuoteDashboardPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:BellwoodGlobal.Mobile.Pages"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Quotes">
+    <ContentPage.Resources>
+        <!-- Status chip colors -->
+        <Color x:Key="ChipPending">#FFD166</Color>
+        <Color x:Key="ChipPriced">#4CAF50</Color>
+        <Color x:Key="ChipDeclined">#EF5350</Color>
+        <Color x:Key="ChipOther">#8A8F98</Color>
+
+        <Style TargetType="Frame" x:Key="Card">
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="HasShadow" Value="True" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="16">
+
+        <!-- Search -->
+        <SearchBar x:Name="Search"
+                   Placeholder="Search passenger, pickup, ID…"
+                   TextColor="{StaticResource BellwoodCream}"
+                   PlaceholderColor="{StaticResource BellwoodPlaceholder}"
+                   BackgroundColor="{StaticResource BellwoodCharcoal}"
+                   TextChanged="OnSearchChanged"/>
+
+        <!-- Filters -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="8" Margin="0,8,0,8">
+            <Button x:Name="AllBtn" Text="All" Clicked="OnFilterClicked"
+                    BackgroundColor="{StaticResource BellwoodGold}" TextColor="{StaticResource BellwoodInk}" />
+            <Button x:Name="PendingBtn" Text="Submitted" Clicked="OnFilterClicked"
+                    BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodCream}" />
+            <Button x:Name="PricedBtn" Text="Priced" Clicked="OnFilterClicked"
+                    BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodCream}" />
+            <Button x:Name="DeclinedBtn" Text="Declined" Clicked="OnFilterClicked"
+                    BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodCream}" />
+        </HorizontalStackLayout>
+
+        <!-- List -->
+        <RefreshView Grid.Row="2" x:Name="Refresh" Refreshing="OnRefresh">
+            <CollectionView x:Name="List"
+                            SelectionMode="Single"
+                            SelectionChanged="OnSelectionChanged">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="24" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label Text="No quotes (yet)" TextColor="{StaticResource BellwoodCream}" FontSize="18" />
+                        <Label Text="Pull to refresh or create a new quote." TextColor="{StaticResource BellwoodCream}" Opacity="0.7" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Style="{StaticResource Card}">
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                                <!-- Line 1 -->
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding Title}"
+                                       TextColor="{StaticResource BellwoodCream}"
+                                       FontAttributes="Bold" />
+                                <Frame Grid.Row="0" Grid.Column="1"
+                                       BackgroundColor="{Binding StatusColor}"
+                                       CornerRadius="10" Padding="8,4" HasShadow="False" Margin="6,0,0,0">
+                                    <Label Text="{Binding Status}"
+                                           TextColor="{StaticResource BellwoodInk}" />
+                                </Frame>
+
+                                <!-- Line 2 -->
+                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                       Text="{Binding SubTitle}"
+                                       TextColor="{StaticResource BellwoodCream}" Opacity="0.9" />
+
+                                <!-- Line 3 -->
+                                <Label Grid.Row="2" Grid.ColumnSpan="2"
+                                       Text="{Binding Meta}"
+                                       TextColor="{StaticResource BellwoodCream}" Opacity="0.7" FontSize="12" />
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>
