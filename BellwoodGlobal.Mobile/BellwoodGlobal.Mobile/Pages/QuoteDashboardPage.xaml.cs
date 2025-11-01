@@ -73,8 +73,7 @@ public partial class QuoteDashboardPage : ContentPage
         if (e.CurrentSelection?.FirstOrDefault() is RowVm vm)
         {
             ((CollectionView)sender!).SelectedItem = null;
-            // Navigate to detail
-            await Shell.Current.GoToAsync($"RideHistoryPage?quoteId={vm.Id}");
+            await Shell.Current.GoToAsync($"QuoteDetailPage?id={vm.Id}");
         }
     }
 
@@ -150,6 +149,13 @@ public partial class QuoteDashboardPage : ContentPage
         return fallback;
     }
 
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        if (Shell.Current.Navigation.NavigationStack.Count > 1)
+            await Shell.Current.GoToAsync("..");
+        else
+            await Shell.Current.GoToAsync("//MainPage"); 
+    }
 
     // --- lightweight row VM ---
     public sealed class RowVm

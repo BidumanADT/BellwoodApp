@@ -51,6 +51,9 @@
 	  <MauiXaml Update="Pages\QuoteDashboardPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Pages\QuoteDetailPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Pages\QuotePage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

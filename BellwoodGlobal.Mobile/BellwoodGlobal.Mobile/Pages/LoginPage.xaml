@@ -5,24 +5,24 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Bellwood">
 
-    <Grid Padding="24" RowDefinitions="Auto,*,Auto">
+    <Grid Padding="12" RowDefinitions="Auto,*,Auto">
 
         <!-- HEADER -->
-        <VerticalStackLayout Grid.Row="0" Spacing="12" HorizontalOptions="Center">
+        <VerticalStackLayout Grid.Row="0" Spacing="10" HorizontalOptions="Center">
             <Image
                 Source="bellwood_logo.png"
                 HeightRequest="200"
                 HorizontalOptions="Center" />
 
             <Label
-                Text="Welcome to Bellwood"
+                Text="Welcome to Bellwood Elite"
                 FontFamily="Playfair"
                 FontSize="{StaticResource H1}"
                 TextColor="{StaticResource BellwoodCharcoal}"
                 HorizontalOptions="Center" />
 
             <Label
-                Text="Sign in to Bellwood Elite"
+                Text="Please sign in"
                 FontFamily="OpenSansRegular"
                 FontSize="{StaticResource Body}"
                 TextColor="{StaticResource BellwoodCharcoal}"
