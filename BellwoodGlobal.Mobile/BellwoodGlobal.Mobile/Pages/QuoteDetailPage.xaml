@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.QuoteDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Quote Detail">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Back" Priority="0" Order="Primary" Clicked="OnBackClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <!-- Header -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="4,0">
+                <Label Grid.Row="0" Grid.Column="0"
+                       x:Name="PassengerTitle"
+                       FontSize="{StaticResource H1}"
+                       TextColor="{StaticResource BellwoodGold}"
+                       Text="Passenger" />
+
+                <!-- status chip -->
+                <Frame x:Name="StatusChipFrame"
+                       Grid.Row="0" Grid.Column="1"
+                       Padding="8,4"
+                       CornerRadius="10"
+                       HasShadow="False"
+                       BackgroundColor="{StaticResource ChipOther}">
+                    <Label x:Name="StatusChip"
+                           Text="Status"
+                           TextColor="{StaticResource BellwoodInk}"
+                           FontAttributes="Bold" />
+                </Frame>
+
+                <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                       x:Name="SubHeader"
+                       FontSize="{StaticResource Body}"
+                       TextColor="{StaticResource BellwoodCream}"
+                       Opacity="0.9"
+                       Text="Vehicle • Created" />
+            </Grid>
+
+            <!-- Pickup / Dropoff -->
+            <Frame Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Pickup" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="PickupLine" TextColor="{StaticResource BellwoodInk}" />
+                    <Label x:Name="PickupStyleLine" TextColor="{StaticResource BellwoodInk}" FontSize="12" Opacity="0.9" />
+
+                    <BoxView HeightRequest="1" BackgroundColor="#2b2f36" Margin="0,8" />
+
+                    <Label Text="Dropoff" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="DropoffLine" TextColor="{StaticResource BellwoodInk}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Return (if round trip) -->
+            <Frame x:Name="ReturnCard" Style="{StaticResource Card}" IsVisible="False">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Return" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="ReturnPickupLine" TextColor="{StaticResource BellwoodInk}" />
+                    <Label x:Name="ReturnStyleLine" TextColor="{StaticResource BellwoodInk}" FontSize="12" Opacity="0.9" />
+                    <Label x:Name="ReturnDropoffLine" TextColor="{StaticResource BellwoodInk}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Flight -->
+            <Frame x:Name="FlightCard" Style="{StaticResource Card}" IsVisible="False">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Flight Details" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="OutboundFlightLine" TextColor="{StaticResource BellwoodInk}" />
+                    <Label x:Name="ReturnFlightLine" TextColor="{StaticResource BellwoodInk}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Capacity / Requests -->
+            <Frame Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Passengers &amp; Luggage" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="CapacityLine" TextColor="{StaticResource BellwoodInk}" />
+                    <Label x:Name="CapacityNoteLine" TextColor="{StaticResource BellwoodInk}" FontSize="12" Opacity="0.9" />
+
+                    <BoxView HeightRequest="1" BackgroundColor="#2b2f36" Margin="0,8" />
+
+                    <Label Text="Additional Request" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="RequestLine" TextColor="{StaticResource BellwoodInk}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Booker / Passenger -->
+            <Frame Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Booker" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="BookerLine" TextColor="{StaticResource BellwoodInk}" />
+
+                    <BoxView HeightRequest="1" BackgroundColor="#2b2f36" Margin="0,8" />
+
+                    <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="PaxLine" TextColor="{StaticResource BellwoodInk}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- JSON (debug / support) -->
+            <Frame x:Name="JsonCard" Style="{StaticResource Card}" IsVisible="False">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Payload (debug)" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Editor x:Name="JsonEditor"
+                            IsReadOnly="True"
+                            AutoSize="TextChanges"
+                            TextColor="{StaticResource BellwoodInk}" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
