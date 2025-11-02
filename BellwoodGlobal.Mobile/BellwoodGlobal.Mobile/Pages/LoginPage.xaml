@@ -3,61 +3,108 @@
     x:Class="BellwoodGlobal.Mobile.LoginPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Bellwood">
+    Shell.NavBarIsVisible="False"
+    Title="Bellwood"
+    BackgroundColor="Transparent">
 
-    <Grid Padding="12" RowDefinitions="Auto,*,Auto">
+    <!-- Full-page gradient background -->
+    <Grid Background="{StaticResource BellwoodLoginGradient}">
+        <!-- Outer grid centers inner content with star rows -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- HEADER -->
-        <VerticalStackLayout Grid.Row="0" Spacing="10" HorizontalOptions="Center">
-            <Image
-                Source="bellwood_logo.png"
-                HeightRequest="200"
-                HorizontalOptions="Center" />
+        <!-- Inner content grid in the middle row -->
+        <Grid Grid.Row="1"
+              Padding="24,32"
+              WidthRequest="{OnIdiom Phone=420, Tablet=720}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="0"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="24"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="128"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-            <Label
-                Text="Welcome to Bellwood Elite"
-                FontFamily="Playfair"
-                FontSize="{StaticResource H1}"
-                TextColor="{StaticResource BellwoodCharcoal}"
-                HorizontalOptions="Center" />
+            <!-- LOGO -->
+            <Image x:Name="Logo"
+                   Grid.Row="0"
+                   Source="bellwood_logo.png"
+                   Aspect="AspectFit"
+                   HeightRequest="{OnIdiom Phone=360, Tablet=420}"
+                   HorizontalOptions="Center" />
 
-            <Label
-                Text="Please sign in"
-                FontFamily="OpenSansRegular"
-                FontSize="{StaticResource Body}"
-                TextColor="{StaticResource BellwoodCharcoal}"
-                HorizontalOptions="Center" />
-        </VerticalStackLayout>
+            <!-- Spacer row (Grid.Row=1) -->
 
-		<!-- LOGIN FORM -->
-		<VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="CenterAndExpand">
-			<Border Style="{StaticResource InputBorder}">
-				<Entry x:Name="UsernameEntry"
-					   Placeholder="Username"
-					   Style="{StaticResource CardInput}" />
-			</Border>
+            <!-- HEADLINE -->
+            <Label Grid.Row="2"
+                   Text="Welcome to Bellwood Elite"
+                   FontFamily="Playfair"
+                   FontSize="{OnIdiom Phone=28, Tablet=36}"
+                   TextColor="{StaticResource BellwoodGold}"
+                   HorizontalTextAlignment="Center" />
 
-			<Border Style="{StaticResource InputBorder}">
-				<Entry x:Name="PasswordEntry"
-					   Placeholder="Password"
-					   IsPassword="True"
-					   Style="{StaticResource CardInput}" />
-			</Border>
+            <!-- Spacer row (Grid.Row=3) -->
 
-			<Label x:Name="ErrorLabel"
-				   Text=""
-				   TextColor="#FF6B6B"
-				   FontSize="{StaticResource Small}"
-				   IsVisible="False"
-				   HorizontalOptions="Center" />
-		</VerticalStackLayout>
+            <!-- FORM CARD -->
+            <Border Grid.Row="4"
+                    BackgroundColor="#1C1F26"
+                    Padding="12"
+                    Stroke="#00000000">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#88000000" Opacity="0.45" Radius="14"/>
+                </Border.Shadow>
 
-        <!-- CTA BUTTON -->
-        <Button
-            x:Name="LoginButton"
-            Grid.Row="2"
-            Text="Sign In"
-            Style="{StaticResource GoldButton}"
-            Clicked="OnLoginClicked" />
+                <VerticalStackLayout Spacing="10">
+                    <Border Style="{StaticResource InputBorder}">
+                        <Entry x:Name="UsernameEntry"
+                               Placeholder="Username"
+                               Style="{StaticResource CardInput}" />
+                    </Border>
+
+                    <Border Style="{StaticResource InputBorder}">
+                        <Entry x:Name="PasswordEntry"
+                               Placeholder="Password"
+                               IsPassword="True"
+                               Style="{StaticResource CardInput}" />
+                    </Border>
+
+                    <Label x:Name="ErrorLabel"
+                           Text=""
+                           TextColor="#FF6B6B"
+                           FontSize="{StaticResource Small}"
+                           IsVisible="False"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Spacer row (Grid.Row=5) -->
+
+            <!-- BUTTON -->
+            <Button Grid.Row="6"
+                    x:Name="LoginButton"
+                    Text="Sign In"
+                    TextColor="{StaticResource BellwoodGold}"
+                    BackgroundColor="{StaticResource BellwoodInk}"
+                    CornerRadius="14"
+                    HeightRequest="50"
+                    WidthRequest="{OnIdiom Phone=260, Tablet=320}"
+                    HorizontalOptions="Center"
+                    Clicked="OnLoginClicked" />
+        </Grid>
+
+        <!-- Grain overlay for banding reduction (on top, but click-through) -->
+        <Image Grid.RowSpan="3"
+               Source="noise_2pt.png"
+               Aspect="Fill"
+               Opacity="0.06"
+               InputTransparent="True" />
     </Grid>
 </ContentPage>

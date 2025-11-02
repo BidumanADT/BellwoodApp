@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Login gradient (extra stops to avoid banding) -->
+    <LinearGradientBrush x:Key="BellwoodLoginGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#111317" Offset="0.00"/>
+        <GradientStop Color="#15181D" Offset="0.12"/>
+        <GradientStop Color="#191C22" Offset="0.24"/>
+        <GradientStop Color="#1E2128" Offset="0.38"/>
+        <GradientStop Color="#23272E" Offset="0.55"/>
+        <GradientStop Color="#282E35" Offset="0.74"/>
+        <GradientStop Color="#2D343C" Offset="0.88"/>
+        <GradientStop Color="#FFD24C" Offset="1.00"/>
+    </LinearGradientBrush>
+
+</ResourceDictionary>

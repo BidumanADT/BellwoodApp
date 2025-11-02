@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Storage;
 using BellwoodGlobal.Mobile.Services;
 
 namespace BellwoodGlobal.Mobile
@@ -17,6 +15,24 @@ namespace BellwoodGlobal.Mobile
             InitializeComponent();
             _factory = factory;
             _auth = auth;
+
+            // Make sure nav bar stays hidden on this page
+            Shell.SetNavBarIsVisible(this, false);
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+
+            try
+            {
+                // entrance animation
+                Logo.Opacity = 0;
+                Logo.Scale = 0.6;
+                await Logo.FadeTo(1, 450, Easing.CubicOut);
+                await Logo.ScaleTo(1.0, 450, Easing.CubicOut);
+            }
+            catch { /* no-op if animation fails */ }
         }
 
         private async void OnLoginClicked(object sender, EventArgs e)
@@ -47,7 +63,7 @@ namespace BellwoodGlobal.Mobile
 
                 await _auth.SetTokenAsync(body.Token);
 
-                // go to rides
+                // navigate to main shell route
                 await Shell.Current.GoToAsync("//MainPage");
             }
             catch (Exception ex)
