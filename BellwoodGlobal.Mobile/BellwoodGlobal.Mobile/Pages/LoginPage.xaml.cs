@@ -20,6 +20,11 @@ namespace BellwoodGlobal.Mobile
             Shell.SetNavBarIsVisible(this, false);
         }
 
+        public LoginPage() : this(
+        ServiceHelper.GetRequiredService<IHttpClientFactory>(),
+        ServiceHelper.GetRequiredService<IAuthService>())
+        { }
+
         protected override async void OnAppearing()
         {
             base.OnAppearing();

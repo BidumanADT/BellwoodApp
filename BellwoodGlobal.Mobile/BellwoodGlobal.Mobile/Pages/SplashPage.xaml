@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.SplashPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Background="{StaticResource BellwoodLoginGradient}"
+    Shell.NavBarIsVisible="False"
+    Padding="0">
+
+    <Grid>
+        <!-- Centered logo -->
+        <Image x:Name="Logo"
+               Source="bellwood_elite_icon.png"
+               WidthRequest="160"
+               HeightRequest="160"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               Opacity="0" />
+
+        <!-- Optional: small spinner near bottom -->
+        <ActivityIndicator IsRunning="True"
+                           VerticalOptions="End"
+                           HorizontalOptions="Center"
+                           Margin="0,0,0,48" />
+    </Grid>
+</ContentPage>
