@@ -10,7 +10,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
-		<ApplicationTitle>Bellwood Mobile</ApplicationTitle>
+		<ApplicationTitle>Bellwood Elite</ApplicationTitle>
 		<ApplicationId>com.bellwoodglobal.mobile</ApplicationId>
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
@@ -22,17 +22,25 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<!-- Use your 1200x1200 PNG as the adaptive icon foreground -->
+		<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon_padded.png"
+            ForegroundFile="Resources\AppIcon\bellwood_elite_icon_padded.png"
+            BackgroundColor="#1C2D5C" />
+
 		<!-- Images -->
-		<MauiImage Include="Resources\Images\**" />
-		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+		<MauiImage Include="Resources/Images/**" />
+
 		<!-- Fonts -->
-		<MauiFont Include="Resources\Fonts\Montserrat-Regular.ttf" Alias="Montserrat" />
-		<MauiFont Include="Resources\Fonts\Montserrat-SemiBold.ttf" Alias="MontserratSemibold" />
-		<MauiFont Include="Resources\Fonts\PlayfairDisplay-SemiBold.ttf" Alias="Playfair" />
-		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiFont Include="Resources/Fonts/Montserrat-Regular.ttf" Alias="Montserrat" />
+		<MauiFont Include="Resources/Fonts/Montserrat-SemiBold.ttf" Alias="MontserratSemibold" />
+		<MauiFont Include="Resources/Fonts/PlayfairDisplay-SemiBold.ttf" Alias="Playfair" />
+		<MauiAsset Include="Resources/Raw/**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <AndroidResource Remove="Platforms\Android\Resources\values\strings.xml" />
+	</ItemGroup>
+
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
