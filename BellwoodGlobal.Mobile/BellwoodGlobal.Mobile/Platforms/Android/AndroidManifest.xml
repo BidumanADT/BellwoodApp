@@ -1,7 +1,8 @@
 ﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.bellwoodglobal.mobile">
 	<uses-permission android:name="android.permission.INTERNET" />
-	<application android:usesCleartextTraffic="true"
-				 android:label="Bellwood Mobile">
-	</application>
+	<application
+    android:label="Bellwood Elite"
+    android:icon="@mipmap/bellwood_elite_icon_padded"
+    android:roundIcon="@mipmap/bellwood_elite_icon_padded" />
 </manifest>
