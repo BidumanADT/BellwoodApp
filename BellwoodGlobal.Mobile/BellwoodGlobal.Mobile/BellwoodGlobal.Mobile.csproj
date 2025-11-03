@@ -23,9 +23,10 @@
 
 	<ItemGroup>
 		<!-- Use your 1200x1200 PNG as the adaptive icon foreground -->
-		<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon_padded.png"
-            ForegroundFile="Resources\AppIcon\bellwood_elite_icon_padded.png"
-            BackgroundColor="#1C2D5C" />
+		<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon_padded.png" ForegroundFile="Resources\AppIcon\bellwood_elite_icon_padded.png" BackgroundColor="#1C2D5C" />
+
+		<!-- System splash: solid background + centered image -->
+		<MauiSplashScreen Include="Resources\Images\bellwood_splash.png" Color="#1C2D5C" BaseSize="256,256" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources/Images/**" />
@@ -66,6 +67,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\RideHistoryPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\SplashPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Resources\Styles\Gradients.xaml">
