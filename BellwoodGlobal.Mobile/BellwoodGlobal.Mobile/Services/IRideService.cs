@@ -1,4 +1,5 @@
 ﻿using BellwoodGlobal.Mobile.Models;
+using BellwoodGlobal.Core.Domain;
 
 namespace BellwoodGlobal.Mobile.Services;
 

@@ -1,4 +1,4 @@
-﻿namespace BellwoodGlobal.Mobile.Models;
+﻿namespace BellwoodGlobal.Core.Domain;
 
 public class Ride
 {

@@ -1,4 +1,6 @@
 ﻿namespace BellwoodGlobal.Mobile.Models;
+using BellwoodGlobal.Core.Domain;
+
 
 public sealed class QuoteListItem
 {

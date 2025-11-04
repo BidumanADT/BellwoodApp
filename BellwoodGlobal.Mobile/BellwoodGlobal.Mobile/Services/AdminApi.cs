@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using BellwoodGlobal.Core.Domain;
+
 
 namespace BellwoodGlobal.Mobile.Services
 {
