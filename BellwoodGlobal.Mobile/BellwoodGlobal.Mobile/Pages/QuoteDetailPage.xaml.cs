@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Mobile.Services;
 using Microsoft.Maui.Controls;
+using BellwoodGlobal.Core.Domain;
+
 
 namespace BellwoodGlobal.Mobile.Pages;
 

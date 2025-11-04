@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using BellwoodGlobal.Mobile.Models;
+using BellwoodGlobal.Core.Domain;
+
 
 namespace BellwoodGlobal.Mobile.Services
 {

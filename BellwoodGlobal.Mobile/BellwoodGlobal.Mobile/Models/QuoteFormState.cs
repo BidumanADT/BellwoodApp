@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BellwoodGlobal.Core.Domain;
 
 namespace BellwoodGlobal.Mobile.Models
 {

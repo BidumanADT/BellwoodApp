@@ -50,6 +50,11 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+	  <ProjectReference Include="..\BellwoodGlobal.Core\BellwoodGlobal.Core.csproj" />
+	</ItemGroup>
+
 	<ItemGroup>
 	  <MauiXaml Update="Pages\LoginPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>

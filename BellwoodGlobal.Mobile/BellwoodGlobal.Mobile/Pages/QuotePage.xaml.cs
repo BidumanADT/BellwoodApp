@@ -4,6 +4,8 @@ using System.Linq;
 using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Mobile.Services;
 using System.Text.Json.Serialization;
+using BellwoodGlobal.Core.Domain;
+
 
 namespace BellwoodGlobal.Mobile.Pages;
 

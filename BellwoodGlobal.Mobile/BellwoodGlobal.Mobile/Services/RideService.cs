@@ -1,6 +1,8 @@
 ﻿using BellwoodGlobal.Mobile.Models;
 using System.Net;
 using System.Net.Http.Json;
+using BellwoodGlobal.Core.Domain;
+
 
 namespace BellwoodGlobal.Mobile.Services;
 
