@@ -10,7 +10,7 @@
     Shell.NavBarHasShadow="False"
     FlyoutBehavior="Disabled">
 
-    <!-- Single visible ShellContent => no tabs UI -->
+    <!-- Single visible ShellContent => tabless UI -->
     <ShellContent
         Route="MainPage"
         ContentTemplate="{DataTemplate pages:MainPage}" />

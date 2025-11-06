@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.BookingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Bookings">
+
+    <Grid Padding="12" RowDefinitions="Auto,*">
+        <Label Text="Your Bookings"
+               FontFamily="Playfair"
+               FontSize="{StaticResource H1}"
+               TextColor="{StaticResource BellwoodGold}"
+               Margin="0,8,0,6"/>
+
+        <CollectionView Grid.Row="1" x:Name="List" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource CardContainer}">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding PickupTime, StringFormat='{}{0:MMM d, h:mm tt}'}"
+                                   TextColor="{StaticResource BellwoodInk}"
+                                   FontFamily="MontserratSemibold"/>
+
+                            <Label Text="{Binding PickupAddress}" Style="{StaticResource MutedLabel}"/>
+                            <Label Text="{Binding DropoffAddress}" Style="{StaticResource MutedLabel}"/>
+
+                            <!-- status chip -->
+                            <Border Padding="6,2"
+                                    StrokeThickness="0"
+                                    BackgroundColor="{Binding Status, Converter={StaticResource StatusToColor}}">
+                                <Label Text="{Binding Status}"
+                                       TextColor="{StaticResource BellwoodCharcoal}"
+                                       FontSize="{StaticResource Small}"
+                                       FontFamily="MontserratSemibold"/>
+                            </Border>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

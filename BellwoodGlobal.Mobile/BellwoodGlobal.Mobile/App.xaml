@@ -2,7 +2,8 @@
 <Application
     x:Class="BellwoodGlobal.Mobile.App"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:converters="clr-namespace:BellwoodGlobal.Mobile.Converters">
 
     <Application.Resources>
         <ResourceDictionary>
@@ -16,6 +17,8 @@
                 <!-- 3) Global control styles (uses colors/gradients) -->
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <converters:StatusToColorConverter x:Key="StatusToColor"/>
 
             <!-- Button | ink w/ gold text -->
             <Style x:Key="DarkHollowButton" TargetType="Button">

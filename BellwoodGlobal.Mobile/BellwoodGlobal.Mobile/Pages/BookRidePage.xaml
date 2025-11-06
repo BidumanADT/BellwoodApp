@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.BookRidePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Book a Ride">
+
+	<Grid Padding="16" RowDefinitions="Auto,*,Auto">
+		<!-- header -->
+		<Label Text="Book a Ride"
+               FontFamily="Playfair"
+               FontSize="{StaticResource H1}"
+               TextColor="{StaticResource BellwoodGold}"
+               Margin="0,8,0,12"/>
+
+		<!-- form -->
+		<VerticalStackLayout Grid.Row="1" Spacing="12">
+			<Border Style="{StaticResource InputBorder}">
+				<Entry x:Name="PickupEntry"
+                       Placeholder="Pickup address"
+                       Style="{StaticResource CardInput}"/>
+			</Border>
+
+			<Border Style="{StaticResource InputBorder}">
+				<Entry x:Name="DropoffEntry"
+                       Placeholder="Dropoff address"
+                       Style="{StaticResource CardInput}"/>
+			</Border>
+
+			<Border Style="{StaticResource InputBorder}">
+				<Entry x:Name="WhenEntry"
+                       Placeholder="Pickup time (e.g., 2025-11-02 17:30)"
+                       Style="{StaticResource CardInput}"/>
+			</Border>
+
+			<Label x:Name="ErrorLabel"
+                   TextColor="#FF6B6B"
+                   IsVisible="False"
+                   FontSize="{StaticResource Small}"/>
+		</VerticalStackLayout>
+
+		<!-- CTA -->
+		<Button Grid.Row="2"
+                Text="Request Booking"
+                Style="{StaticResource GoldButton}"
+                Clicked="OnSubmit"/>
+	</Grid>
+</ContentPage>
