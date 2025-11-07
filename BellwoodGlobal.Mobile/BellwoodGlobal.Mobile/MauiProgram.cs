@@ -29,6 +29,8 @@ public static class MauiProgram
         builder.Services.AddTransient<QuotePage>();
         builder.Services.AddTransient<QuoteDashboardPage>();
         builder.Services.AddTransient<SplashPage>();
+        builder.Services.AddTransient<BookRidePage>();
+        builder.Services.AddTransient<BookingsPage>(); // Phase 4
 
 
         // Services
@@ -37,6 +39,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IQuoteService, QuoteService>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
         builder.Services.AddSingleton<IQuoteDraftBuilder, QuoteDraftBuilder>();
+        builder.Services.AddSingleton<ITripDraftBuilder, TripDraftBuilder>();
 
         builder.Services.AddHttpClient("admin", c =>
         {
