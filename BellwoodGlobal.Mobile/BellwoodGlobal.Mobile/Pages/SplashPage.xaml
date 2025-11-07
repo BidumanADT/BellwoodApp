@@ -3,7 +3,7 @@
     x:Class="BellwoodGlobal.Mobile.Pages.SplashPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Background="{StaticResource BellwoodLoginGradient}"
+    Background="#1d3770"
     Shell.NavBarIsVisible="False"
     Padding="0">
 
@@ -11,8 +11,8 @@
         <!-- Centered logo -->
         <Image x:Name="Logo"
                Source="bellwood_elite_icon.png"
-               WidthRequest="160"
-               HeightRequest="160"
+               WidthRequest="270"
+               HeightRequest="270"
                HorizontalOptions="Center"
                VerticalOptions="Center"
                Opacity="0" />
