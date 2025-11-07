@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.BookRidePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Book a Ride">
+
+    <ContentPage.Resources>
+        <!-- High-contrast, page-local overrides -->
+        <Color x:Key="BellwoodInk">#0F1217</Color>
+        <Color x:Key="BellwoodCharcoal">#171B21</Color>
+        <Color x:Key="BellwoodCream">#F5F7FA</Color>
+        <Color x:Key="BellwoodGold">#FFD166</Color>
+        <Color x:Key="BellwoodPlaceholder">#9AA3AF</Color>
+
+        <!-- Base styles -->
+        <Style x:Key="BaseEntryStyle" TargetType="Entry">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource BellwoodPlaceholder}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="HorizontalOptions" Value="Fill" />
+        </Style>
+
+        <Style x:Key="BasePickerStyle" TargetType="Picker">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="TitleColor" Value="{StaticResource BellwoodPlaceholder}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <Style TargetType="Entry" BasedOn="{StaticResource BaseEntryStyle}" />
+        <Style TargetType="Editor">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style TargetType="Picker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="DatePicker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="TimePicker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="Label">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodGold}" />
+            <Setter Property="TextColor" Value="{StaticResource BellwoodInk}" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="14,10" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+
+            <!-- Header -->
+            <Label 
+                Text="Book Your Ride" 
+                TextColor="{StaticResource BellwoodGold}" 
+                FontSize="28" 
+                FontAttributes="Bold"
+                HorizontalOptions="Center"
+                Margin="0,0,0,12" />
+
+            <!-- Booker (read only) -->
+            <Label Text="Booker" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" 
+                  RowDefinitions="Auto,Auto,Auto,Auto" 
+                  BackgroundColor="{StaticResource BellwoodCharcoal}" 
+                  Padding="12">
+                <Label Text="First Name" Grid.Row="0" Grid.Column="0" />
+                <Entry x:Name="BookerFirst" Grid.Row="0" Grid.Column="1" IsReadOnly="True" />
+                <Label Text="Last Name" Grid.Row="1" Grid.Column="0" />
+                <Entry x:Name="BookerLast" Grid.Row="1" Grid.Column="1" IsReadOnly="True" />
+                <Label Text="Phone" Grid.Row="2" Grid.Column="0" />
+                <Entry x:Name="BookerPhone" Grid.Row="2" Grid.Column="1" IsReadOnly="True" />
+                <Label Text="Email" Grid.Row="3" Grid.Column="0" />
+                <Entry x:Name="BookerEmail" Grid.Row="3" Grid.Column="1" IsReadOnly="True" />
+            </Grid>
+
+            <!-- Passenger selection -->
+            <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Picker x:Name="PassengerPicker" Title="Select passenger" />
+            <Grid x:Name="PassengerNewGrid"
+                  ColumnDefinitions="Auto,*"
+                  RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                  ColumnSpacing="12"
+                  IsVisible="False"
+                  BackgroundColor="{StaticResource BellwoodCharcoal}"
+                  Padding="12">
+                <Label Text="First Name" Grid.Row="0" Grid.Column="0" />
+                <Entry x:Name="PassengerFirst" Grid.Row="0" Grid.Column="1" />
+                <Label Text="Last Name" Grid.Row="1" Grid.Column="0" />
+                <Entry x:Name="PassengerLast" Grid.Row="1" Grid.Column="1" />
+                <Label Text="Phone (optional)" Grid.Row="2" Grid.Column="0" />
+                <Entry x:Name="PassengerPhone" Grid.Row="2" Grid.Column="1" Placeholder="optional" />
+                <Label Text="Email (optional)" Grid.Row="3" Grid.Column="0" />
+                <Entry x:Name="PassengerEmail" Grid.Row="3" Grid.Column="1" Placeholder="optional" />
+                <Button x:Name="SavePassengerButton"
+                        Grid.Row="4" Grid.ColumnSpan="2"
+                        Text="Save Passenger"
+                        IsVisible="False"
+                        Clicked="OnSaveNewPassenger" />
+            </Grid>
+
+            <!-- Additional passengers -->
+            <Label Text="Additional Passengers" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry x:Name="AdditionalPassengerEntry" Placeholder="First Last" Grid.Column="0" />
+                <Button Text="Add" Clicked="OnAddAdditionalPassenger" Grid.Column="1" />
+            </Grid>
+            <CollectionView x:Name="AdditionalPassengersList" HeightRequest="100" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto" Padding="6" BackgroundColor="{StaticResource BellwoodCharcoal}" Margin="0,4,0,0">
+                            <Label Text="{Binding .}" />
+                            <Button Text="Remove" Grid.Column="1" Clicked="OnRemoveAdditionalPassenger" CommandParameter="{Binding .}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Label Text="None" />
+                </CollectionView.EmptyView>
+            </CollectionView>
+
+            <!-- Total Passengers -->
+            <Label Text="Total Passengers" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="12" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Count" VerticalOptions="Center" />
+                <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                    <Label x:Name="PassengerCountValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="PassengerCountStepper" Minimum="1" Maximum="14" Increment="1" ValueChanged="OnPassengerCountChanged" />
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Luggage -->
+            <Label Text="Luggage" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Checked bags" Grid.Row="0" />
+                <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="8">
+                    <Label x:Name="CheckedBagsValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="CheckedBagsStepper" Minimum="0" Maximum="12" Increment="1" ValueChanged="OnCheckedBagsChanged" />
+                </HorizontalStackLayout>
+                <Label Text="Carry-ons" Grid.Row="1" />
+                <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="8">
+                    <Label x:Name="CarryOnBagsValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="CarryOnBagsStepper" Minimum="0" Maximum="12" Increment="1" ValueChanged="OnCarryOnBagsChanged" />
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Vehicle -->
+            <Label Text="Vehicle Type" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Picker x:Name="VehiclePicker" Title="Select vehicle" />
+
+            <!-- Pickup -->
+            <Label Text="Pickup" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <HorizontalStackLayout Spacing="10">
+                <DatePicker x:Name="PickupDate" />
+                <TimePicker x:Name="PickupTime" />
+            </HorizontalStackLayout>
+            <Picker x:Name="PickupLocationPicker" Title="Select pickup location" />
+            <Grid ColumnDefinitions="*,*" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="New pickup label" Grid.Column="0" />
+                <Entry x:Name="PickupNewLabel" Grid.Column="1" />
+                <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" />
+                <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" />
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Pickup Location" Clicked="OnSaveNewPickup"/>
+            </Grid>
+
+            <!-- Airport pickup style -->
+            <Grid x:Name="PickupStyleRow" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Pickup style" VerticalOptions="Center"/>
+                <Picker x:Name="PickupStylePicker" Grid.Column="1">
+                    <Picker.Items>
+                        <x:String>Curbside</x:String>
+                        <x:String>Meet &amp; Greet</x:String>
+                    </Picker.Items>
+                </Picker>
+            </Grid>
+
+            <!-- Sign text for Meet & Greet -->
+            <Grid x:Name="PickupSignGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Sign text" VerticalOptions="Center"/>
+                <Entry x:Name="PickupSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
+            </Grid>
+
+            <!-- Flight info -->
+            <Label Text="Flight Info (optional)" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Picker x:Name="FlightInfoPicker" Title="TBD" />
+            <Grid x:Name="FlightInfoGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label x:Name="FlightInfoLabel" Text="Flight number" />
+                <Entry x:Name="FlightInfoEntry" Grid.Column="1" Placeholder="e.g., AA1234" />
+            </Grid>
+
+            <!-- Dropoff -->
+            <Label Text="Dropoff" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Picker x:Name="DropoffPicker" Title="Select dropoff (or As Directed)" />
+            <Grid ColumnDefinitions="*,*" IsVisible="False" x:Name="DropoffNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="New dropoff label" Grid.Column="0" />
+                <Entry x:Name="DropoffNewLabel" Grid.Column="1" />
+                <Label Text="New dropoff address" Grid.Column="0" Grid.Row="1" />
+                <Entry x:Name="DropoffNewAddress" Grid.Column="1" Grid.Row="1" />
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Dropoff Location" Clicked="OnSaveNewDropoff"/>
+            </Grid>
+
+            <!-- Round Trip -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" x:Name="RoundTripGrid" IsVisible="True">
+                <CheckBox x:Name="RoundTripCheck" VerticalOptions="Center" CheckedChanged="OnRoundTripChanged" />
+                <Label Grid.Column="1" Text="Round Trip" VerticalOptions="Center" />
+            </Grid>
+
+            <!-- Return Section -->
+            <VerticalStackLayout x:Name="ReturnSection" IsVisible="False" Spacing="6" Margin="0,6,0,0">
+                <Label Text="Return (second ride)" FontAttributes="Bold" TextColor="{StaticResource BellwoodGold}" />
+                <Label Text="Select return date and time" FontSize="12" />
+                <Grid x:Name="ReturnDTGrid" ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="10">
+                    <Label Grid.Column="0" Text="Return date" VerticalOptions="Center" />
+                    <DatePicker x:Name="ReturnDatePicker" Grid.Column="1" />
+                    <Label Grid.Column="2" Text="Time" VerticalOptions="Center" />
+                    <TimePicker x:Name="ReturnTimePicker" Grid.Column="3" />
+                </Grid>
+
+                <!-- Return pickup style -->
+                <Grid x:Name="ReturnPickupStyleRow" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                    <Label Text="Return pickup style" VerticalOptions="Center"/>
+                    <Picker x:Name="ReturnPickupStylePicker" Grid.Column="1">
+                        <Picker.Items>
+                            <x:String>Curbside</x:String>
+                            <x:String>Meet &amp; Greet</x:String>
+                        </Picker.Items>
+                    </Picker>
+                </Grid>
+
+                <!-- Return sign text -->
+                <Grid x:Name="ReturnPickupSignGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                    <Label Text="Return sign text" VerticalOptions="Center"/>
+                    <Entry x:Name="ReturnPickupSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
+                </Grid>
+
+                <!-- Private: change aircraft? -->
+                <Grid x:Name="ReturnTailChangeRow" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                    <Label Text="Change aircraft for return?" VerticalOptions="Center" />
+                    <Switch x:Name="ReturnTailChangeSwitch" Grid.Column="1" VerticalOptions="Center" Toggled="OnReturnTailChangeToggled" />
+                </Grid>
+
+                <!-- Return flight input -->
+                <Grid x:Name="ReturnFlightGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                    <Label x:Name="ReturnFlightLabel" Text="Return flight number" />
+                    <Entry x:Name="ReturnFlightEntry" Grid.Column="1" Placeholder="e.g., UA4321" />
+                </Grid>
+            </VerticalStackLayout>
+
+            <!-- As Directed -->
+            <Grid ColumnDefinitions="Auto,Auto" x:Name="AsDirectedHoursGrid" IsVisible="False" ColumnSpacing="12">
+                <Label Text="Hours (As Directed)" VerticalOptions="Center" />
+                <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                    <Label x:Name="HoursValueLabel" VerticalOptions="Center" />
+                    <Stepper x:Name="HoursStepper" Minimum="1" Maximum="12" Increment="1" Value="2" ValueChanged="OnHoursChanged" />
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Additional requests -->
+            <Label Text="Additional Requests" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
+            <Picker x:Name="RequestsPicker" Title="Select request (optional)" />
+            <Grid ColumnDefinitions="*,*" x:Name="RequestOtherGrid" IsVisible="False">
+                <Label Text="Please describe" />
+                <Entry x:Name="RequestOtherEntry" />
+            </Grid>
+            <Grid x:Name="NonAirportMeetGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <Label Text="Sign text" VerticalOptions="Center"/>
+                <Entry x:Name="NonAirportMeetSignEntry" Grid.Column="1" Placeholder="e.g., SMITH / Bellwood Global"/>
+            </Grid>
+
+            <!-- Capacity suggestion banner -->
+            <Grid x:Name="CapacityBanner" IsVisible="False" Padding="12" BackgroundColor="#2B2F36" RowDefinitions="Auto,Auto" ColumnDefinitions="*" Margin="0,6,0,6">
+                <Label x:Name="CapacityBannerText" Grid.Row="0" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                <HorizontalStackLayout Grid.Row="1" Spacing="8" Margin="0,8,0,0">
+                    <Button Text="Switch to Suggested" Clicked="OnAcceptCapacitySuggestion" />
+                    <Button Text="Keep Current" Clicked="OnKeepCurrentVehicle" />
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Request Booking Button -->
+            <Button 
+                Text="Request Booking" 
+                Clicked="OnRequestBooking"
+                FontSize="18"
+                FontAttributes="Bold"
+                Margin="0,12,0,0" />
+
+            <!-- JSON Preview (dev mode) -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False" x:Name="JsonFrame">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Booking JSON Preview" TextColor="{StaticResource BellwoodGold}" />
+                    <Editor x:Name="JsonEditor" IsReadOnly="True" AutoSize="TextChanges" />
+                    <Button Text="Copy JSON" Clicked="OnCopyJson" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

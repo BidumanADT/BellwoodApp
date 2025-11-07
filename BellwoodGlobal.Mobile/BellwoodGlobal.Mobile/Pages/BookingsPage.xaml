@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.BookingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="My Bookings">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Back" Priority="0" Order="Primary" Clicked="OnBackClicked" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="10">
+        <!-- Header -->
+        <Label 
+            Grid.Row="0"
+            Text="Your Ride Bookings" 
+            TextColor="{StaticResource BellwoodGold}" 
+            FontSize="24" 
+            FontAttributes="Bold"
+            Margin="0,0,0,8" />
+
+        <!-- Filter buttons (booking-specific statuses) -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="8">
+            <Button x:Name="AllBtn" Text="All" Clicked="OnFilterClicked" />
+            <Button x:Name="RequestedBtn" Text="Requested" Clicked="OnFilterClicked" />
+            <Button x:Name="ConfirmedBtn" Text="Confirmed" Clicked="OnFilterClicked" />
+            <Button x:Name="CompletedBtn" Text="Completed" Clicked="OnFilterClicked" />
+        </HorizontalStackLayout>
+
+        <!-- Search -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Label Text="Search" VerticalOptions="Center" TextColor="{StaticResource BellwoodCream}" />
+            <Entry Grid.Column="1"
+                   x:Name="SearchEntry"
+                   Placeholder="ID, passenger, or pickup location"
+                   TextColor="{StaticResource BellwoodCream}"
+                   BackgroundColor="{StaticResource BellwoodCharcoal}"
+                   TextChanged="OnSearchChanged"/>
+        </Grid>
+
+        <!-- List -->
+        <RefreshView Grid.Row="3" x:Name="Refresh" Refreshing="OnRefresh">
+            <CollectionView x:Name="List"
+                            SelectionMode="Single"
+                            SelectionChanged="OnSelectionChanged"
+                            ItemsLayout="VerticalList">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="12" Margin="0,6"
+                              BackgroundColor="{StaticResource BellwoodCharcoal}"
+                              ColumnDefinitions="*,Auto"
+                              RowDefinitions="Auto,Auto,Auto">
+                            <!-- Title (Passenger · Vehicle) -->
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Text="{Binding Title}"
+                                   TextColor="{StaticResource BellwoodCream}"
+                                   FontAttributes="Bold"
+                                   FontSize="16" />
+                            <!-- Status chip -->
+                            <Frame Grid.Row="0" Grid.Column="1"
+                                   Padding="8,4" CornerRadius="10" HasShadow="False"
+                                   BackgroundColor="{Binding StatusColor}">
+                                <Label Text="{Binding Status}"
+                                       TextColor="{StaticResource BellwoodInk}"
+                                       FontAttributes="Bold"
+                                       FontSize="12" />
+                            </Frame>
+
+                            <!-- SubTitle (pickup dt + location) -->
+                            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                   Text="{Binding SubTitle}"
+                                   TextColor="{StaticResource BellwoodCream}"
+                                   Opacity="0.9" FontSize="14"
+                                   Margin="0,4,0,0"/>
+
+                            <!-- Meta (booker • drop • created) -->
+                            <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                   Text="{Binding Meta}"
+                                   TextColor="{StaticResource BellwoodCream}"
+                                   Opacity="0.7" FontSize="12"
+                                   Margin="0,4,0,0"/>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Padding="20">
+                        <Label Text="No bookings found"
+                               TextColor="{StaticResource BellwoodCream}"
+                               FontSize="18"
+                               HorizontalOptions="Center" />
+                        <Label Text="Try adjusting your filters or search"
+                               TextColor="{StaticResource BellwoodCream}"
+                               Opacity="0.7"
+                               FontSize="14"
+                               HorizontalOptions="Center"
+                               Margin="0,8,0,0" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

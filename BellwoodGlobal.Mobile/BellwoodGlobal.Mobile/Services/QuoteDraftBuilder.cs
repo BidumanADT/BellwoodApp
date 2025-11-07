@@ -1,94 +1,19 @@
-﻿using System.Linq;
-using BellwoodGlobal.Mobile.Models;
+﻿using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Core.Domain;
-
 
 namespace BellwoodGlobal.Mobile.Services
 {
+    /// <summary>
+    /// Legacy alias for TripDraftBuilder. Redirects to shared implementation.
+    /// </summary>
+    [System.Obsolete("Use ITripDraftBuilder/TripDraftBuilder instead.", false)]
     public sealed class QuoteDraftBuilder : IQuoteDraftBuilder
     {
-        public QuoteDraft Build(QuoteFormState s)
+        private readonly ITripDraftBuilder _tripBuilder = new TripDraftBuilder();
+
+        public QuoteDraft Build(QuoteFormState state)
         {
-            var draft = new QuoteDraft
-            {
-                Booker = s.Booker,
-                Passenger = s.Passenger,
-                AdditionalPassengers = s.AdditionalPassengers?.ToList() ?? new(),
-
-                VehicleClass = s.VehicleClass ?? "Sedan",
-
-                PickupDateTime = s.PickupDateTime,
-                PickupLocation = s.PickupLocation ?? "",
-
-                PickupStyle = s.PickupStyle,
-                PickupSignText = s.PickupStyle == PickupStyle.MeetAndGreet ? s.PickupSignText : null,
-                ReturnPickupStyle = s.RoundTrip ? s.ReturnPickupStyle : null,
-                ReturnPickupSignText = (s.RoundTrip && s.ReturnPickupStyle == PickupStyle.MeetAndGreet) ? s.ReturnPickupSignText : null,
-
-                AsDirected = s.AsDirected,
-                Hours = s.AsDirected ? s.Hours : null,
-                DropoffLocation = s.AsDirected ? null : s.DropoffLocation,
-
-                RoundTrip = !s.AsDirected && s.RoundTrip,
-                ReturnPickupTime = (!s.AsDirected && s.RoundTrip) ? s.ReturnPickupTime : null,
-
-                AdditionalRequest = s.AdditionalRequest,
-                AdditionalRequestOtherText = s.AdditionalRequestOtherText,
-
-                OutboundFlight = BuildOutboundFlight(s),
-                ReturnFlight = BuildReturnFlight(s),
-            };
-
-            // Capacity fields (pass-through)
-            draft.PassengerCount = s.PassengerCount;
-            draft.CheckedBags = s.CheckedBags;
-            draft.CarryOnBags = s.CarryOnBags;
-            draft.CapacityWithinLimits = s.CapacityWithinLimits;
-            draft.CapacityNote = s.CapacityNote;
-            draft.SuggestedVehicle = s.SuggestedVehicle;
-            draft.CapacityOverrideByUser = s.CapacityOverrideByUser;
-
-            return draft;
-        }
-
-        private static FlightInfo BuildOutboundFlight(QuoteFormState s)
-        {
-            switch (s.FlightMode)
-            {
-                case FlightMode.Commercial:
-                    return new FlightInfo { FlightNumber = string.IsNullOrWhiteSpace(s.OutboundFlightNumber) ? null : s.OutboundFlightNumber };
-                case FlightMode.Private:
-                    return new FlightInfo { TailNumber = string.IsNullOrWhiteSpace(s.OutboundTailNumber) ? null : s.OutboundTailNumber };
-                default:
-                    // model requires a non-null OutboundFlight; keep empty when no flight info
-                    return new FlightInfo();
-            }
-        }
-
-        private static FlightInfo? BuildReturnFlight(QuoteFormState s)
-        {
-            if (s.AsDirected || !s.RoundTrip || s.ReturnPickupTime is null)
-                return null;
-
-            switch (s.FlightMode)
-            {
-                case FlightMode.Commercial:
-                    // For commercial round trips, we expect a *new* return flight number.
-                    return string.IsNullOrWhiteSpace(s.ReturnFlightNumber)
-                        ? null
-                        : new FlightInfo { FlightNumber = s.ReturnFlightNumber };
-
-                case FlightMode.Private:
-                    // If not changing aircraft, reuse outbound tail. If changing, require a return tail.
-                    var tail = s.AllowReturnTailChange
-                        ? (string.IsNullOrWhiteSpace(s.ReturnTailNumber) ? s.OutboundTailNumber : s.ReturnTailNumber)
-                        : s.OutboundTailNumber;
-
-                    return string.IsNullOrWhiteSpace(tail) ? null : new FlightInfo { TailNumber = tail };
-
-                default:
-                    return null;
-            }
+            return _tripBuilder.Build((TripFormState)state);
         }
     }
 }

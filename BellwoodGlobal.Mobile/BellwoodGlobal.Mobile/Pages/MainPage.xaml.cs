@@ -45,4 +45,9 @@ public partial class MainPage : ContentPage
 
     private async void OnLogoutClicked(object sender, EventArgs e)
         => await _auth.LogoutAsync(); // clears tokens + routes to //LoginPage per your impl
+
+    private async void OnBookRideClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(Pages.BookRidePage));
+    }
 }

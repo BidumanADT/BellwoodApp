@@ -31,17 +31,17 @@
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="24">
         <VerticalStackLayout Spacing="8" Margin="0,36,0,16">
-            <Label Text="Bellwood" TextColor="{StaticResource BellwoodGold}" FontSize="{StaticResource H1}" FontAttributes="Bold" />
+            <Label Text="Bellwood Elite" TextColor="{StaticResource BellwoodGold}" FontSize="{StaticResource H1}" FontAttributes="Bold" />
             <Label Text="Executive Car Service" TextColor="{StaticResource BellwoodCream}" FontSize="{StaticResource Body}" />
         </VerticalStackLayout>
 
         <VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="Center">
-            <Button Text="Get a Quote"
+            <Button Text="Book a Ride"
                     FontSize="{StaticResource H2}"
                     TextColor="{StaticResource BellwoodInk}"
                     BackgroundColor="{StaticResource BellwoodGold}"
                     CornerRadius="14" HeightRequest="56"
-                    Clicked="OnGetQuote" />
+                    Clicked="OnBookRideClicked" />
 
             <Button Text="Ride History"
                     FontSize="{StaticResource H2}"
