@@ -155,8 +155,8 @@
             <!-- Pickup -->
             <Label Text="Pickup" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <HorizontalStackLayout Spacing="10">
-                <DatePicker x:Name="PickupDate" />
-                <TimePicker x:Name="PickupTime" />
+                <DatePicker x:Name="PickupDate" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
+                <TimePicker x:Name="PickupTime" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
             </HorizontalStackLayout>
             <Picker x:Name="PickupLocationPicker" Title="Select pickup location" />
             <Grid ColumnDefinitions="*,*" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
@@ -212,12 +212,12 @@
             <!-- Return Section -->
             <VerticalStackLayout x:Name="ReturnSection" IsVisible="False" Spacing="6" Margin="0,6,0,0">
                 <Label Text="Return (second ride)" FontAttributes="Bold" TextColor="{StaticResource BellwoodGold}" />
-                <Label Text="Select return date and time" FontSize="12" />
+                <Label Text="Select return date and time" FontSize="12" TextColor="{StaticResource BellwoodCream}" />
                 <Grid x:Name="ReturnDTGrid" ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="10">
-                    <Label Grid.Column="0" Text="Return date" VerticalOptions="Center" />
-                    <DatePicker x:Name="ReturnDatePicker" Grid.Column="1" />
-                    <Label Grid.Column="2" Text="Time" VerticalOptions="Center" />
-                    <TimePicker x:Name="ReturnTimePicker" Grid.Column="3" />
+                    <Label Grid.Column="0" Text="Return date" VerticalOptions="Center" TextColor="{StaticResource BellwoodCream}" />
+                    <DatePicker x:Name="ReturnDatePicker" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
+                    <Label Grid.Column="2" Text="Time" VerticalOptions="Center" TextColor="{StaticResource BellwoodCream}" />
+                    <TimePicker x:Name="ReturnTimePicker" Grid.Column="3" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
                 </Grid>
 
                 <!-- Return pickup style -->
