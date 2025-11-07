@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.BookingDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Booking Details">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Back" Priority="0" Order="Primary" Clicked="OnBackClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+
+            <!-- Header -->
+            <Label x:Name="PassengerTitle" 
+                   TextColor="{StaticResource BellwoodGold}" 
+                   FontSize="24" 
+                   FontAttributes="Bold" />
+
+            <!-- Status chip + SubHeader -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Frame x:Name="StatusChipFrame"
+                       Padding="10,6" CornerRadius="12" HasShadow="False">
+                    <Label x:Name="StatusChip"
+                           TextColor="{StaticResource BellwoodInk}"
+                           FontAttributes="Bold" />
+                </Frame>
+                <Label x:Name="SubHeader"
+                       Grid.Column="1"
+                       TextColor="{StaticResource BellwoodCream}"
+                       VerticalOptions="Center"
+                       FontSize="12" />
+            </Grid>
+
+            <!-- Pickup -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Pickup" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="PickupLine" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="PickupStyleLine" TextColor="{StaticResource BellwoodCream}" FontSize="12" Opacity="0.8" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Dropoff -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Dropoff" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="DropoffLine" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Return (if applicable) -->
+            <Frame x:Name="ReturnCard" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Return Ride" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="ReturnPickupLine" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="ReturnStyleLine" TextColor="{StaticResource BellwoodCream}" FontSize="12" Opacity="0.8" />
+                    <Label x:Name="ReturnDropoffLine" TextColor="{StaticResource BellwoodCream}" FontSize="12" Opacity="0.8" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Flight -->
+            <Frame x:Name="FlightCard" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Flight Details" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="OutboundFlightLine" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="ReturnFlightLine" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Capacity + Requests -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Passengers &amp; Luggage" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="CapacityLine" TextColor="{StaticResource BellwoodCream}" />
+                    <Label x:Name="CapacityNoteLine" TextColor="{StaticResource BellwoodCream}" FontSize="12" Opacity="0.8" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Additional Requests" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="RequestLine" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Booker / Passenger -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Booker" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="BookerLine" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="PaxLine" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- JSON (dev mode) -->
+            <Frame x:Name="JsonCard" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="JSON (Dev Mode)" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Editor x:Name="JsonEditor" IsReadOnly="True" AutoSize="TextChanges" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

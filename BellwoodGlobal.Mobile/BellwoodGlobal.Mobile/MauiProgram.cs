@@ -30,7 +30,8 @@ public static class MauiProgram
         builder.Services.AddTransient<QuoteDashboardPage>();
         builder.Services.AddTransient<SplashPage>();
         builder.Services.AddTransient<BookRidePage>();
-        builder.Services.AddTransient<BookingsPage>(); // Phase 4
+        builder.Services.AddTransient<BookingsPage>();
+        builder.Services.AddTransient<BookingDetailPage>();
 
 
         // Services
