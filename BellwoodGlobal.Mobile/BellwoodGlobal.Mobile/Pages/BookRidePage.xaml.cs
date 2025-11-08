@@ -903,7 +903,8 @@ public partial class BookRidePage : ContentPage
             AllowReturnTailChange = _allowReturnTailChange,
             ReturnFlightNumber = (mode == FlightMode.Commercial && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null,
             ReturnTailNumber = (mode == FlightMode.Private && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null,
-            PaymentMethodId = selectedPaymentMethod.Id
+            PaymentMethodId = selectedPaymentMethod.Id,
+            PaymentMethodLast4 = selectedPaymentMethod.Last4
         };
 
         state.PassengerCount = (int)PassengerCountStepper.Value;

@@ -60,6 +60,7 @@ namespace BellwoodGlobal.Mobile.Models
 
         // selected payment method (not used for quotes)
         public string? PaymentMethodId { get; set; }
+        public string? PaymentMethodLast4 { get; set; }
 
         // capacity evaluation outcome
         public bool CapacityWithinLimits { get; set; }  // computed in UI before building draft

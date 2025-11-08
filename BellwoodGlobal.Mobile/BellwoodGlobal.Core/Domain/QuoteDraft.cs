@@ -29,4 +29,5 @@ public sealed class QuoteDraft
     public string? AdditionalRequest { get; set; }
     public string? AdditionalRequestOtherText { get; set; }
     public string? PaymentMethodId { get; set; }
+    public string? PaymentMethodLast4 { get; set; }
 }
