@@ -28,4 +28,5 @@ public sealed class QuoteDraft
     public bool CapacityOverrideByUser { get; set; }
     public string? AdditionalRequest { get; set; }
     public string? AdditionalRequestOtherText { get; set; }
+    public string? PaymentMethodId { get; set; }
 }

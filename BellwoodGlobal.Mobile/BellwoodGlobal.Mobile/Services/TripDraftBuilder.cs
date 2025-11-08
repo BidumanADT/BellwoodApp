@@ -34,6 +34,8 @@ namespace BellwoodGlobal.Mobile.Services
                 AdditionalRequest = s.AdditionalRequest,
                 AdditionalRequestOtherText = s.AdditionalRequestOtherText,
 
+                PaymentMethodId = s.PaymentMethodId,
+
                 OutboundFlight = BuildOutboundFlight(s),
                 ReturnFlight = BuildReturnFlight(s),
             };

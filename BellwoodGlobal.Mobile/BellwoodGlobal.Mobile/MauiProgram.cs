@@ -41,6 +41,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IProfileService, ProfileService>();
         builder.Services.AddSingleton<IQuoteDraftBuilder, QuoteDraftBuilder>();
         builder.Services.AddSingleton<ITripDraftBuilder, TripDraftBuilder>();
+        builder.Services.AddSingleton<IPaymentService, PaymentService>();
 
         builder.Services.AddHttpClient("admin", c =>
         {

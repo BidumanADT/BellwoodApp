@@ -58,6 +58,9 @@ namespace BellwoodGlobal.Mobile.Models
         public int? CheckedBags { get; set; }
         public int? CarryOnBags { get; set; }
 
+        // selected payment method (not used for quotes)
+        public string? PaymentMethodId { get; set; }
+
         // capacity evaluation outcome
         public bool CapacityWithinLimits { get; set; }  // computed in UI before building draft
         public string? CapacityNote { get; set; }       // e.g., "User kept Sedan; suggested SUV"

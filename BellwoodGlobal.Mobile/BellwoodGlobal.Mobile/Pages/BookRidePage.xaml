@@ -280,6 +280,54 @@
                 </HorizontalStackLayout>
             </Grid>
 
+            <!-- Payment Method -->
+            <Label Text="Payment Method" TextColor="{StaticResource BellwoodGold}" FontSize="20" Margin="0,12,0,0" />
+            <Picker x:Name="PaymentPicker" Title="Select payment method" />
+
+            <!-- New Payment Method Form -->
+            <Grid x:Name="NewPaymentGrid"
+      ColumnDefinitions="*"
+      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+      RowSpacing="8"
+      IsVisible="False"
+      BackgroundColor="{StaticResource BellwoodCharcoal}"
+      Padding="12"
+      Margin="0,8,0,0">
+
+                <Label Grid.Row="0" Text="Add New Payment Method" FontAttributes="Bold" TextColor="{StaticResource BellwoodGold}" />
+
+                <Entry x:Name="CardholderNameEntry" Grid.Row="1" Placeholder="Name on Card" />
+
+                <Entry x:Name="CardNumberEntry" 
+           Grid.Row="2" 
+           Placeholder="Card Number (16 digits)" 
+           Keyboard="Numeric" 
+           MaxLength="19"
+           TextChanged="OnCardNumberTextChanged" />
+
+                <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Entry x:Name="ExpiryDateEntry" 
+               Grid.Column="0" 
+               Placeholder="MM/YY" 
+               Keyboard="Numeric" 
+               MaxLength="5"
+               TextChanged="OnExpiryDateTextChanged" />
+                    <Entry x:Name="CvcEntry" 
+               Grid.Column="1" 
+               Placeholder="CVC" 
+               Keyboard="Numeric" 
+               MaxLength="4" 
+               IsPassword="True" />
+                </Grid>
+
+                <Entry x:Name="BillingZipEntry" Grid.Row="4" Placeholder="Billing ZIP Code" Keyboard="Numeric" MaxLength="5" />
+
+                <Button Grid.Row="5" 
+            Text="Save Payment Method" 
+            Clicked="OnSaveNewPaymentMethod"
+            Margin="0,8,0,0" />
+            </Grid>
+
             <!-- Request Booking Button -->
             <Button 
                 Text="Request Booking" 
