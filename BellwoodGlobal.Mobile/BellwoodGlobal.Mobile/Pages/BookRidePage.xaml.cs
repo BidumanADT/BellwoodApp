@@ -15,6 +15,10 @@ public partial class BookRidePage : ContentPage
     private readonly ObservableCollection<string> _additionalPassengers = new();
     private readonly ITripDraftBuilder _draftBuilder;
     private readonly IAdminApi _adminApi;
+    private readonly IPaymentService _paymentService;
+
+    private List<PaymentMethod> _savedPaymentMethods = new();
+    private const string PaymentMethodNew = "Add New Card";
 
     private const string PassengerSelf = "Booker (you)";
     private const string PassengerNew = "New Passenger";
@@ -40,12 +44,15 @@ public partial class BookRidePage : ContentPage
         _profile = ServiceHelper.GetRequiredService<IProfileService>();
         _draftBuilder = ServiceHelper.GetRequiredService<ITripDraftBuilder>();
         _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
+        _paymentService = ServiceHelper.GetRequiredService<IPaymentService>();
 
         InitializeBooker();
         InitializeData();
         InitializePickers();
         InitializeDefaults();
         InitializeEventHandlers();
+
+        _ = LoadPaymentMethodsAsync();
     }
 
     private void InitializeBooker()
@@ -107,6 +114,9 @@ public partial class BookRidePage : ContentPage
         };
 
         AdditionalPassengersList.ItemsSource = _additionalPassengers;
+
+        // Payment Source
+        PaymentPicker.SelectedIndexChanged += OnPaymentPickerChanged;
     }
 
     private void InitializeDefaults()
@@ -137,7 +147,7 @@ public partial class BookRidePage : ContentPage
         ReevaluateCapacityAndMaybeShowBanner();
     }
 
-    // ===== EVENT HANDLERS (same as QuotePage) =====
+    // ===== EVENT HANDLERS =====
     private void OnPassengerChanged(object? sender, EventArgs e)
     {
         var sel = PassengerPicker.SelectedItem?.ToString();
@@ -537,10 +547,180 @@ public partial class BookRidePage : ContentPage
         }
     }
 
+    private async Task LoadPaymentMethodsAsync()
+    {
+        try
+        {
+            _savedPaymentMethods = (await _paymentService.GetStoredPaymentMethodsAsync()).ToList();
+
+            PaymentPicker.Items.Clear();
+            foreach (var pm in _savedPaymentMethods)
+                PaymentPicker.Items.Add(pm.DisplayName);
+
+            PaymentPicker.Items.Add(PaymentMethodNew);
+
+            // Pre-select first card if available
+            if (_savedPaymentMethods.Any())
+                PaymentPicker.SelectedIndex = 0;
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Payment Methods", $"Could not load payment methods: {ex.Message}", "OK");
+        }
+    }
+
+    private void OnPaymentPickerChanged(object? sender, EventArgs e)
+    {
+        var sel = PaymentPicker.SelectedItem?.ToString();
+        NewPaymentGrid.IsVisible = sel == PaymentMethodNew;
+    }
+
+    private void OnCardNumberTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not Entry entry) return;
+
+        // Auto-format with spaces: 1234 5678 9012 3456
+        var digitsOnly = new string(e.NewTextValue.Where(char.IsDigit).ToArray());
+
+        if (digitsOnly.Length > 16)
+            digitsOnly = digitsOnly[..16];
+
+        var formatted = string.Join(" ", Enumerable.Range(0, (digitsOnly.Length + 3) / 4)
+            .Select(i => digitsOnly.Substring(i * 4, Math.Min(4, digitsOnly.Length - i * 4))));
+
+        if (formatted != e.NewTextValue)
+        {
+            entry.Text = formatted;
+        }
+    }
+
+    private void OnExpiryDateTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not Entry entry) return;
+
+        // Auto-format: MM/YY
+        var digitsOnly = new string(e.NewTextValue.Where(char.IsDigit).ToArray());
+
+        if (digitsOnly.Length > 4)
+            digitsOnly = digitsOnly[..4];
+
+        var formatted = digitsOnly.Length > 2
+            ? $"{digitsOnly[..2]}/{digitsOnly[2..]}"
+            : digitsOnly;
+
+        if (formatted != e.NewTextValue)
+        {
+            entry.Text = formatted;
+        }
+    }
+
+    private static string DetectCardBrand(string cardNumber)
+    {
+        if (string.IsNullOrEmpty(cardNumber) || cardNumber.Length < 2)
+            return "Unknown";
+
+        var first2 = cardNumber[..2];
+        var firstDigit = cardNumber[0];
+
+        return firstDigit switch
+        {
+            '4' => "Visa",
+            '5' when first2[1] >= '1' && first2[1] <= '5' => "Mastercard",
+            '3' when first2 == "34" || first2 == "37" => "Amex",
+            '6' when first2 == "60" || first2 == "65" => "Discover",
+            _ => "Unknown"
+        };
+    }
+
+    private async void OnSaveNewPaymentMethod(object? sender, EventArgs e)
+    {
+        // Validation
+        if (string.IsNullOrWhiteSpace(CardholderNameEntry.Text))
+        {
+            await DisplayAlert("Required", "Cardholder name is required.", "OK");
+            return;
+        }
+
+        var cardNumber = new string(CardNumberEntry.Text?.Where(char.IsDigit).ToArray() ?? []);
+        if (cardNumber.Length != 16)
+        {
+            await DisplayAlert("Invalid Card", "Card number must be 16 digits.", "OK");
+            return;
+        }
+
+        var expiryParts = ExpiryDateEntry.Text?.Split('/') ?? [];
+        if (expiryParts.Length != 2 ||
+            !int.TryParse(expiryParts[0], out var mm) ||
+            !int.TryParse(expiryParts[1], out var yy))
+        {
+            await DisplayAlert("Invalid Expiry", "Expiration date must be MM/YY format.", "OK");
+            return;
+        }
+
+        var year = 2000 + yy; // Assume 20xx
+        if (new DateTime(year, mm, 1) < DateTime.Now)
+        {
+            await DisplayAlert("Expired Card", "This card has already expired.", "OK");
+            return;
+        }
+
+        var cvc = CvcEntry.Text ?? "";
+        if (cvc.Length < 3 || cvc.Length > 4)
+        {
+            await DisplayAlert("Invalid CVC", "CVC must be 3-4 digits.", "OK");
+            return;
+        }
+
+        var zip = BillingZipEntry.Text ?? "";
+        if (zip.Length != 5)
+        {
+            await DisplayAlert("Invalid ZIP", "Billing ZIP code must be 5 digits.", "OK");
+            return;
+        }
+
+        try
+        {
+            // Step 1: Tokenize card with Stripe
+            var token = await _paymentService.TokenizeCardAsync(cardNumber, mm, year, cvc);
+            var last4 = cardNumber[^4..];
+
+            // Step 2: Submit token + metadata to backend
+            var request = new NewCardRequest
+            {
+                NameOnCard = CardholderNameEntry.Text!,
+                BillingZip = zip,
+                StripeToken = token,
+                Last4 = last4,
+                Brand = DetectCardBrand(cardNumber)
+            };
+
+            var newMethod = await _paymentService.SubmitPaymentMethodAsync(request);
+
+            // Step 3: Add to picker
+            _savedPaymentMethods.Add(newMethod);
+            PaymentPicker.Items.Insert(PaymentPicker.Items.Count - 1, newMethod.DisplayName);
+            PaymentPicker.SelectedIndex = PaymentPicker.Items.Count - 2; // Select the new card
+
+            // Clear form
+            NewPaymentGrid.IsVisible = false;
+            CardholderNameEntry.Text = "";
+            CardNumberEntry.Text = "";
+            ExpiryDateEntry.Text = "";
+            CvcEntry.Text = "";
+            BillingZipEntry.Text = "";
+
+            await DisplayAlert("Success", "Payment method added successfully!", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"Could not add payment method: {ex.Message}", "OK");
+        }
+    }
+
     // ===== MAIN SUBMISSION HANDLER (KEY DIFFERENCE FROM QUOTEPAGE) =====
     private async void OnRequestBooking(object? sender, EventArgs e)
     {
-        // Validation (same as QuotePage)
+        // Validation
         if (string.IsNullOrWhiteSpace(BookerPhone.Text) || string.IsNullOrWhiteSpace(BookerEmail.Text))
         {
             await DisplayAlert("Required", "Booker phone and email are required.", "OK");
@@ -672,6 +852,19 @@ public partial class BookRidePage : ContentPage
             }
         }
 
+        if (PaymentPicker.SelectedIndex < 0)
+        {
+            await DisplayAlert("Required", "Please select a payment method.", "OK");
+            return;
+        }
+
+        if (PaymentPicker.SelectedItem?.ToString() == PaymentMethodNew)
+        {
+            await DisplayAlert("Required", "Please save your new payment method before booking.", "OK");
+            return;
+        }
+        var selectedPaymentMethod = _savedPaymentMethods[PaymentPicker.SelectedIndex];
+
         // Build state
         var state = new TripFormState
         {
@@ -709,7 +902,9 @@ public partial class BookRidePage : ContentPage
             OutboundTailNumber = (mode == FlightMode.Private) ? (FlightInfoEntry.Text ?? "").Trim() : null,
             AllowReturnTailChange = _allowReturnTailChange,
             ReturnFlightNumber = (mode == FlightMode.Commercial && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null,
-            ReturnTailNumber = (mode == FlightMode.Private && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null
+            ReturnTailNumber = (mode == FlightMode.Private && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null,
+            PaymentMethodId = selectedPaymentMethod.Id,
+            PaymentMethodLast4 = selectedPaymentMethod.Last4
         };
 
         state.PassengerCount = (int)PassengerCountStepper.Value;
@@ -726,7 +921,6 @@ public partial class BookRidePage : ContentPage
             state.SuggestedVehicle = suggestion;
             state.CapacityOverrideByUser = _userChoseToKeep;
         }
-
         var draft = _draftBuilder.Build(state);
 
         try
