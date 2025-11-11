@@ -81,5 +81,15 @@ namespace BellwoodGlobal.Mobile.Services
 
         public async Task<Models.BookingDetail?> GetBookingAsync(string id)
             => await _http.GetFromJsonAsync<Models.BookingDetail>($"/bookings/{id}", _json);
+
+        public async Task CancelBookingAsync(string id)
+        {
+            using var res = await _http.PostAsync($"/bookings/{id}/cancel", null);
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Booking {id} cancelled successfully");
+#endif
+        }
     }
 }

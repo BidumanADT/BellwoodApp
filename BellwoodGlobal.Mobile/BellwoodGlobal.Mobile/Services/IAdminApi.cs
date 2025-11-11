@@ -27,5 +27,10 @@ namespace BellwoodGlobal.Mobile.Services
         /// Retrieves detailed information for a specific booking.
         /// </summary>
         Task<Models.BookingDetail?> GetBookingAsync(string id);
+
+        /// <summary>
+        /// Cancels a booking request. Only allowed for Requested/Confirmed bookings.
+        /// </summary>
+        Task CancelBookingAsync(string id);
     }
 }

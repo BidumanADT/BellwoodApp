@@ -100,6 +100,13 @@
                     <Label x:Name="PaxLine" TextColor="{StaticResource BellwoodCream}" />
                 </VerticalStackLayout>
             </Frame>
+			<Button x:Name="CancelButton"
+                Text="Cancel Booking"
+                BackgroundColor="#e53e3e"
+                TextColor="White"
+                Clicked="OnCancelBookingClicked"
+                IsVisible="False"
+                Margin="0,8,0,0" />
 
             <!-- JSON (dev mode) -->
             <Frame x:Name="JsonCard" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False">
