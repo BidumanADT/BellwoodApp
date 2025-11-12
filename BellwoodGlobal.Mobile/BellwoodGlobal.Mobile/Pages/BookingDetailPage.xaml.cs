@@ -147,6 +147,11 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
 
         CapacityNoteLine.Text = string.Join(" ", capLines);
 
+        // Show cancel button only for cancellable bookings
+        var isCancellable = d.Status?.Equals("Requested", StringComparison.OrdinalIgnoreCase) == true ||
+                            d.Status?.Equals("Confirmed", StringComparison.OrdinalIgnoreCase) == true;
+        CancelButton.IsVisible = isCancellable;
+
         var req = draft.AdditionalRequest;
         RequestLine.Text = string.IsNullOrWhiteSpace(req)
             ? "—"
@@ -166,6 +171,47 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         JsonCard.IsVisible = true;
         JsonEditor.Text = JsonSerializer.Serialize(d, _jsonOpts);
 #endif
+    }
+
+    // Cancel button handler
+    private async void OnCancelBookingClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            await DisplayAlert("Error", "Booking ID not found.", "OK");
+            return;
+        }
+
+        // Confirm cancellation
+        var confirm = await DisplayAlert(
+            "Cancel Booking",
+            "Are you sure you want to cancel this booking? Bellwood staff will be notified immediately.",
+            "Yes, Cancel",
+            "No, Keep Booking");
+
+        if (!confirm) return;
+
+        try
+        {
+            // Disable button during API call
+            CancelButton.IsEnabled = false;
+            CancelButton.Text = "Cancelling...";
+
+            await _admin.CancelBookingAsync(Id!);
+
+            await DisplayAlert("Cancelled", "Your booking has been cancelled. Bellwood staff have been notified.", "OK");
+
+            // Navigate back to bookings list
+            await Shell.Current.GoToAsync("..");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"Could not cancel booking: {ex.Message}", "OK");
+
+            // Re-enable button on failure
+            CancelButton.IsEnabled = true;
+            CancelButton.Text = "Cancel Booking";
+        }
     }
 
     private static string EmptyAsNA(string? v) => string.IsNullOrWhiteSpace(v) ? "N/A" : v;
