@@ -43,18 +43,21 @@ public static class MauiProgram
         builder.Services.AddSingleton<ITripDraftBuilder, TripDraftBuilder>();
         builder.Services.AddSingleton<IPaymentService, PaymentService>();
 
+        // Auth handler for protected API calls
+        builder.Services.AddTransient<AuthHttpHandler>();
+
         builder.Services.AddHttpClient("admin", c =>
         {
-        #if ANDROID
-                    c.BaseAddress = new Uri("https://10.0.2.2:5206");
-        #else
+#if ANDROID
+            c.BaseAddress = new Uri("https://10.0.2.2:5206");
+#else
             c.BaseAddress = new Uri("https://localhost:5206");
-        #endif
-                    c.DefaultRequestHeaders.Accept.Add(
-                        new MediaTypeWithQualityHeaderValue("application/json"));
-            c.DefaultRequestHeaders.Add("X-Admin-ApiKey", "dev-secret-123");
+#endif
+            c.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
         })
-        #if DEBUG
+        .AddHttpMessageHandler<AuthHttpHandler>()
+#if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
             // DEV ONLY: trust local dev certs
@@ -66,9 +69,6 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddSingleton<IAdminApi, AdminApi>();
-
-        // Auth handler for protected API calls
-        builder.Services.AddTransient<AuthHttpHandler>();
 
         // -------- HttpClients --------
 
