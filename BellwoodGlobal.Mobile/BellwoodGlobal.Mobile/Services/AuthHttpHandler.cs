@@ -19,18 +19,38 @@ namespace BellwoodGlobal.Mobile.Services
             if (!IsHealthCheck(request.RequestUri) && request.Headers.Authorization is null)
             {
                 var token = await _auth.GetValidTokenAsync();
+                
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AuthHttpHandler] Token retrieved for {request.RequestUri?.AbsolutePath}: {(string.IsNullOrWhiteSpace(token) ? "NULL/EMPTY" : $"Present (length: {token.Length})")}");
+#endif
+
                 if (!string.IsNullOrWhiteSpace(token))
                 {
                     request.Headers.Authorization =
                         new AuthenticationHeaderValue("Bearer", token);
                 }
+                else
+                {
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[AuthHttpHandler] WARNING: No valid token available for {request.RequestUri?.AbsolutePath}");
+#endif
+                    // Token is missing or expired - this will likely result in a 401
+                    // but we let the request proceed so the 401 handler below can trigger logout
+                }
             }
 
             var response = await base.SendAsync(request, cancellationToken);
 
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AuthHttpHandler] Response status for {request.RequestUri?.AbsolutePath}: {(int)response.StatusCode} {response.StatusCode}");
+#endif
+
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 // Token likely expired/invalid; force re-auth so the next call can retry with a fresh JWT.
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AuthHttpHandler] 401 Unauthorized - triggering logout");
+#endif
                 Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     await _auth.LogoutAsync();

@@ -27,6 +27,9 @@ public sealed class AuthService : IAuthService
     public async Task SetTokenAsync(string token)
     {
         await SecureStorage.SetAsync(TokenKey, token);
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[AuthService] Token saved to SecureStorage");
+#endif
     }
 
     public async Task<bool> IsSignedInAsync()
@@ -38,11 +41,25 @@ public sealed class AuthService : IAuthService
     public async Task<string?> GetValidTokenAsync()
     {
         var token = await GetTokenAsync();
-        if (string.IsNullOrWhiteSpace(token) || IsExpired(token))
+        if (string.IsNullOrWhiteSpace(token))
         {
-            await LogoutAsync(); // clears and routes to Login
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AuthService] GetValidTokenAsync: No token found");
+#endif
             return null;
         }
+
+        if (IsExpired(token))
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AuthService] GetValidTokenAsync: Token is expired");
+#endif
+            return null;
+        }
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[AuthService] GetValidTokenAsync: Valid token found");
+#endif
         return token;
     }
 
@@ -54,6 +71,9 @@ public sealed class AuthService : IAuthService
 
     public async Task LogoutAsync()
     {
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[AuthService] LogoutAsync: Clearing token and navigating to login");
+#endif
         try { SecureStorage.Remove(TokenKey); } catch { /* ignore */ }
         // if we're already on LoginPage this will no-op
         await Shell.Current.GoToAsync(nameof(LoginPage));
@@ -63,9 +83,11 @@ public sealed class AuthService : IAuthService
 
     private static bool IsExpired(string jwt)
     {
-        // If we can’t read exp, assume NOT expired and let the server 401 if needed.
+        // If we can't read exp, assume NOT expired and let the server 401 if needed.
         if (!TryReadExp(jwt, out var exp)) return false;
-        var now = DateTimeOffset.UtcNow.AddSeconds(ClockSkewSeconds);
+        
+        // Subtract clock skew to account for time drift (be more lenient on expiration)
+        var now = DateTimeOffset.UtcNow.AddSeconds(-ClockSkewSeconds);
         return now >= exp;
     }
 
