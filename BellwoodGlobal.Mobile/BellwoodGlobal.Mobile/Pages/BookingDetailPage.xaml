@@ -100,6 +100,15 @@
                     <Label x:Name="PaxLine" TextColor="{StaticResource BellwoodCream}" />
                 </VerticalStackLayout>
             </Frame>
+            
+            <!-- Driver Assignment -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Driver" TextColor="{StaticResource BellwoodGold}" FontAttributes="Bold" />
+                    <Label x:Name="DriverLine" TextColor="{StaticResource BellwoodCream}" />
+                </VerticalStackLayout>
+            </Frame>
+
 			<Button x:Name="CancelButton"
                 Text="Cancel Booking"
                 BackgroundColor="#e53e3e"

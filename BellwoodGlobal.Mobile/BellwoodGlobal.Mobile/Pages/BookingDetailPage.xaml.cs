@@ -167,6 +167,11 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         PaxLine.Text = (paxObj is null) ? "—"
             : $"{paxObj} — {EmptyAsNA(paxObj.PhoneNumber)} — {EmptyAsNA(paxObj.EmailAddress)}";
 
+        // Driver Assignment (privacy-conscious: only show name, not contact info)
+        DriverLine.Text = string.IsNullOrWhiteSpace(d.AssignedDriverName)
+            ? "Driver Unassigned"
+            : d.AssignedDriverName;
+
 #if DEBUG
         JsonCard.IsVisible = true;
         JsonEditor.Text = JsonSerializer.Serialize(d, _jsonOpts);

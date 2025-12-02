@@ -184,6 +184,11 @@ public partial class BookingsPage : ContentPage
         public static RowVm From(BookingListItem b)
         {
             var displayStatus = ToDisplayStatus(b.Status);
+            
+            // Determine driver display text
+            var driverDisplay = string.IsNullOrWhiteSpace(b.AssignedDriverName) 
+                ? "Driver Unassigned" 
+                : b.AssignedDriverName;
 
             return new RowVm
             {
@@ -193,6 +198,7 @@ public partial class BookingsPage : ContentPage
                 Meta =
                     $"Booker: {b.BookerName}   •   " +
                     $"Drop: {(string.IsNullOrWhiteSpace(b.DropoffLocation) ? "As Directed" : b.DropoffLocation)}   •   " +
+                    $"Driver: {driverDisplay}   •   " +
                     $"Created: {b.CreatedUtc.ToLocalTime():g}",
                 Status = displayStatus,
                 StatusColor = StatusColorForDisplay(displayStatus)

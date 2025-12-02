@@ -17,6 +17,11 @@ namespace BellwoodGlobal.Mobile.Models
         public string PickupLocation { get; set; } = "";
         public string? DropoffLocation { get; set; }
         public DateTime PickupDateTime { get; set; }
+        
+        /// <summary>
+        /// Assigned driver name (null if unassigned).
+        /// </summary>
+        public string? AssignedDriverName { get; set; }
     }
 
     /// <summary>
@@ -33,6 +38,11 @@ namespace BellwoodGlobal.Mobile.Models
         public string PickupLocation { get; set; } = "";
         public string? DropoffLocation { get; set; }
         public DateTime PickupDateTime { get; set; }
+
+        /// <summary>
+        /// Assigned driver name (null if unassigned).
+        /// </summary>
+        public string? AssignedDriverName { get; set; }
 
         public QuoteDraft Draft { get; set; } = new(); // Reuses QuoteDraft for trip details
     }
