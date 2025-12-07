@@ -168,9 +168,23 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
             : $"{paxObj} — {EmptyAsNA(paxObj.PhoneNumber)} — {EmptyAsNA(paxObj.EmailAddress)}";
 
         // Driver Assignment (privacy-conscious: only show name, not contact info)
-        DriverLine.Text = string.IsNullOrWhiteSpace(d.AssignedDriverName)
+        var driverDisplayText = string.IsNullOrWhiteSpace(d.AssignedDriverName)
             ? "Driver Unassigned"
             : d.AssignedDriverName;
+
+#if DEBUG
+        // In debug mode, also show driver UID for troubleshooting assignment issues
+        if (!string.IsNullOrWhiteSpace(d.AssignedDriverUid))
+        {
+            driverDisplayText += $" (UID: {d.AssignedDriverUid})";
+        }
+        else if (!string.IsNullOrWhiteSpace(d.AssignedDriverName))
+        {
+            driverDisplayText += " (UID: Not linked)";
+        }
+#endif
+
+        DriverLine.Text = driverDisplayText;
 
 #if DEBUG
         JsonCard.IsVisible = true;

@@ -190,6 +190,18 @@ public partial class BookingsPage : ContentPage
                 ? "Driver Unassigned" 
                 : b.AssignedDriverName;
 
+#if DEBUG
+            // In debug mode, append driver UID status for troubleshooting
+            if (!string.IsNullOrWhiteSpace(b.AssignedDriverUid))
+            {
+                driverDisplay += $" [UID: {b.AssignedDriverUid}]";
+            }
+            else if (!string.IsNullOrWhiteSpace(b.AssignedDriverName))
+            {
+                driverDisplay += " [Not linked]";
+            }
+#endif
+
             return new RowVm
             {
                 Id = b.Id ?? "",

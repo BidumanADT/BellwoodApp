@@ -19,9 +19,20 @@ namespace BellwoodGlobal.Mobile.Models
         public DateTime PickupDateTime { get; set; }
         
         /// <summary>
+        /// Assigned driver's internal ID (GUID-based for scalability).
+        /// </summary>
+        public string? AssignedDriverId { get; set; }
+        
+        /// <summary>
         /// Assigned driver name (null if unassigned).
         /// </summary>
         public string? AssignedDriverName { get; set; }
+        
+        /// <summary>
+        /// Assigned driver's AuthServer identity (UserUid).
+        /// Used for debugging driver assignment issues.
+        /// </summary>
+        public string? AssignedDriverUid { get; set; }
     }
 
     /// <summary>
@@ -40,9 +51,20 @@ namespace BellwoodGlobal.Mobile.Models
         public DateTime PickupDateTime { get; set; }
 
         /// <summary>
+        /// Assigned driver's internal ID (GUID-based for scalability).
+        /// </summary>
+        public string? AssignedDriverId { get; set; }
+
+        /// <summary>
         /// Assigned driver name (null if unassigned).
         /// </summary>
         public string? AssignedDriverName { get; set; }
+        
+        /// <summary>
+        /// Assigned driver's AuthServer identity (UserUid).
+        /// Used for debugging driver assignment issues.
+        /// </summary>
+        public string? AssignedDriverUid { get; set; }
 
         public QuoteDraft Draft { get; set; } = new(); // Reuses QuoteDraft for trip details
     }
