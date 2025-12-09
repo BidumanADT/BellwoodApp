@@ -15,6 +15,7 @@ public partial class QuotePage : ContentPage
     private readonly ObservableCollection<string> _additionalPassengers = new();
     private readonly IQuoteDraftBuilder _draftBuilder;
     private readonly IAdminApi _adminApi;
+    private readonly ILocationPickerService _locationPicker;
 
     // --- passenger/location UI constants (avoid string typos) ---
     private const string PassengerSelf = "Booker (you)";
@@ -138,7 +139,7 @@ public partial class QuotePage : ContentPage
         _profile = ServiceHelper.GetRequiredService<IProfileService>();
         _draftBuilder = ServiceHelper.GetRequiredService<IQuoteDraftBuilder>();
         _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
-
+        _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
 
         // Booker
         var booker = _profile.GetBooker();
@@ -599,6 +600,60 @@ public partial class QuotePage : ContentPage
         DropoffNewGrid.IsVisible = false;
         await DisplayAlert("Saved", "Dropoff location added.", "OK");
         UpdateReturnPickupStyleAirportUx(); // re-evaluate airport logic for return
+    }
+
+    // ===== MAP PICKER HANDLERS =====
+    
+    private async void OnPickPickupFromMaps(object? sender, EventArgs e)
+    {
+        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
+        {
+            Title = "Select Pickup Location",
+            SuggestedLabel = (PickupNewLabel.Text ?? "").Trim(),
+            InitialAddress = (PickupNewAddress.Text ?? "").Trim(),
+            UseCurrentLocation = true
+        });
+
+        if (result.Success && result.Location is not null)
+        {
+            PickupNewLabel.Text = result.Location.Label;
+            PickupNewAddress.Text = result.Location.Address;
+            
+#if DEBUG
+            if (result.Location.HasCoordinates)
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Pickup coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+#endif
+        }
+        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
+        {
+            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
+        }
+    }
+
+    private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
+    {
+        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
+        {
+            Title = "Select Dropoff Location",
+            SuggestedLabel = (DropoffNewLabel.Text ?? "").Trim(),
+            InitialAddress = (DropoffNewAddress.Text ?? "").Trim(),
+            UseCurrentLocation = false // Don't default to current location for dropoff
+        });
+
+        if (result.Success && result.Location is not null)
+        {
+            DropoffNewLabel.Text = result.Location.Label;
+            DropoffNewAddress.Text = result.Location.Address;
+            
+#if DEBUG
+            if (result.Location.HasCoordinates)
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Dropoff coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+#endif
+        }
+        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
+        {
+            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
+        }
     }
 
     private static string ResolveLocation(Picker picker, Entry label, Entry address)

@@ -16,6 +16,7 @@ public partial class BookRidePage : ContentPage
     private readonly ITripDraftBuilder _draftBuilder;
     private readonly IAdminApi _adminApi;
     private readonly IPaymentService _paymentService;
+    private readonly ILocationPickerService _locationPicker;
 
     private List<PaymentMethod> _savedPaymentMethods = new();
     private const string PaymentMethodNew = "Add New Card";
@@ -45,6 +46,7 @@ public partial class BookRidePage : ContentPage
         _draftBuilder = ServiceHelper.GetRequiredService<ITripDraftBuilder>();
         _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
         _paymentService = ServiceHelper.GetRequiredService<IPaymentService>();
+        _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
 
         InitializeBooker();
         InitializeData();
@@ -503,6 +505,60 @@ public partial class BookRidePage : ContentPage
         DropoffNewGrid.IsVisible = false;
         await DisplayAlert("Saved", "Dropoff location added.", "OK");
         UpdateReturnPickupStyleAirportUx();
+    }
+
+    // ===== MAP PICKER HANDLERS =====
+
+    private async void OnPickPickupFromMaps(object? sender, EventArgs e)
+    {
+        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
+        {
+            Title = "Select Pickup Location",
+            SuggestedLabel = (PickupNewLabel.Text ?? "").Trim(),
+            InitialAddress = (PickupNewAddress.Text ?? "").Trim(),
+            UseCurrentLocation = true
+        });
+
+        if (result.Success && result.Location is not null)
+        {
+            PickupNewLabel.Text = result.Location.Label;
+            PickupNewAddress.Text = result.Location.Address;
+
+#if DEBUG
+            if (result.Location.HasCoordinates)
+                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Pickup coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+#endif
+        }
+        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
+        {
+            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
+        }
+    }
+
+    private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
+    {
+        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
+        {
+            Title = "Select Dropoff Location",
+            SuggestedLabel = (DropoffNewLabel.Text ?? "").Trim(),
+            InitialAddress = (DropoffNewAddress.Text ?? "").Trim(),
+            UseCurrentLocation = false // Don't default to current location for dropoff
+        });
+
+        if (result.Success && result.Location is not null)
+        {
+            DropoffNewLabel.Text = result.Location.Label;
+            DropoffNewAddress.Text = result.Location.Address;
+
+#if DEBUG
+            if (result.Location.HasCoordinates)
+                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Dropoff coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+#endif
+        }
+        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
+        {
+            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
+        }
     }
 
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
