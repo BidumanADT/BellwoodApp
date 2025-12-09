@@ -43,18 +43,10 @@
                     CornerRadius="14" HeightRequest="56"
                     Clicked="OnBookRideClicked" />
 
-            <Button Text="Ride History"
-                    FontSize="{StaticResource H2}"
-                    TextColor="{StaticResource BellwoodCream}"
-                    BackgroundColor="{StaticResource BellwoodCharcoal}"
-                    BorderColor="{StaticResource BellwoodGold}" BorderWidth="1"
-                    CornerRadius="14" HeightRequest="56"
-                    Clicked="OnRideHistory" />
-        </VerticalStackLayout>
-
-        <Label Grid.Row="2" Margin="0,24,0,12"
+            <Label Grid.Row="2" Margin="0,24,0,12"
                Text="BE the Bellwood Difference"
                HorizontalTextAlignment="Center"
                TextColor="{StaticResource BellwoodCream}" Opacity="0.7" />
+        </VerticalStackLayout>
     </Grid>
 </ContentPage>
