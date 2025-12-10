@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using BellwoodGlobal.Core.Domain;
+using System.Net;
 
 namespace BellwoodGlobal.Mobile.Services
 {
@@ -90,6 +91,44 @@ namespace BellwoodGlobal.Mobile.Services
 #if DEBUG
             System.Diagnostics.Debug.WriteLine($"[AdminApi] Booking {id} cancelled successfully");
 #endif
+        }
+
+        // ========== DRIVER TRACKING ==========
+        public async Task<DriverLocation?> GetDriverLocationAsync(string rideId)
+        {
+            try
+            {
+                var response = await _http.GetAsync($"/driver/location/{Uri.EscapeDataString(rideId)}");
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[AdminApi] No driver location for ride {rideId}");
+#endif
+                    return null;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                var location = await response.Content.ReadFromJsonAsync<DriverLocation>(_json);
+
+#if DEBUG
+                if (location != null)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[AdminApi] Driver location: {location.Latitude:F6}, {location.Longitude:F6}, Age={location.AgeSeconds}s");
+                }
+#endif
+
+                return location;
+            }
+            catch (HttpRequestException ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AdminApi] Error fetching driver location: {ex.Message}");
+#endif
+                return null;
+            }
         }
     }
 }

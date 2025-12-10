@@ -12,6 +12,7 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder()
             .UseMauiApp<App>()
+            .UseMauiMaps() // Enable MAUI Maps
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -32,6 +33,7 @@ public static class MauiProgram
         builder.Services.AddTransient<BookRidePage>();
         builder.Services.AddTransient<BookingsPage>();
         builder.Services.AddTransient<BookingDetailPage>();
+        builder.Services.AddTransient<DriverTrackingPage>();
 
 
         // Services
@@ -43,6 +45,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<ITripDraftBuilder, TripDraftBuilder>();
         builder.Services.AddSingleton<IPaymentService, PaymentService>();
         builder.Services.AddSingleton<ILocationPickerService, LocationPickerService>();
+        builder.Services.AddSingleton<IDriverTrackingService, DriverTrackingService>();
+        builder.Services.AddSingleton<IRideStatusService, RideStatusService>();
 
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();

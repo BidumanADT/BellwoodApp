@@ -22,6 +22,9 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
 
     public string? Id { get; private set; }
 
+    // Store booking details for tracking navigation
+    private Models.BookingDetail? _currentBooking;
+
     public BookingDetailPage()
     {
         InitializeComponent();
@@ -61,6 +64,7 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
                 await Shell.Current.GoToAsync("..");
                 return;
             }
+            _currentBooking = detail;
             Bind(detail);
         }
         catch (Exception ex)
@@ -79,6 +83,10 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
 
         SubHeader.Text =
             $"{(string.IsNullOrWhiteSpace(d.VehicleClass) ? "Vehicle" : d.VehicleClass)}  •  Created {d.CreatedUtc.ToLocalTime():g}";
+
+        // Show Track Driver banner when status is OnRoute/InProgress
+        var isTrackable = IsTrackableStatus(d.Status);
+        TrackDriverBanner.IsVisible = isTrackable;
 
         // Pickup/Dropoff
         PickupLine.Text = $"{d.PickupDateTime.ToLocalTime():g} — {d.PickupLocation}";
@@ -173,6 +181,49 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
 #endif
     }
 
+    /// <summary>
+    /// Determines if the ride status allows driver tracking.
+    /// </summary>
+    private static bool IsTrackableStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return false;
+
+        return status.Equals("OnRoute", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("InProgress", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("Dispatched", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("EnRoute", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Navigate to the Driver Tracking page.
+    /// </summary>
+    private async void OnTrackDriverClicked(object? sender, EventArgs e)
+    {
+        if (_currentBooking == null || string.IsNullOrWhiteSpace(Id))
+        {
+            await DisplayAlert("Error", "Booking details not available.", "OK");
+            return;
+        }
+
+        var draft = _currentBooking.Draft;
+
+        // Get pickup coordinates from the draft if available
+        // Default to NYC coordinates if not available (fallback for demo)
+        double pickupLat = draft?.PickupLatitude ?? 40.7128;
+        double pickupLng = draft?.PickupLongitude ?? -74.0060;
+
+        var pickupAddress = Uri.EscapeDataString(_currentBooking.PickupLocation ?? "Pickup");
+
+        // Navigate to tracking page with parameters
+        var route = $"{nameof(DriverTrackingPage)}?rideId={Uri.EscapeDataString(Id)}&pickupLat={pickupLat}&pickupLng={pickupLng}&pickupAddress={pickupAddress}";
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[BookingDetailPage] Navigating to tracking: {route}");
+#endif
+
+        await Shell.Current.GoToAsync(route);
+    }
+
     // Cancel button handler
     private async void OnCancelBookingClicked(object? sender, EventArgs e)
     {
@@ -222,7 +273,10 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         ["Requested"] = "Requested",
         ["Confirmed"] = "Confirmed",
         ["Scheduled"] = "Scheduled",
+        ["OnRoute"] = "Driver En Route",
         ["InProgress"] = "In Progress",
+        ["Dispatched"] = "Dispatched",
+        ["EnRoute"] = "En Route",
         ["Completed"] = "Completed",
         ["Cancelled"] = "Cancelled",
         ["NoShow"] = "No Show"
@@ -239,6 +293,7 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         {
             "requested" => TryGetColor("ChipPending", Colors.Goldenrod),
             "confirmed" or "scheduled" => TryGetColor("ChipPriced", Colors.SeaGreen),
+            "driver en route" or "dispatched" or "en route" => TryGetColor("BellwoodGold", Colors.Gold),
             "in progress" => TryGetColor("BellwoodGold", Colors.Gold),
             "completed" => TryGetColor("ChipOther", Colors.LightGray),
             "cancelled" or "no show" => TryGetColor("ChipDeclined", Colors.IndianRed),

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.DriverTrackingPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Track Driver">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Close" Clicked="OnCloseClicked" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        
+        <!-- Header with ETA and Status -->
+        <Frame Grid.Row="0" 
+               BackgroundColor="{StaticResource BellwoodCharcoal}" 
+               Padding="16" 
+               Margin="0"
+               CornerRadius="0"
+               HasShadow="False">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                <!-- ETA Display -->
+                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                    <Label x:Name="EtaLabel" 
+                           Text="Calculating ETA..." 
+                           TextColor="{StaticResource BellwoodGold}" 
+                           FontSize="24" 
+                           FontAttributes="Bold" />
+                    <Label x:Name="DistanceLabel" 
+                           Text="" 
+                           TextColor="{StaticResource BellwoodCream}" 
+                           FontSize="14" 
+                           Opacity="0.8" />
+                </VerticalStackLayout>
+
+                <!-- Status Indicator -->
+                <Frame x:Name="StatusFrame"
+                       Grid.Row="0" Grid.Column="1"
+                       BackgroundColor="{StaticResource BellwoodGold}"
+                       Padding="12,6"
+                       CornerRadius="12"
+                       HasShadow="False"
+                       VerticalOptions="Center">
+                    <Label x:Name="StatusLabel" 
+                           Text="Tracking" 
+                           TextColor="{StaticResource BellwoodInk}" 
+                           FontAttributes="Bold"
+                           FontSize="12" />
+                </Frame>
+
+                <!-- Pickup info -->
+                <HorizontalStackLayout Grid.Row="1" Grid.ColumnSpan="2" Spacing="8" Margin="0,12,0,0">
+                    <Label Text="??" FontSize="16" />
+                    <Label x:Name="PickupAddressLabel" 
+                           Text="Pickup location" 
+                           TextColor="{StaticResource BellwoodCream}" 
+                           FontSize="14"
+                           LineBreakMode="TailTruncation"
+                           MaxLines="1" />
+                </HorizontalStackLayout>
+            </Grid>
+        </Frame>
+
+        <!-- Map View -->
+        <Grid Grid.Row="1">
+            <maps:Map x:Name="TrackingMap"
+                      IsShowingUser="False"
+                      IsScrollEnabled="True"
+                      IsZoomEnabled="True"
+                      MapType="Street" />
+            
+            <!-- Loading Overlay -->
+            <Frame x:Name="LoadingOverlay"
+                   BackgroundColor="{StaticResource BellwoodInk}"
+                   Opacity="0.9"
+                   IsVisible="True"
+                   HasShadow="False">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="16">
+                    <ActivityIndicator IsRunning="True" Color="{StaticResource BellwoodGold}" />
+                    <Label x:Name="LoadingLabel" 
+                           Text="Locating your driver..." 
+                           TextColor="{StaticResource BellwoodCream}" 
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Unavailable Overlay -->
+            <Frame x:Name="UnavailableOverlay"
+                   BackgroundColor="{StaticResource BellwoodInk}"
+                   Opacity="0.9"
+                   IsVisible="False"
+                   HasShadow="False">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="16" Padding="24">
+                    <Label Text="??" FontSize="48" HorizontalTextAlignment="Center" />
+                    <Label Text="Driver location unavailable" 
+                           TextColor="{StaticResource BellwoodGold}" 
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" />
+                    <Label Text="We're waiting for the driver's GPS signal. This usually resolves in a few moments." 
+                           TextColor="{StaticResource BellwoodCream}" 
+                           HorizontalTextAlignment="Center"
+                           Opacity="0.8" />
+                    <Button x:Name="RetryButton"
+                            Text="Retry Now"
+                            BackgroundColor="{StaticResource BellwoodGold}"
+                            TextColor="{StaticResource BellwoodInk}"
+                            Clicked="OnRetryClicked"
+                            Margin="0,8,0,0" />
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- Bottom Info Bar -->
+        <Frame Grid.Row="2" 
+               BackgroundColor="{StaticResource BellwoodCharcoal}" 
+               Padding="16"
+               CornerRadius="0"
+               HasShadow="False">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Driver car icon indicator -->
+                <Frame BackgroundColor="{StaticResource BellwoodInk}"
+                       Padding="8"
+                       CornerRadius="8"
+                       HasShadow="False">
+                    <Label Text="??" FontSize="24" />
+                </Frame>
+
+                <!-- Last updated info -->
+                <VerticalStackLayout Grid.Column="1" Margin="12,0" VerticalOptions="Center">
+                    <Label x:Name="LastUpdatedLabel" 
+                           Text="Waiting for update..." 
+                           TextColor="{StaticResource BellwoodCream}" 
+                           FontSize="12" />
+                    <Label x:Name="StaleWarningLabel"
+                           Text="?? Location may be outdated"
+                           TextColor="#FFB347"
+                           FontSize="11"
+                           IsVisible="False" />
+                </VerticalStackLayout>
+
+                <!-- Call Driver Button (future use) -->
+                <Button x:Name="CallDriverButton"
+                        Grid.Column="2"
+                        Text="??"
+                        BackgroundColor="Transparent"
+                        TextColor="{StaticResource BellwoodGold}"
+                        FontSize="24"
+                        IsVisible="False"
+                        WidthRequest="48"
+                        HeightRequest="48" />
+            </Grid>
+        </Frame>
+    </Grid>
+</ContentPage>
