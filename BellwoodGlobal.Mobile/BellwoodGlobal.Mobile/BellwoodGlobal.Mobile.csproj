@@ -33,6 +33,21 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
+	<!-- Android Debug Signing - Use the debug keystore we created -->
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
+	  <AndroidKeyStore>True</AndroidKeyStore>
+	  <AndroidSigningKeyStore Condition=" '$(OS)' == 'Windows_NT' ">$(USERPROFILE)\.android\debug.keystore</AndroidSigningKeyStore>
+	  <AndroidSigningKeyStore Condition=" '$(OS)' != 'Windows_NT' ">$(HOME)/.android/debug.keystore</AndroidSigningKeyStore>
+	  <AndroidSigningStorePass>android</AndroidSigningStorePass>
+	  <AndroidSigningKeyAlias>androiddebugkey</AndroidSigningKeyAlias>
+	  <AndroidSigningKeyPass>android</AndroidSigningKeyPass>
+	</PropertyGroup>
+
+	<!-- Android Release Signing - Keep disabled for now -->
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+	  <AndroidKeyStore>False</AndroidKeyStore>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- Use your 1200x1200 PNG as the adaptive icon foreground -->
 		<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon_padded.png" ForegroundFile="Resources\AppIcon\bellwood_elite_icon_padded.png" BackgroundColor="#1C2D5C" />
