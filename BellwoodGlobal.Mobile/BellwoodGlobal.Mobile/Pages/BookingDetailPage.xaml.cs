@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BellwoodGlobal.Mobile.Models;
+using Microsoft.Maui.Controls;
 using BellwoodGlobal.Mobile.Services;
+using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Core.Domain;
+using BellwoodGlobal.Mobile.Helpers;
 
 namespace BellwoodGlobal.Mobile.Pages;
 
@@ -82,14 +80,14 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         PassengerTitle.Text = string.IsNullOrWhiteSpace(d.PassengerName) ? "Passenger" : d.PassengerName;
 
         SubHeader.Text =
-            $"{(string.IsNullOrWhiteSpace(d.VehicleClass) ? "Vehicle" : d.VehicleClass)}  •  Created {d.CreatedUtc.ToLocalTime():g}";
+            $"{(string.IsNullOrWhiteSpace(d.VehicleClass) ? "Vehicle" : d.VehicleClass)}  •  Created {DateTimeHelper.FormatForDisplay(d.CreatedUtc)}";
 
         // Show Track Driver banner when status is OnRoute/InProgress
         var isTrackable = IsTrackableStatus(d.Status);
         TrackDriverBanner.IsVisible = isTrackable;
 
-        // Pickup/Dropoff
-        PickupLine.Text = $"{d.PickupDateTime.ToLocalTime():g} — {d.PickupLocation}";
+        // Pickup/Dropoff - Use DateTimeHelper to prevent double-conversion
+        PickupLine.Text = $"{DateTimeHelper.FormatFriendly(d.PickupDateTime)} — {d.PickupLocation}";
         var draft = d.Draft ?? new QuoteDraft();
 
         // Pickup style/sign

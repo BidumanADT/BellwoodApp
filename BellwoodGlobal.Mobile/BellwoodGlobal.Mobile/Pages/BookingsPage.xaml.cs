@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Mobile.Services;
+using BellwoodGlobal.Mobile.Helpers;
 
 namespace BellwoodGlobal.Mobile.Pages;
 
@@ -189,11 +190,11 @@ public partial class BookingsPage : ContentPage
             {
                 Id = b.Id ?? "",
                 Title = $"{(string.IsNullOrWhiteSpace(b.PassengerName) ? "Passenger" : b.PassengerName)}  ·  {b.VehicleClass}",
-                SubTitle = $"{b.PickupDateTime:g} — {b.PickupLocation}",
+                SubTitle = $"{DateTimeHelper.FormatFriendly(b.PickupDateTime)} — {b.PickupLocation}",
                 Meta =
                     $"Booker: {b.BookerName}   •   " +
                     $"Drop: {(string.IsNullOrWhiteSpace(b.DropoffLocation) ? "As Directed" : b.DropoffLocation)}   •   " +
-                    $"Created: {b.CreatedUtc.ToLocalTime():g}",
+                    $"Created: {DateTimeHelper.FormatForDisplay(b.CreatedUtc)}",
                 Status = displayStatus,
                 StatusColor = StatusColorForDisplay(displayStatus)
             };
