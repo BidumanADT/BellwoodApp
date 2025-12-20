@@ -73,8 +73,13 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
 
     private void Bind(Models.BookingDetail d)
     {
+        // Prefer CurrentRideStatus (driver-specific) over Status when available
+        var effectiveStatus = !string.IsNullOrWhiteSpace(d.CurrentRideStatus) 
+            ? d.CurrentRideStatus 
+            : d.Status;
+        
         // Status mapping (same as dashboard)
-        string displayStatus = ToDisplayStatus(d.Status);
+        string displayStatus = ToDisplayStatus(effectiveStatus);
         StatusChip.Text = displayStatus;
         StatusChipFrame.BackgroundColor = StatusColorForDisplay(displayStatus);
         PassengerTitle.Text = string.IsNullOrWhiteSpace(d.PassengerName) ? "Passenger" : d.PassengerName;
@@ -191,7 +196,9 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         return status.Equals("OnRoute", StringComparison.OrdinalIgnoreCase) ||
                status.Equals("InProgress", StringComparison.OrdinalIgnoreCase) ||
                status.Equals("Dispatched", StringComparison.OrdinalIgnoreCase) ||
-               status.Equals("EnRoute", StringComparison.OrdinalIgnoreCase);
+               status.Equals("EnRoute", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("Arrived", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("PassengerOnboard", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -277,6 +284,8 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         ["InProgress"] = "In Progress",
         ["Dispatched"] = "Dispatched",
         ["EnRoute"] = "En Route",
+        ["Arrived"] = "Driver Arrived",
+        ["PassengerOnboard"] = "Passenger On Board",
         ["Completed"] = "Completed",
         ["Cancelled"] = "Cancelled",
         ["NoShow"] = "No Show"
@@ -294,6 +303,8 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
             "requested" => TryGetColor("ChipPending", Colors.Goldenrod),
             "confirmed" or "scheduled" => TryGetColor("ChipPriced", Colors.SeaGreen),
             "driver en route" or "dispatched" or "en route" => TryGetColor("BellwoodGold", Colors.Gold),
+            "driver arrived" or "arrived" => TryGetColor("BellwoodGold", Colors.Gold),
+            "passenger on board" or "passengeronboard" => TryGetColor("BellwoodGold", Colors.Gold),
             "in progress" => TryGetColor("BellwoodGold", Colors.Gold),
             "completed" => TryGetColor("ChipOther", Colors.LightGray),
             "cancelled" or "no show" => TryGetColor("ChipDeclined", Colors.IndianRed),
