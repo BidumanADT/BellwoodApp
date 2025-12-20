@@ -82,8 +82,10 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         SubHeader.Text =
             $"{(string.IsNullOrWhiteSpace(d.VehicleClass) ? "Vehicle" : d.VehicleClass)}  •  Created {DateTimeHelper.FormatForDisplay(d.CreatedUtc)}";
 
-        // Show Track Driver banner when status is OnRoute/InProgress
-        var isTrackable = IsTrackableStatus(d.Status);
+        // Show Track Driver banner when driver status is OnRoute/InProgress/Dispatched
+        // Check CurrentRideStatus first (driver-specific), fallback to Status if not available
+        var statusToCheck = !string.IsNullOrWhiteSpace(d.CurrentRideStatus) ? d.CurrentRideStatus : d.Status;
+        var isTrackable = IsTrackableStatus(statusToCheck);
         TrackDriverBanner.IsVisible = isTrackable;
 
         // Pickup/Dropoff - Use DateTimeHelper to prevent double-conversion

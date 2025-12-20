@@ -11,7 +11,7 @@
         <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" />
     </ContentPage.ToolbarItems>
 
-    <!-- Left-aligned TitleView with a Quotes menu button -->
+    <!-- Left-aligned TitleView with Quotes and Bookings menu buttons -->
     <Shell.TitleView>
         <!-- Grid trick to keep content left-aligned across platforms -->
         <Grid ColumnDefinitions="Auto,*" Padding="0" VerticalOptions="Center" HeightRequest="44">
@@ -19,6 +19,13 @@
                 <Button x:Name="QuotesMenuButton"
                     Text="Quotes ▾"
                     Clicked="OnQuotesMenuClicked"
+                    BackgroundColor="Transparent"
+                    Padding="0"
+                    TextColor="{StaticResource BellwoodCream}"
+                    FontSize="{StaticResource Body}"/>
+                <Button x:Name="BookingsMenuButton"
+                    Text="Bookings ▾"
+                    Clicked="OnBookingsMenuClicked"
                     BackgroundColor="Transparent"
                     Padding="0"
                     TextColor="{StaticResource BellwoodCream}"
