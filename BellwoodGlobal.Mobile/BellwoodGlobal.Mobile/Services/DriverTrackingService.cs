@@ -83,20 +83,52 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
     {
         try
         {
-            var response = await _http.GetAsync($"/driver/location/{Uri.EscapeDataString(rideId)}");
+            // Use passenger-safe endpoint instead of admin/driver endpoint
+            var response = await _http.GetAsync($"/passenger/rides/{Uri.EscapeDataString(rideId)}/location");
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                // No location data available
+                // Ride doesn't exist
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] No location for ride {rideId}");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Ride not found: {rideId}");
 #endif
+                return null;
+            }
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                // Not authorized to view this ride
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Unauthorized to view ride: {rideId}");
+#endif
+                SetState(TrackingState.Unauthorized);
                 return null;
             }
 
             response.EnsureSuccessStatusCode();
 
-            var location = await response.Content.ReadFromJsonAsync<DriverLocation>(_jsonOptions);
+            var passengerResponse = await response.Content.ReadFromJsonAsync<PassengerLocationResponse>(_jsonOptions);
+
+            if (passengerResponse == null)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Failed to deserialize response for ride {rideId}");
+#endif
+                return null;
+            }
+
+            // Check if tracking has started
+            if (!passengerResponse.TrackingActive)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Tracking not started: {passengerResponse.Message}");
+#endif
+                SetState(TrackingState.NotStarted);
+                return null;
+            }
+
+            // Convert to DriverLocation
+            var location = passengerResponse.ToDriverLocation();
 
 #if DEBUG
             if (location != null)

@@ -93,13 +93,14 @@
                    IsVisible="False"
                    HasShadow="False">
                 <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="16" Padding="24">
-                    <Label Text="??" FontSize="48" HorizontalTextAlignment="Center" />
+                    <Label Text="📍" FontSize="48" HorizontalTextAlignment="Center" />
                     <Label Text="Driver location unavailable" 
                            TextColor="{StaticResource BellwoodGold}" 
                            FontSize="18"
                            FontAttributes="Bold"
                            HorizontalTextAlignment="Center" />
-                    <Label Text="We're waiting for the driver's GPS signal. This usually resolves in a few moments." 
+                    <Label x:Name="UnavailableLabel"
+                           Text="We're waiting for the driver's GPS signal. This usually resolves in a few moments." 
                            TextColor="{StaticResource BellwoodCream}" 
                            HorizontalTextAlignment="Center"
                            Opacity="0.8" />

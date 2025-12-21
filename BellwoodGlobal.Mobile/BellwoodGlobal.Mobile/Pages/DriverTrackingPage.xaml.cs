@@ -226,18 +226,38 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
                 StatusFrame.BackgroundColor = TryGetColor("BellwoodGold", Colors.Gold);
                 break;
 
+            case TrackingState.NotStarted:
+                LoadingOverlay.IsVisible = false;
+                UnavailableOverlay.IsVisible = true;
+                UnavailableLabel.Text = "Your driver hasn't started the trip yet.\n\nTracking will begin when your driver is en route.";
+                StatusLabel.Text = "Waiting";
+                StatusFrame.BackgroundColor = Colors.Orange;
+                break;
+
             case TrackingState.Unavailable:
                 LoadingOverlay.IsVisible = false;
                 UnavailableOverlay.IsVisible = true;
+                UnavailableLabel.Text = "Driver location temporarily unavailable.\n\nThis can happen due to poor GPS signal or network connectivity.";
                 StatusLabel.Text = "Waiting";
                 StatusFrame.BackgroundColor = Colors.Orange;
+                break;
+
+            case TrackingState.Unauthorized:
+                LoadingOverlay.IsVisible = false;
+                UnavailableOverlay.IsVisible = true;
+                UnavailableLabel.Text = "You are not authorized to view this ride.\n\nYou can only track your own bookings.";
+                StatusLabel.Text = "Error";
+                StatusFrame.BackgroundColor = Colors.IndianRed;
+                RetryButton.IsVisible = false; // Don't allow retry for auth errors
                 break;
 
             case TrackingState.Error:
                 LoadingOverlay.IsVisible = false;
                 UnavailableOverlay.IsVisible = true;
+                UnavailableLabel.Text = "Unable to connect to tracking service.\n\nPlease check your internet connection and try again.";
                 StatusLabel.Text = "Error";
                 StatusFrame.BackgroundColor = Colors.IndianRed;
+                RetryButton.IsVisible = true;
                 break;
 
             case TrackingState.Ended:

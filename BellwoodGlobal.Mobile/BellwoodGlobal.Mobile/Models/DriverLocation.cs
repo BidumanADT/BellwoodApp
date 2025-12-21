@@ -44,6 +44,85 @@ public sealed class DriverLocation
     /// Indicates if location data is considered stale (older than expected).
     /// </summary>
     public bool IsStale => AgeSeconds > 120; // > 2 minutes considered stale
+
+    /// <summary>
+    /// Driver's unique identifier.
+    /// </summary>
+    public string? DriverUid { get; set; }
+
+    /// <summary>
+    /// Driver's display name.
+    /// </summary>
+    public string? DriverName { get; set; }
+}
+
+/// <summary>
+/// Response from the passenger location endpoint when tracking has not started yet.
+/// </summary>
+public sealed class PassengerLocationResponse
+{
+    /// <summary>
+    /// The ride ID being tracked.
+    /// </summary>
+    public string RideId { get; set; } = "";
+
+    /// <summary>
+    /// Indicates if tracking is currently active.
+    /// </summary>
+    public bool TrackingActive { get; set; }
+
+    /// <summary>
+    /// Message explaining tracking status (e.g., "Driver has not started tracking yet").
+    /// </summary>
+    public string? Message { get; set; }
+
+    /// <summary>
+    /// Current ride status (Scheduled, OnRoute, etc.).
+    /// </summary>
+    public string? CurrentStatus { get; set; }
+
+    /// <summary>
+    /// Location data (only present when TrackingActive is true).
+    /// </summary>
+    public double? Latitude { get; set; }
+
+    public double? Longitude { get; set; }
+
+    public DateTime? Timestamp { get; set; }
+
+    public double? Heading { get; set; }
+
+    public double? Speed { get; set; }
+
+    public double? Accuracy { get; set; }
+
+    public double? AgeSeconds { get; set; }
+
+    public string? DriverUid { get; set; }
+
+    public string? DriverName { get; set; }
+
+    /// <summary>
+    /// Converts this response to a DriverLocation if tracking is active.
+    /// </summary>
+    public DriverLocation? ToDriverLocation()
+    {
+        if (!TrackingActive || Latitude == null || Longitude == null || Timestamp == null)
+            return null;
+
+        return new DriverLocation
+        {
+            RideId = RideId,
+            Latitude = Latitude.Value,
+            Longitude = Longitude.Value,
+            TimestampUtc = Timestamp.Value,
+            AgeSeconds = (int)(AgeSeconds ?? 0),
+            Heading = Heading,
+            SpeedKmh = Speed,
+            DriverUid = DriverUid,
+            DriverName = DriverName
+        };
+    }
 }
 
 /// <summary>
@@ -83,8 +162,12 @@ public enum TrackingState
     Tracking,
     /// <summary>Location temporarily unavailable.</summary>
     Unavailable,
+    /// <summary>Tracking not started yet (driver hasn't begun the ride).</summary>
+    NotStarted,
     /// <summary>An error occurred.</summary>
     Error,
     /// <summary>Ride is no longer active (completed/cancelled).</summary>
-    Ended
+    Ended,
+    /// <summary>Unauthorized to view this ride.</summary>
+    Unauthorized
 }
