@@ -60,8 +60,20 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
     {
         base.OnAppearing();
 
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"???????????????????????????????????????????????????");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] OnAppearing called");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] RideId: {_rideId ?? "NULL"}");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Pickup: ({_pickupLatitude:F6}, {_pickupLongitude:F6})");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Address: {_pickupAddress ?? "NULL"}");
+        System.Diagnostics.Debug.WriteLine($"???????????????????????????????????????????????????");
+#endif
+
         if (string.IsNullOrWhiteSpace(_rideId))
         {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] !!! RideId is NULL or empty, showing error");
+#endif
             await DisplayAlert("Error", "No ride ID provided for tracking.", "OK");
             await Shell.Current.GoToAsync("..");
             return;
@@ -73,8 +85,16 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
         // Initialize map with pickup location
         InitializeMap();
 
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Calling StartTrackingAsync...");
+#endif
+
         // Start tracking
         await _trackingService.StartTrackingAsync(_rideId, _pickupLatitude, _pickupLongitude);
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] StartTrackingAsync completed");
+#endif
     }
 
     protected override void OnDisappearing()

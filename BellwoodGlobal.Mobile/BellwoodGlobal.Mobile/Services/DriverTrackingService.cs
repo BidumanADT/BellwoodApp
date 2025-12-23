@@ -47,6 +47,15 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
     public async Task StartTrackingAsync(string rideId, double pickupLatitude, double pickupLongitude, int pollingIntervalMs = 15000)
     {
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"???????????????????????????????????????????????????");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] START TRACKING CALLED");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] RideId: {rideId}");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Pickup: ({pickupLatitude:F6}, {pickupLongitude:F6})");
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Polling Interval: {pollingIntervalMs}ms");
+        System.Diagnostics.Debug.WriteLine($"???????????????????????????????????????????????????");
+#endif
+
         // Stop any existing tracking
         StopTracking();
 
@@ -58,6 +67,10 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
         _pollingCts = new CancellationTokenSource();
         _pollingTask = PollLocationAsync(rideId, pollingIntervalMs, _pollingCts.Token);
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Polling task started");
+#endif
 
         await Task.CompletedTask;
     }
@@ -83,8 +96,17 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
     {
         try
         {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> Fetching location for ride: {rideId}");
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> Endpoint: /passenger/rides/{rideId}/location");
+#endif
+
             // Use passenger-safe endpoint instead of admin/driver endpoint
             var response = await _http.GetAsync($"/passenger/rides/{Uri.EscapeDataString(rideId)}/location");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> HTTP Status: {(int)response.StatusCode} {response.StatusCode}");
+#endif
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -99,7 +121,9 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
             {
                 // Not authorized to view this ride
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Unauthorized to view ride: {rideId}");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!!FORBIDDEN!!! Unauthorized to view ride: {rideId}");
+                var errorBody = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Error response: {errorBody}");
 #endif
                 SetState(TrackingState.Unauthorized);
                 return null;
@@ -107,7 +131,19 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
             response.EnsureSuccessStatusCode();
 
-            var passengerResponse = await response.Content.ReadFromJsonAsync<PassengerLocationResponse>(_jsonOptions);
+#if DEBUG
+            var rawJson = await response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> Response JSON: {rawJson}");
+#endif
+
+            // Re-create stream for deserialization since we read it for logging
+            var passengerResponse = System.Text.Json.JsonSerializer.Deserialize<PassengerLocationResponse>(
+#if DEBUG
+                rawJson,
+#else
+                await response.Content.ReadAsStreamAsync(),
+#endif
+                _jsonOptions);
 
             if (passengerResponse == null)
             {
@@ -121,11 +157,17 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
             if (!passengerResponse.TrackingActive)
             {
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Tracking not started: {passengerResponse.Message}");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> TrackingActive=FALSE");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> Message: {passengerResponse.Message}");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> CurrentStatus: {passengerResponse.CurrentStatus}");
 #endif
                 SetState(TrackingState.NotStarted);
                 return null;
             }
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> TrackingActive=TRUE");
+#endif
 
             // Convert to DriverLocation
             var location = passengerResponse.ToDriverLocation();
@@ -136,6 +178,10 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
                 System.Diagnostics.Debug.WriteLine(
                     $"[DriverTrackingService] Location received: {location.Latitude:F6}, {location.Longitude:F6}, Age={location.AgeSeconds}s");
             }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!! ToDriverLocation returned NULL");
+            }
 #endif
 
             return location;
@@ -143,14 +189,16 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
         catch (HttpRequestException ex)
         {
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] HTTP error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!! HTTP error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!! Stack trace: {ex.StackTrace}");
 #endif
             return null;
         }
         catch (Exception ex)
         {
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Error fetching location: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!! Error fetching location: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!! Stack trace: {ex.StackTrace}");
 #endif
             return null;
         }
@@ -183,13 +231,29 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
     private async Task PollLocationAsync(string rideId, int intervalMs, CancellationToken ct)
     {
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] >>> POLLING LOOP STARTED for ride: {rideId}");
+#endif
+
         bool firstFetch = true;
+        int pollCount = 0;
 
         while (!ct.IsCancellationRequested)
         {
             try
             {
+                pollCount++;
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] ?????????? POLL #{pollCount} ({DateTime.Now:HH:mm:ss}) ??????????");
+#endif
+
                 var location = await GetDriverLocationAsync(rideId);
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] GetDriverLocationAsync returned: {(location != null ? "LOCATION" : "NULL")}");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Current State: {CurrentState}");
+#endif
 
                 if (location != null)
                 {
@@ -209,21 +273,47 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
                 }
                 else if (firstFetch)
                 {
-                    // First fetch failed - set to unavailable but keep trying
-                    SetState(TrackingState.Unavailable);
+                    // First fetch returned null - check if state was already set by GetDriverLocationAsync
+                    // (e.g., NotStarted, Unauthorized). If not, set to Unavailable.
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] First fetch returned null. Current state: {CurrentState}");
+#endif
+
+                    if (CurrentState == TrackingState.Loading)
+                    {
+#if DEBUG
+                        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] State still Loading, setting to Unavailable");
+#endif
+                        SetState(TrackingState.Unavailable);
+                    }
+#if DEBUG
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] State already set to {CurrentState}, preserving it");
+                    }
+#endif
                 }
-                // If not first fetch and no location, keep showing last known position
+#if DEBUG
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Not first fetch, location still null. State: {CurrentState}");
+                }
+#endif
+                // If not first fetch and no location, keep current state (NotStarted or last known)
 
                 firstFetch = false;
             }
             catch (OperationCanceledException)
             {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Polling cancelled");
+#endif
                 break;
             }
             catch (Exception ex)
             {
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Poll error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] !!! Poll error: {ex.Message}");
 #endif
                 if (firstFetch)
                 {
@@ -233,10 +323,16 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
             try
             {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Waiting {intervalMs}ms before next poll...");
+#endif
                 await Task.Delay(intervalMs, ct);
             }
             catch (OperationCanceledException)
             {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingService] Delay cancelled");
+#endif
                 break;
             }
         }
