@@ -233,4 +233,4 @@ For issues or questions, please use the GitHub issue tracker.
 
 **Built with care using .NET MAUI**
 
-*© 2024 Bellwood Global, Inc. All rights reserved.*
+*© 2025 Bellwood Global, Inc. All rights reserved.*
