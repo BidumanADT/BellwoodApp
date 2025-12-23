@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using BellwoodGlobal.Core.Domain;
+using System.Net;
 
 namespace BellwoodGlobal.Mobile.Services
 {
@@ -90,6 +91,88 @@ namespace BellwoodGlobal.Mobile.Services
 #if DEBUG
             System.Diagnostics.Debug.WriteLine($"[AdminApi] Booking {id} cancelled successfully");
 #endif
+        }
+
+        // ========== DRIVER TRACKING ==========
+        /// <summary>
+        /// Gets the current driver location for a ride using the passenger-safe endpoint.
+        /// Returns null if no location data is available or tracking hasn't started.
+        /// </summary>
+        /// <param name="rideId">The ride ID to get driver location for.</param>
+        public async Task<DriverLocation?> GetDriverLocationAsync(string rideId)
+        {
+            try
+            {
+                // Use passenger-safe endpoint with email-based authorization
+                var response = await _http.GetAsync($"/passenger/rides/{Uri.EscapeDataString(rideId)}/location");
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // Ride doesn't exist
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[AdminApi] Ride not found: {rideId}");
+#endif
+                    return null;
+                }
+
+                if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    // Not authorized to view this ride (email doesn't match booking)
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[AdminApi] Forbidden: Not authorized to view ride {rideId}");
+#endif
+                    return null;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                // Try to deserialize as PassengerLocationResponse first
+                var passengerResponse = await response.Content.ReadFromJsonAsync<PassengerLocationResponse>(_json);
+
+                if (passengerResponse == null)
+                {
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[AdminApi] Failed to deserialize response for ride {rideId}");
+#endif
+                    return null;
+                }
+
+                // Check if tracking has started
+                if (!passengerResponse.TrackingActive)
+                {
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[AdminApi] Tracking not started: {passengerResponse.Message}");
+#endif
+                    return null;
+                }
+
+                // Convert to DriverLocation
+                var location = passengerResponse.ToDriverLocation();
+
+#if DEBUG
+                if (location != null)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[AdminApi] Driver location: {location.Latitude:F6}, {location.Longitude:F6}, Age={location.AgeSeconds}s");
+                }
+#endif
+
+                return location;
+            }
+            catch (HttpRequestException ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AdminApi] HTTP error fetching driver location: {ex.Message}");
+#endif
+                return null;
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AdminApi] Error fetching driver location: {ex.Message}");
+#endif
+                return null;
+            }
         }
     }
 }

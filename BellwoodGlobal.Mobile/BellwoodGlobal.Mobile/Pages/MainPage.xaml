@@ -11,7 +11,7 @@
         <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" />
     </ContentPage.ToolbarItems>
 
-    <!-- Left-aligned TitleView with a Quotes menu button -->
+    <!-- Left-aligned TitleView with Quotes and Bookings menu buttons -->
     <Shell.TitleView>
         <!-- Grid trick to keep content left-aligned across platforms -->
         <Grid ColumnDefinitions="Auto,*" Padding="0" VerticalOptions="Center" HeightRequest="44">
@@ -19,6 +19,13 @@
                 <Button x:Name="QuotesMenuButton"
                     Text="Quotes ▾"
                     Clicked="OnQuotesMenuClicked"
+                    BackgroundColor="Transparent"
+                    Padding="0"
+                    TextColor="{StaticResource BellwoodCream}"
+                    FontSize="{StaticResource Body}"/>
+                <Button x:Name="BookingsMenuButton"
+                    Text="Bookings ▾"
+                    Clicked="OnBookingsMenuClicked"
                     BackgroundColor="Transparent"
                     Padding="0"
                     TextColor="{StaticResource BellwoodCream}"
@@ -43,18 +50,10 @@
                     CornerRadius="14" HeightRequest="56"
                     Clicked="OnBookRideClicked" />
 
-            <Button Text="Ride History"
-                    FontSize="{StaticResource H2}"
-                    TextColor="{StaticResource BellwoodCream}"
-                    BackgroundColor="{StaticResource BellwoodCharcoal}"
-                    BorderColor="{StaticResource BellwoodGold}" BorderWidth="1"
-                    CornerRadius="14" HeightRequest="56"
-                    Clicked="OnRideHistory" />
-        </VerticalStackLayout>
-
-        <Label Grid.Row="2" Margin="0,24,0,12"
+            <Label Grid.Row="2" Margin="0,24,0,12"
                Text="BE the Bellwood Difference"
                HorizontalTextAlignment="Center"
                TextColor="{StaticResource BellwoodCream}" Opacity="0.7" />
+        </VerticalStackLayout>
     </Grid>
 </ContentPage>

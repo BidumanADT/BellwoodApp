@@ -34,6 +34,35 @@
                        FontSize="12" />
             </Grid>
 
+            <!-- Track Driver Banner (shown when OnRoute) -->
+            <Frame x:Name="TrackDriverBanner"
+                   BackgroundColor="{StaticResource BellwoodGold}"
+                   Padding="16"
+                   CornerRadius="12"
+                   HasShadow="False"
+                   IsVisible="False">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="🚗 Driver en route!" 
+                               TextColor="{StaticResource BellwoodInk}" 
+                               FontSize="16" 
+                               FontAttributes="Bold" />
+                        <Label Text="Track your driver's live location" 
+                               TextColor="{StaticResource BellwoodInk}" 
+                               FontSize="13"
+                               Opacity="0.8" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1"
+                            Text="Track →"
+                            BackgroundColor="{StaticResource BellwoodInk}"
+                            TextColor="{StaticResource BellwoodGold}"
+                            Clicked="OnTrackDriverClicked"
+                            VerticalOptions="Center"
+                            Padding="16,8"
+                            CornerRadius="8" />
+                </Grid>
+            </Frame>
+
             <!-- Pickup -->
             <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
                 <VerticalStackLayout Spacing="6">

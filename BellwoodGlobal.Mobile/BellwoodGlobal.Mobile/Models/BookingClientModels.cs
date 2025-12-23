@@ -11,6 +11,14 @@ namespace BellwoodGlobal.Mobile.Models
         public string Id { get; set; } = "";
         public DateTime CreatedUtc { get; set; }
         public string Status { get; set; } = "Requested"; // Requested, Confirmed, Declined, Cancelled
+        
+        /// <summary>
+        /// Current driver/ride-specific status (OnRoute, Arrived, PassengerOnboard, etc.)
+        /// Used for real-time driver tracking status updates.
+        /// If populated, this should be displayed instead of Status.
+        /// </summary>
+        public string? CurrentRideStatus { get; set; }
+        
         public string BookerName { get; set; } = "";
         public string PassengerName { get; set; } = "";
         public string VehicleClass { get; set; } = "";
@@ -27,6 +35,13 @@ namespace BellwoodGlobal.Mobile.Models
         public string Id { get; set; } = "";
         public DateTime CreatedUtc { get; set; }
         public string Status { get; set; } = "Requested";
+        
+        /// <summary>
+        /// Current driver/ride-specific status (OnRoute, Arrived, PassengerOnboard, etc.)
+        /// Used for driver tracking and real-time status updates.
+        /// </summary>
+        public string? CurrentRideStatus { get; set; }
+        
         public string BookerName { get; set; } = "";
         public string PassengerName { get; set; } = "";
         public string VehicleClass { get; set; } = "";

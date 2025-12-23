@@ -32,5 +32,13 @@ namespace BellwoodGlobal.Mobile.Services
         /// Cancels a booking request. Only allowed for Requested/Confirmed bookings.
         /// </summary>
         Task CancelBookingAsync(string id);
+
+        // ========== DRIVER TRACKING ==========
+        /// <summary>
+        /// Gets the current driver location for a ride.
+        /// Returns null if no location data is available.
+        /// </summary>
+        /// <param name="rideId">The ride ID to get driver location for.</param>
+        Task<DriverLocation?> GetDriverLocationAsync(string rideId);
     }
 }

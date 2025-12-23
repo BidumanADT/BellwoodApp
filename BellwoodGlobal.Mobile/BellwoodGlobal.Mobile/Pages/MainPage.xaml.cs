@@ -40,6 +40,22 @@ public partial class MainPage : ContentPage
                 break;
         }
     }
+
+    private async void OnBookingsMenuClicked(object? sender, EventArgs e)
+    {
+        var choice = await DisplayActionSheet(
+            "Bookings", "Cancel", null,
+            "My Bookings"
+        );
+
+        switch (choice)
+        {
+            case "My Bookings":
+                await Shell.Current.GoToAsync(nameof(Pages.BookingsPage));
+                break;
+        }
+    }
+
     private async void OnRideHistory(object sender, EventArgs e)
         => await Shell.Current.GoToAsync(nameof(RideHistoryPage));  // relative push
 

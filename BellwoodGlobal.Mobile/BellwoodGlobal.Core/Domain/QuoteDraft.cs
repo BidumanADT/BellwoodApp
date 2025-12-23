@@ -8,6 +8,17 @@ public sealed class QuoteDraft
     public string VehicleClass { get; set; } = "Sedan";
     public DateTime PickupDateTime { get; set; }
     public string PickupLocation { get; set; } = "";
+
+    /// <summary>
+    /// Pickup location latitude (for driver tracking/ETA).
+    /// </summary>
+    public double? PickupLatitude { get; set; }
+
+    /// <summary>
+    /// Pickup location longitude (for driver tracking/ETA).
+    /// </summary>
+    public double? PickupLongitude { get; set; }
+
     public PickupStyle PickupStyle { get; set; } = PickupStyle.Curbside;
     public string? PickupSignText { get; set; }
     public PickupStyle? ReturnPickupStyle { get; set; }
@@ -15,6 +26,17 @@ public sealed class QuoteDraft
     public bool AsDirected { get; set; }
     public int? Hours { get; set; }
     public string? DropoffLocation { get; set; }
+
+    /// <summary>
+    /// Dropoff location latitude (for trip tracking).
+    /// </summary>
+    public double? DropoffLatitude { get; set; }
+
+    /// <summary>
+    /// Dropoff location longitude (for trip tracking).
+    /// </summary>
+    public double? DropoffLongitude { get; set; }
+
     public bool RoundTrip { get; set; }
     public DateTime? ReturnPickupTime { get; set; }
     public FlightInfo OutboundFlight { get; set; } = new();

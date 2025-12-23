@@ -1,8 +1,14 @@
 ﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.bellwoodglobal.mobile">
 	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<application
     android:label="Bellwood Elite"
     android:icon="@mipmap/bellwood_elite_icon_padded"
-    android:roundIcon="@mipmap/bellwood_elite_icon_padded" />
+    android:roundIcon="@mipmap/bellwood_elite_icon_padded">
+		<!-- Google Maps API Key -->
+		<meta-data android:name="com.google.android.geo.API_KEY" 
+		           android:value="AIzaSyDzAsZxbY4ZnHGBt9X_17Mc532J6t5_LA8" />
+	</application>
 </manifest>

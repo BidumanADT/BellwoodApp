@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Mobile.Services;
+using BellwoodGlobal.Mobile.Helpers;
 
 namespace BellwoodGlobal.Mobile.Pages;
 
@@ -115,6 +116,11 @@ public partial class BookingsPage : ContentPage
             ["Requested"] = "Requested",
             ["Confirmed"] = "Confirmed",
             ["Scheduled"] = "Scheduled",
+            ["OnRoute"] = "Driver En Route",
+            ["Dispatched"] = "Dispatched",
+            ["EnRoute"] = "En Route",
+            ["Arrived"] = "Driver Arrived",
+            ["PassengerOnboard"] = "Passenger On Board",
             ["InProgress"] = "In Progress",
             ["Completed"] = "Completed",
             ["Cancelled"] = "Cancelled",
@@ -134,6 +140,19 @@ public partial class BookingsPage : ContentPage
         return DisplayStatusMap.TryGetValue(raw!, out var friendly) ? friendly : raw!;
     }
 
+    /// <summary>
+    /// Gets the effective display status, preferring CurrentRideStatus when available.
+    /// </summary>
+    private static string GetEffectiveStatus(BookingListItem b)
+    {
+        // Prefer CurrentRideStatus (driver-specific status) when populated
+        var statusToUse = !string.IsNullOrWhiteSpace(b.CurrentRideStatus) 
+            ? b.CurrentRideStatus 
+            : b.Status;
+        
+        return ToDisplayStatus(statusToUse);
+    }
+
     // Mirror the enum from AdminAPI for defensive parsing
     private enum BookingStatusEnum 
     { 
@@ -149,6 +168,9 @@ public partial class BookingsPage : ContentPage
         {
             "requested" => TryGetColor("ChipPending", Colors.Goldenrod),
             "confirmed" or "scheduled" => TryGetColor("ChipPriced", Colors.SeaGreen),
+            "driver en route" or "dispatched" or "en route" => TryGetColor("BellwoodGold", Colors.Gold),
+            "driver arrived" or "arrived" => TryGetColor("BellwoodGold", Colors.Gold),
+            "passenger on board" or "passengeronboard" => TryGetColor("BellwoodGold", Colors.Gold),
             "in progress" => TryGetColor("BellwoodGold", Colors.Gold),
             "completed" => TryGetColor("ChipOther", Colors.LightGray),
             "cancelled" or "no show" => TryGetColor("ChipDeclined", Colors.IndianRed),
@@ -183,17 +205,18 @@ public partial class BookingsPage : ContentPage
 
         public static RowVm From(BookingListItem b)
         {
-            var displayStatus = ToDisplayStatus(b.Status);
+            // Use CurrentRideStatus if available, otherwise fall back to Status
+            var displayStatus = GetEffectiveStatus(b);
 
             return new RowVm
             {
                 Id = b.Id ?? "",
                 Title = $"{(string.IsNullOrWhiteSpace(b.PassengerName) ? "Passenger" : b.PassengerName)}  ·  {b.VehicleClass}",
-                SubTitle = $"{b.PickupDateTime:g} — {b.PickupLocation}",
+                SubTitle = $"{DateTimeHelper.FormatFriendly(b.PickupDateTime)} — {b.PickupLocation}",
                 Meta =
                     $"Booker: {b.BookerName}   •   " +
                     $"Drop: {(string.IsNullOrWhiteSpace(b.DropoffLocation) ? "As Directed" : b.DropoffLocation)}   •   " +
-                    $"Created: {b.CreatedUtc.ToLocalTime():g}",
+                    $"Created: {DateTimeHelper.FormatForDisplay(b.CreatedUtc)}",
                 Status = displayStatus,
                 StatusColor = StatusColorForDisplay(displayStatus)
             };
