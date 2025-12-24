@@ -7,7 +7,7 @@
 **Repository:** https://github.com/BidumanADT/BellwoodApp  
 **Branch:** `feature/driver-tracking`  
 **Status:** ✅ Passenger App Complete | ⏳ Backend Fix Required  
-**Date:** December 2024
+**Date:** December 2025
 
 ---
 
@@ -772,12 +772,12 @@ Tracking
 
 | Date | Activity | Status |
 |------|----------|--------|
-| Dec 18, 2024 | Initial implementation | ✅ Complete |
-| Dec 19, 2024 | Status display fix | ✅ Complete |
-| Dec 20, 2024 | Endpoint migration | ✅ Complete |
-| Dec 21, 2024 | Polling loop bug fix | ✅ Complete |
-| Dec 22, 2024 | Enhanced logging | ✅ Complete |
-| Dec 23, 2024 | Root cause identified | ✅ Complete |
+| Dec 18, 2025 | Initial implementation | ✅ Complete |
+| Dec 19, 2025 | Status display fix | ✅ Complete |
+| Dec 20, 2025 | Endpoint migration | ✅ Complete |
+| Dec 21, 2025 | Polling loop bug fix | ✅ Complete |
+| Dec 22, 2025 | Enhanced logging | ✅ Complete |
+| Dec 23, 2025 | Root cause identified | ✅ Complete |
 | **TBD** | **Backend fix** | ⏳ **PENDING** |
 | **TBD** | **End-to-end testing** | ⏳ Pending |
 | **TBD** | **Production deployment** | ⏳ Pending |
@@ -795,7 +795,7 @@ Tracking
 
 ### Code Repositories
 - Passenger App: https://github.com/BidumanADT/BellwoodApp
-- Backend API: https://github.com/BidumanADT/RidesApi
+- Backend API: https://github.com/BidumanADT/Bellwood.AdminAPI
 
 ### API Documentation
 - Endpoint: `GET /passenger/rides/{rideId}/location`
@@ -805,7 +805,7 @@ Tracking
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** December 23, 2024  
+**Last Updated:** December 23, 2025
 **Status:** ✅ Passenger App Complete | ⏳ Backend Fix Required  
 **Estimated Time to Production:** < 1 day (after backend fix)
 
@@ -813,4 +813,3 @@ Tracking
 
 **🎯 BOTTOM LINE:**
 
-The passenger app is **100% complete and working perfectly**. The ONLY thing preventing this feature from going live is **one missing field** (`trackingActive: true`) in the backend API response. Once the backend team adds that one line of code, the feature will be **immediately production-ready**.
