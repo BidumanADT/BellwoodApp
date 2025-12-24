@@ -6,17 +6,17 @@
 
 A premium cross-platform mobile application for Bellwood Global, providing seamless ride booking, quote management, and transportation services.
 
-## ?? Overview
+## Overview
 
-Bellwood Elite is a sophisticated .NET MAUI mobile application that enables users to:
-- Book premium transportation services
-- Request and manage ride quotes
-- Track ride history and booking details
-- Manage payment methods
-- View real-time driver tracking
-- Access personalized user profiles
+Bellwood Elite is a .NET MAUI application that allows passengers to:
+- Authenticate securely and manage their rider profile
+- Book new trips and review booking history
+- Request quotes (one-way or round trip) with flight information and special requests
+- Save and re-use locations with native map integrations
+- Track booking status updates as drivers progress through a trip
+- View real-time driver location, ETA, and distance when tracking is active
 
-## ??? Architecture
+## Architecture
 
 The solution consists of three main projects:
 
@@ -38,26 +38,26 @@ The solution consists of three main projects:
 - **Framework:** .NET 9.0/.NET 8.0
 - **Purpose:** RESTful API for ride booking and management
 
-## ?? Features
+## Current Capabilities
 
-### Core Functionality
-- ? **User Authentication** - Secure login and authorization
-- ? **Ride Booking** - Quick and easy ride reservation
-- ? **Quote Management** - Request, view, and manage ride quotes
-- ? **Booking History** - Complete ride history tracking
-- ? **Driver Tracking** - Real-time driver location (feature branch)
-- ? **Payment Integration** - Secure payment method management
-- ? **Location Services** - Map integration and location picking
-- ? **Flight Information** - Airport pickup with flight tracking
+- **Authentication & Profiles:** JWT-secured login with stored tokens; profile data hydrates quote and booking flows.
+- **Ride Booking & History:** Create rides, view historical trips, and see detailed booking information.
+- **Quote Builder:** Booker/passenger selection, vehicle class, additional passengers, round-trip support, flight info, and additional requests with JSON preview/copy.
+- **Payment Methods:** Manage and submit payment data for rides.
+- **Location Services:** Cross-platform `LocationPickerService` with geocoding, reverse-geocoding, current-location lookup, and deep links to native map apps.
+- **Booking Statuses:** Displays `CurrentRideStatus` (e.g., Driver En Route, Arrived, Passenger On Board) when present, falling back to booking `Status`; gold status chips for active driver states.
+- **Driver Tracking:** Passenger-safe tracking via `GET /passenger/rides/{rideId}/location` with ETA/distance, stale-location warnings, and clear state messaging.
 
-### User Experience
-- ?? Custom branding with Bellwood Elite theme
-- ?? Professional UI with gradient backgrounds
-- ?? Responsive design across all platforms
-- ? Fast and fluid animations
-- ?? Status-based color coding for bookings
+## Driver Tracking & Ride Status
 
-## ?? Project Structure
+- Passenger app polls the passenger-safe endpoint every ~15 seconds using the authenticated user's email claim for authorization.
+- Supported tracking states: **Loading**, **Tracking**, **NotStarted** (driver has not begun), **Unavailable** (404 or GPS gap), **Unauthorized** (403 for non-owners), **Error**, and **Ended**. UI messages and retry visibility adapt per state.
+- ETA uses Haversine distance plus driver speed (or a 35 km/h default) and marks estimates when speed is unknown.
+- Map pins show pickup plus live driver location; auto-zoom keeps both visible when tracking.
+- Backend must include `trackingActive: true` when location data is returned; otherwise the app treats the ride as "not started."
+- Bookings list and detail views prioritize `CurrentRideStatus` so passengers see real-time driver progress and the "Track Driver" entry point appears for OnRoute/Arrived/PassengerOnboard.
+
+## Project Structure
 
 ```
 BellwoodGlobal.Mobile/
@@ -133,14 +133,24 @@ BellwoodGlobal.Core/
 ?   ??? PickupStyle.cs
 ??? Helpers/                        # Utility Classes
     ??? LocationHelper.cs
-    ??? CapacityValidator.cs
+??? CapacityValidator.cs
 ```
 
-## ??? Prerequisites
+## Documentation
+
+- `Docs/PassengerLocationTracking-Implementation.md` – deep dive on tracking flow and models  
+- `Docs/PassengerLocationTracking-TestingGuide.md` – edge cases and QA steps  
+- `Docs/PassengerLocationTracking-QuickRef.md` – code snippets for developers  
+- `Docs/PassengerLocationTracking-Summary.md` – executive summary  
+- `Docs/CurrentRideStatus-Implementation-Summary.md` – status mapping and UI behavior  
+- `Docs/LocationPickerService.md` & `Docs/LocationPickerService-Testing.md` – location picker design and validation  
+- `Docs/DriverTracking-*` – diagnostic logging, polling loop fixes, and pending backend requirement (`trackingActive` flag)
+
+## Prerequisites
 
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Visual Studio 2022](https://visualstudio.microsoft.com/) (17.8+) with MAUI workload
+- [Visual Studio 2022](https://visualstudio.microsoft.com/) (17.8+) with MAUI workload  
   - OR [Visual Studio Code](https://code.visualstudio.com/) with C# Dev Kit
 - Platform-specific requirements:
   - **iOS:** macOS with Xcode 15+
@@ -148,243 +158,79 @@ BellwoodGlobal.Core/
   - **Windows:** Windows 10 Build 17763+
   - **macOS:** macOS 13.1+
 
-## ?? Dependencies
+## Getting Started
 
-### Main Application (BellwoodGlobal.Mobile)
-```xml
-<PackageReference Include="Microsoft.Maui.Controls" />
-<PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
-<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
-<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
-```
-
-### Core Library (BellwoodGlobal.Core)
-- .NET 8.0 Standard Library
-
-## ?? Getting Started
-
-### 1. Clone the Repository
-
+1) **Clone**
 ```bash
 git clone https://github.com/BidumanADT/BellwoodApp.git
 cd BellwoodApp/BellwoodGlobal.Mobile
 ```
 
-### 2. Restore Dependencies
-
+2) **Restore**
 ```bash
 dotnet restore
 ```
 
-### 3. Configure API Endpoint
+3) **Configure API endpoints** in `MauiProgram.cs` and service options to point to your AuthServer/RidesAPI instances (Android uses `10.0.2.2` loopback).
 
-Update the API base URL in your service configuration files to point to your backend API instance.
-
-### 4. Build the Solution
-
+4) **Build**
 ```bash
-# Build for all platforms
-dotnet build
-
-# Build for specific platform
+dotnet build           # all targets
 dotnet build -f net9.0-android
 dotnet build -f net9.0-ios
 dotnet build -f net9.0-windows10.0.19041.0
 dotnet build -f net9.0-maccatalyst
 ```
 
-### 5. Run the Application
-
-#### Using Visual Studio
-1. Open `BellwoodGlobal.Mobile.sln`
-2. Select your target platform (Android, iOS, Windows, or macOS)
-3. Choose your device/emulator
-4. Press F5 or click Run
-
-#### Using .NET CLI
+5) **Run**
+- Visual Studio: open `BellwoodGlobal.Mobile.sln`, pick target platform/emulator, and start debugging.
+- CLI examples:
 ```bash
-# Android
 dotnet build -t:Run -f net9.0-android
-
-# iOS (requires macOS)
 dotnet build -t:Run -f net9.0-ios
-
-# Windows
 dotnet build -t:Run -f net9.0-windows10.0.19041.0
 ```
 
-## ?? Branding & Design
-
-### Color Scheme
-- **Primary:** `#1C2D5C` (Deep Navy Blue)
-- **Accent:** Gold/Premium tones
-- **Background:** Custom gradients defined in `Gradients.xaml`
-
-### Fonts
-- **Primary:** Montserrat (Regular, SemiBold)
-- **Display:** Playfair Display (SemiBold)
-
-### Icons & Splash
-- App icon: 1200x1200 PNG with adaptive background
-- Splash screen: Centered Bellwood Elite logo on navy background
-
-## ?? Configuration
-
-### Development Environment Setup
-
-1. **Enable Developer Mode** (Windows)
-   ```powershell
-   # Run as Administrator
-   Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" -Name "AllowDevelopmentWithoutDevLicense" -Value 1
-   ```
-
-2. **Android Emulator Setup**
-   - Install Android SDK through Visual Studio Installer
-   - Create AVD with API 21+ through Android Device Manager
-
-3. **iOS Simulator** (macOS only)
-   - Install Xcode from App Store
-   - Open Xcode and accept license agreements
-
-## ?? Testing
+## Testing
 
 ```bash
-# Run unit tests
 dotnet test
-
-# Run with code coverage
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-## ?? Platform-Specific Notes
+## Platform Notes
 
-### Android
-- **Min SDK:** API 21 (Android 5.0 Lollipop)
-- **Target SDK:** API 35 (Android 15)
-- **Permissions:** Location, Internet, Network State
+- **Android:** Min SDK 21, Target SDK 35; requires Location/Internet/Network State permissions.
+- **iOS:** Min 11.0, Target 18.0; ensure Info.plist includes location usage strings.
+- **Windows:** Min build 17763.
+- **macOS:** Min 13.1 (Ventura).
 
-### iOS
-- **Min Version:** iOS 11.0
-- **Target Version:** iOS 18.0
-- **Info.plist:** Configure location usage descriptions
+## Deployment
 
-### Windows
-- **Min Version:** Windows 10 Build 17763
-- **Package Identity:** Required for Store deployment
-
-### macOS
-- **Min Version:** macOS 13.1 (Ventura)
-- **Entitlements:** Configure as needed
-
-## ?? Deployment
-
-### Android (Google Play Store)
 ```bash
 dotnet publish -f net9.0-android -c Release
-```
-
-### iOS (App Store)
-```bash
 dotnet publish -f net9.0-ios -c Release
-```
-
-### Windows (Microsoft Store)
-```bash
 dotnet publish -f net9.0-windows10.0.19041.0 -c Release
 ```
 
-## ?? Git Branches
+## Branches
 
-- **main:** Stable production code
-- **feature/driver-tracking:** Real-time driver tracking implementation
+- **main:** Stable production code  
+- **feature/driver-tracking:** Passenger-safe tracking implementation and docs  
 - **develop:** Integration branch for features
 
-## ?? Development Team
+## Security & Standards
 
-**Repository:** [BidumanADT/BellwoodApp](https://github.com/BidumanADT/BellwoodApp)
+- JWT-based authentication with `AuthHttpHandler` attaching tokens to outbound requests.
+- HTTPS for all service calls; dev builds allow local certificates.
+- Follow C# naming conventions, async/await for I/O, DI-first architecture, MVVM separation, and nullable reference types enabled.
 
-## ?? API Integration
+## Support
 
-The mobile app integrates with the **RidesApi** backend service for:
-- User authentication and authorization
-- Ride booking and management
-- Quote generation and tracking
-- Payment processing
-- User profile management
-
-**Backend Repository:** [BidumanADT/RidesApi](https://github.com/BidumanADT/RidesApi)
-
-## ?? Security
-
-- ? JWT-based authentication
-- ? Secure HTTP communication
-- ? AuthHttpHandler for token management
-- ? Encrypted credential storage
-- ?? Never commit sensitive credentials or API keys
-
-## ?? Code Style & Standards
-
-- **Naming:** Follow C# naming conventions
-- **Async/Await:** Use for all I/O operations
-- **Dependency Injection:** Leverage MAUI DI container
-- **MVVM Pattern:** Separation of concerns
-- **Null Safety:** Enabled (`<Nullable>enable</Nullable>`)
-
-## ?? Troubleshooting
-
-### Common Issues
-
-**Build Errors:**
-```bash
-# Clean and rebuild
-dotnet clean
-dotnet restore
-dotnet build
-```
-
-**Android Deployment Issues:**
-- Check Android SDK installation
-- Verify emulator is running
-- Enable USB debugging on physical device
-
-**iOS Code Signing:**
-- Configure provisioning profiles in Xcode
-- Verify Apple Developer account settings
-
-**Windows Packaging:**
-- Ensure package identity is properly configured
-- Check Windows SDK version compatibility
-
-## ?? Additional Resources
-
-- [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
-- [.NET MAUI GitHub](https://github.com/dotnet/maui)
-- [MAUI Community Toolkit](https://github.com/CommunityToolkit/Maui)
-- [Microsoft Learn - MAUI](https://learn.microsoft.com/training/paths/build-apps-with-dotnet-maui/)
-
-## ?? Project Statistics
-
-- **Target Frameworks:** 4 (iOS, Android, Windows, macOS)
-- **Pages:** 10+ XAML pages
-- **Services:** 10+ business services
-- **Models:** 15+ domain models
-- **.NET Version:** 9.0 (Mobile), 8.0 (Core)
-
-## ?? Version History
-
-- **v1.0.0** - Initial release
-  - User authentication
-  - Ride booking
-  - Quote management
-  - Payment integration
-  - Ride history
-
-## ?? Support
-
-For issues, questions, or contributions, please refer to the GitHub repository issue tracker.
+For issues or questions, please use the GitHub issue tracker.
 
 ---
 
-**Built with ?? using .NET MAUI**
+**Built with care using .NET MAUI**
 
-*© 2024 Bellwood Global, Inc. All rights reserved.*
+*© 2025 Bellwood Global, Inc. All rights reserved.*
