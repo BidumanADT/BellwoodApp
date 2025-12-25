@@ -120,7 +120,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 #endif
 
             var response = await client.PostAsync(
-                "places:autocomplete",
+                "v1/places:autocomplete",
                 content,
                 ct);
 
@@ -209,7 +209,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
             Debug.WriteLine($"[PlacesAutocompleteService] Place Details request: {placeId}");
 #endif
 
-            var request = new HttpRequestMessage(HttpMethod.Get, $"places/{placeId}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"v1/places/{placeId}");
             request.Headers.Add("X-Goog-FieldMask", fieldMask);
 
             var response = await client.SendAsync(request, ct);

@@ -84,10 +84,10 @@ public static class MauiProgram
         // Google Places API (New) client
         builder.Services.AddHttpClient("places", c =>
         {
-            c.BaseAddress = new Uri("https://places.googleapis.com/v1/");
+            c.BaseAddress = new Uri("https://places.googleapis.com/");
             c.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
-            c.DefaultRequestHeaders.Add("X-Goog-Api-Key", "AIzaSyDzAsZxbY4ZnHGBt9X_17Mc532J6t5_LA8");
+            c.DefaultRequestHeaders.Add("X-Goog-Api-Key", "AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY");
             c.Timeout = TimeSpan.FromSeconds(10);
         });
 
