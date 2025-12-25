@@ -9,6 +9,6 @@
     android:roundIcon="@mipmap/bellwood_elite_icon_padded">
 		<!-- Google Maps API Key -->
 		<meta-data android:name="com.google.android.geo.API_KEY" 
-		           android:value="AIzaSyDzAsZxbY4ZnHGBt9X_17Mc532J6t5_LA8" />
+		           android:value="AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY" />
 	</application>
 </manifest>
