@@ -66,4 +66,10 @@ public partial class MainPage : ContentPage
     {
         await Shell.Current.GoToAsync(nameof(Pages.BookRidePage));
     }
+
+    // DEBUG: Temporary navigation to Places API test page (Phase 1)
+    private async void OnPlacesTestClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(PlacesTestPage));
+    }
 }
