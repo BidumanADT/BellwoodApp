@@ -1,4 +1,4 @@
-﻿## Phase 0 — Alignment and guardrails (½–1 day)
+﻿## Phase 0 — Alignment and guardrails 
 Completed 24 December 2025
 
 **Goal:** Everyone agrees on UX + technical approach before touching code.
@@ -21,7 +21,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 1 — Foundations: service + models + DI (1–2 days)
+## Phase 1 — Foundations: service + models + DI 
 
 **Goal:** Build the plumbing with zero UI changes yet.
 
@@ -52,7 +52,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 2 — Reusable UI component: `LocationAutoCompleteView` (2–3 days)
+## Phase 2 — Reusable UI component: `LocationAutoCompleteView` 
 
 **Goal:** Create a drop-in component the pages can reuse without rewriting flows.
 
@@ -85,7 +85,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 3 — Integrate into Quote flow (1–2 days)
+## Phase 3 — Integrate into Quote flow 
 
 **Goal:** First production value: improve Quote pickup/dropoff without breaking anything.
 
@@ -108,7 +108,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 4 — Integrate into Book Ride flow (1–2 days)
+## Phase 4 — Integrate into Book Ride flow 
 
 **Goal:** Extend the same UX to the booking flow.
 
@@ -132,7 +132,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 5 — Lifecycle + resilience hardening (1–2 days)
+## Phase 5 — Lifecycle + resilience hardening 
 
 **Goal:** Make the flow “unbreakable” even if the OS suspends the app.
 
@@ -160,7 +160,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 6 — Cleanup + deprecation of external map picker (½–1 day)
+## Phase 6 — Cleanup + deprecation of external map picker 
 
 **Goal:** Reduce code complexity and remove the old pain point.
 
@@ -180,7 +180,7 @@ Completed 24 December 2025
 
 ---
 
-## Phase 7 — Instrumentation + quota protection (½–1 day)
+## Phase 7 — Instrumentation + quota protection 
 
 **Goal:** Confirm real usage stays under free tier and avoid surprise costs.
 

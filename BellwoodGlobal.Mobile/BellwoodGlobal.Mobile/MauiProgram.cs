@@ -37,7 +37,7 @@ public static class MauiProgram
         builder.Services.AddTransient<BookingsPage>();
         builder.Services.AddTransient<BookingDetailPage>();
         builder.Services.AddTransient<DriverTrackingPage>();
-
+        builder.Services.AddTransient<PlacesTestPage>(); // Phase 1 test page
 
         // Services
         builder.Services.AddSingleton<IAuthService, AuthService>();
@@ -50,6 +50,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ILocationPickerService, LocationPickerService>();
         builder.Services.AddSingleton<IDriverTrackingService, DriverTrackingService>();
         builder.Services.AddSingleton<IRideStatusService, RideStatusService>();
+        builder.Services.AddSingleton<IPlacesAutocompleteService, PlacesAutocompleteService>();
 
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();
@@ -79,6 +80,16 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAdminApi, AdminApi>();
 
         // -------- HttpClients --------
+
+        // Google Places API (New) client
+        builder.Services.AddHttpClient("places", c =>
+        {
+            c.BaseAddress = new Uri("https://places.googleapis.com/v1/");
+            c.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+            c.DefaultRequestHeaders.Add("X-Goog-Api-Key", "AIzaSyDzAsZxbY4ZnHGBt9X_17Mc532J6t5_LA8");
+            c.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         // Auth Server client
         builder.Services.AddHttpClient("auth", c =>

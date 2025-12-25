@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.PlacesTestPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Places API Test">
+
+    <ContentPage.Resources>
+        <Color x:Key="BellwoodInk">#0F1217</Color>
+        <Color x:Key="BellwoodCharcoal">#171B21</Color>
+        <Color x:Key="BellwoodCream">#F5F7FA</Color>
+        <Color x:Key="BellwoodGold">#FFD166</Color>
+
+        <Style TargetType="Label">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+        </Style>
+
+        <Style TargetType="Entry">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodGold}" />
+            <Setter Property="TextColor" Value="{StaticResource BellwoodInk}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <!-- Header -->
+            <Label 
+                Text="Google Places API Test" 
+                FontSize="24" 
+                FontAttributes="Bold"
+                TextColor="{StaticResource BellwoodGold}" />
+
+            <!-- Session Info -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Session Token:" FontAttributes="Bold" />
+                    <Label x:Name="SessionTokenLabel" FontSize="12" LineBreakMode="MiddleTruncation" />
+                    <Button Text="New Session" Clicked="OnNewSession" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Location Bias Info -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Location Bias:" FontAttributes="Bold" />
+                    <Label x:Name="BiasLocationLabel" FontSize="12" Text="Checking..." />
+                    <Button Text="?? Refresh Location Bias" Clicked="OnRefreshLocationBias" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Quota Status -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Quota Status:" FontAttributes="Bold" />
+                    <Label x:Name="QuotaStatusLabel" FontSize="12" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Autocomplete Test -->
+            <Label Text="Test Autocomplete" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource BellwoodGold}" />
+            
+            <Entry 
+                x:Name="SearchEntry" 
+                Placeholder="Type an address (e.g., 123 Main St, Chicago)"
+                TextChanged="OnSearchTextChanged" />
+
+            <Button Text="Search Now" Clicked="OnSearchClicked" />
+
+            <!-- Predictions Results -->
+            <Label Text="Predictions:" FontAttributes="Bold" />
+            <CollectionView x:Name="PredictionsList" HeightRequest="200">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame 
+                            BackgroundColor="{StaticResource BellwoodCharcoal}" 
+                            Padding="12" 
+                            Margin="0,4">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPredictionTapped" />
+                            </Frame.GestureRecognizers>
+                            <VerticalStackLayout>
+                                <Label Text="{Binding Description}" FontAttributes="Bold" />
+                                <Label Text="{Binding PlaceId}" FontSize="10" Opacity="0.7" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Label Text="No predictions yet. Type to search." Opacity="0.6" />
+                </CollectionView.EmptyView>
+            </CollectionView>
+
+            <!-- Place Details Test -->
+            <Label Text="Selected Place Details" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource BellwoodGold}" Margin="0,20,0,0" />
+            
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
+                <VerticalStackLayout Spacing="8">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="Label:" FontAttributes="Bold" WidthRequest="80" />
+                        <Label x:Name="DetailsLabelLabel" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="Address:" FontAttributes="Bold" WidthRequest="80" />
+                        <Label x:Name="DetailsAddressLabel" LineBreakMode="WordWrap" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="Lat/Lng:" FontAttributes="Bold" WidthRequest="80" />
+                        <Label x:Name="DetailsCoordinatesLabel" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="Place ID:" FontAttributes="Bold" WidthRequest="80" />
+                        <Label x:Name="DetailsPlaceIdLabel" FontSize="10" LineBreakMode="MiddleTruncation" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Test Logs -->
+            <Label Text="Test Log" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource BellwoodGold}" Margin="0,20,0,0" />
+            <Editor 
+                x:Name="LogEditor" 
+                HeightRequest="200" 
+                IsReadOnly="True"
+                BackgroundColor="{StaticResource BellwoodCharcoal}"
+                TextColor="{StaticResource BellwoodCream}" />
+
+            <Button Text="Clear Log" Clicked="OnClearLog" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
