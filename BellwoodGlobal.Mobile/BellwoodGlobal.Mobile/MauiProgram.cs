@@ -38,6 +38,7 @@ public static class MauiProgram
         builder.Services.AddTransient<BookingDetailPage>();
         builder.Services.AddTransient<DriverTrackingPage>();
         builder.Services.AddTransient<PlacesTestPage>(); // Phase 1 test page
+        builder.Services.AddTransient<LocationAutocompleteTestPage>(); // Phase 2 test page
 
         // Services
         builder.Services.AddSingleton<IAuthService, AuthService>();

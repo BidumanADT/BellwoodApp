@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BellwoodGlobal.Mobile.Pages.LocationAutocompleteTestPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:BellwoodGlobal.Mobile.Components"
+    BackgroundColor="{StaticResource BellwoodInk}"
+    Title="Location Autocomplete Test">
+
+    <ContentPage.Resources>
+        <Color x:Key="BellwoodInk">#0F1217</Color>
+        <Color x:Key="BellwoodCharcoal">#171B21</Color>
+        <Color x:Key="BellwoodCream">#F5F7FA</Color>
+        <Color x:Key="BellwoodGold">#FFD166</Color>
+
+        <Style TargetType="Label">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="24">
+
+            <!-- Header -->
+            <Label 
+                Text="Location Autocomplete Component" 
+                FontSize="24" 
+                FontAttributes="Bold"
+                TextColor="{StaticResource BellwoodGold}" />
+
+            <Label 
+                Text="This is a reusable component that can be dropped into any page for location selection."
+                FontSize="14"
+                Opacity="0.8"
+                LineBreakMode="WordWrap" />
+
+            <!-- Example 1: Pickup Location -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="16">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Pickup Location" FontAttributes="Bold" FontSize="18" />
+                    
+                    <components:LocationAutocompleteView 
+                        x:Name="PickupAutocomplete"
+                        Placeholder="Search for pickup address..."
+                        LocationSelected="OnPickupLocationSelected" />
+                    
+                    <Label Text="Selected:" FontSize="12" Opacity="0.7" />
+                    <Frame BackgroundColor="{StaticResource BellwoodInk}" Padding="12">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Label:" FontAttributes="Bold" WidthRequest="80" />
+                                <Label x:Name="PickupLabel" Text="-" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Address:" FontAttributes="Bold" WidthRequest="80" />
+                                <Label x:Name="PickupAddress" Text="-" LineBreakMode="WordWrap" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Coords:" FontAttributes="Bold" WidthRequest="80" />
+                                <Label x:Name="PickupCoords" Text="-" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Example 2: Dropoff Location -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="16">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Dropoff Location" FontAttributes="Bold" FontSize="18" />
+                    
+                    <components:LocationAutocompleteView 
+                        x:Name="DropoffAutocomplete"
+                        Placeholder="Search for dropoff address..."
+                        LocationSelected="OnDropoffLocationSelected" />
+                    
+                    <Label Text="Selected:" FontSize="12" Opacity="0.7" />
+                    <Frame BackgroundColor="{StaticResource BellwoodInk}" Padding="12">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Label:" FontAttributes="Bold" WidthRequest="80" />
+                                <Label x:Name="DropoffLabel" Text="-" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Address:" FontAttributes="Bold" WidthRequest="80" />
+                                <Label x:Name="DropoffAddress" Text="-" LineBreakMode="WordWrap" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Coords:" FontAttributes="Bold" WidthRequest="80" />
+                                <Label x:Name="DropoffCoords" Text="-" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Actions -->
+            <Button 
+                Text="Clear Both"
+                Clicked="OnClearBoth"
+                BackgroundColor="{StaticResource BellwoodGold}"
+                TextColor="{StaticResource BellwoodInk}" />
+
+            <!-- Usage Instructions -->
+            <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="How to Use" FontAttributes="Bold" FontSize="16" />
+                    <Label Text="1. Type at least 3 characters" FontSize="14" />
+                    <Label Text="2. Wait 300ms for debounce" FontSize="14" />
+                    <Label Text="3. Tap a suggestion" FontSize="14" />
+                    <Label Text="4. Location details populate above" FontSize="14" />
+                    <Label Text="5. Component clears automatically" FontSize="14" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

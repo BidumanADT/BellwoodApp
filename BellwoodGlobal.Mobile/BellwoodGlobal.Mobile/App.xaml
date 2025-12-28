@@ -18,7 +18,9 @@
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- Global Converters -->
             <converters:StatusToColorConverter x:Key="StatusToColor"/>
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
 
             <!-- Button | ink w/ gold text -->
             <Style x:Key="DarkHollowButton" TargetType="Button">

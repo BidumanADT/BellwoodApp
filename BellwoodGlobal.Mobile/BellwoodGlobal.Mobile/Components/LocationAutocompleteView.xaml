@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="BellwoodGlobal.Mobile.Components.LocationAutocompleteView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:BellwoodGlobal.Mobile.ViewModels"
+    xmlns:models="clr-namespace:BellwoodGlobal.Mobile.Models.Places"
+    x:Name="RootView">
+
+    <ContentView.Resources>
+        <Color x:Key="BellwoodInk">#0F1217</Color>
+        <Color x:Key="BellwoodCharcoal">#171B21</Color>
+        <Color x:Key="BellwoodCream">#F5F7FA</Color>
+        <Color x:Key="BellwoodGold">#FFD166</Color>
+        <Color x:Key="BellwoodError">#FF6B6B</Color>
+    </ContentView.Resources>
+
+    <VerticalStackLayout Spacing="8">
+
+        <!-- Search Bar with Clear Button -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            
+            <!-- Search Entry -->
+            <Entry 
+                Grid.Column="0"
+                x:Name="SearchEntry"
+                Text="{Binding SearchText, Mode=TwoWay}"
+                Placeholder="{Binding Source={x:Reference RootView}, Path=Placeholder}"
+                PlaceholderColor="#9AA3AF"
+                TextColor="{StaticResource BellwoodCream}"
+                BackgroundColor="{StaticResource BellwoodCharcoal}"
+                FontSize="16"
+                HeightRequest="44"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}" />
+
+            <!-- Loading Indicator / Clear Button -->
+            <Grid Grid.Column="1" WidthRequest="44" HeightRequest="44">
+                <!-- Loading Spinner -->
+                <ActivityIndicator 
+                    IsRunning="{Binding IsBusy}"
+                    IsVisible="{Binding IsBusy}"
+                    Color="{StaticResource BellwoodGold}"
+                    WidthRequest="24"
+                    HeightRequest="24"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+
+                <!-- Clear Button (when not busy and has text) -->
+                <Button 
+                    Text="✕"
+                    Command="{Binding ClearCommand}"
+                    IsVisible="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                    BackgroundColor="Transparent"
+                    TextColor="{StaticResource BellwoodCream}"
+                    FontSize="20"
+                    Padding="0"
+                    WidthRequest="44"
+                    HeightRequest="44" />
+            </Grid>
+        </Grid>
+
+        <!-- Error Message -->
+        <Frame 
+            IsVisible="{Binding HasError}"
+            BackgroundColor="#331A1A"
+            BorderColor="{StaticResource BellwoodError}"
+            Padding="12"
+            CornerRadius="8"
+            HasShadow="False">
+            <Label 
+                Text="{Binding ErrorMessage}"
+                TextColor="{StaticResource BellwoodError}"
+                FontSize="14"
+                LineBreakMode="WordWrap" />
+        </Frame>
+
+        <!-- Predictions List -->
+        <Frame 
+            IsVisible="{Binding HasPredictions}"
+            BackgroundColor="{StaticResource BellwoodCharcoal}"
+            Padding="0"
+            CornerRadius="8"
+            HasShadow="True">
+            
+            <CollectionView 
+                ItemsSource="{Binding Predictions}"
+                SelectionMode="None"
+                MaximumHeightRequest="220">
+                
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:AutocompletePrediction">
+                        <Frame 
+                            BackgroundColor="{StaticResource BellwoodCharcoal}"
+                            Padding="12"
+                            Margin="0"
+                            CornerRadius="0"
+                            HasShadow="False"
+                            BorderColor="#2B2F36">
+                            
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPredictionTapped" />
+                            </Frame.GestureRecognizers>
+
+                            <VerticalStackLayout Spacing="4">
+                                <!-- Main Text (Place name or street) -->
+                                <Label 
+                                    Text="{Binding Text.MainText.Text, TargetNullValue={Binding Description}}"
+                                    TextColor="{StaticResource BellwoodCream}"
+                                    FontSize="16"
+                                    FontAttributes="Bold"
+                                    LineBreakMode="TailTruncation" />
+                                
+                                <!-- Secondary Text (City, state, country) -->
+                                <Label 
+                                    Text="{Binding Text.SecondaryText.Text}"
+                                    TextColor="{StaticResource BellwoodCream}"
+                                    Opacity="0.7"
+                                    FontSize="14"
+                                    LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <ContentView Padding="16">
+                        <Label 
+                            Text="Start typing to search for an address..."
+                            TextColor="{StaticResource BellwoodCream}"
+                            Opacity="0.5"
+                            FontSize="14"
+                            HorizontalOptions="Center" />
+                    </ContentView>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Frame>
+
+    </VerticalStackLayout>
+</ContentView>
