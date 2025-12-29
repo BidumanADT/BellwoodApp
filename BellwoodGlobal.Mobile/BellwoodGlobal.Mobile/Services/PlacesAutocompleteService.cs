@@ -18,21 +18,21 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILocationPickerService _locationPicker;
     private readonly string _apiKey;
-    
+
     // Quota tracking (persistent storage keys)
     private const string QuotaDateKey = "PlacesQuota_Date";
     private const string AutocompleteCountKey = "PlacesQuota_AutocompleteCount";
     private const string DetailsCountKey = "PlacesQuota_DetailsCount";
     private const string DisabledUntilKey = "PlacesQuota_DisabledUntil";
-    
+
     // Quota limits (conservative daily limits)
     private const int DailyAutocompleteLimit = 1000; // Adjust based on your quota
     private const int DailyDetailsLimit = 500;
-    
+
     // Rate limiting
     private DateTime _lastAutocompleteRequest = DateTime.MinValue;
     private const int MinMillisecondsBetweenRequests = 100; // 10 requests per second max
-    
+
     // Debouncing state
     private CancellationTokenSource? _debounceCts;
     private const int DebounceDelayMs = 300;
@@ -48,12 +48,12 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
     {
         _httpClientFactory = httpClientFactory;
         _locationPicker = locationPicker;
-        
+
         // Get API key from AndroidManifest.xml or platform config
         // For now, using the key from AndroidManifest.xml
         // TODO: Move to secure config/secrets management
         _apiKey = "AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY";
-        
+
 #if DEBUG
         Debug.WriteLine("[PlacesAutocompleteService] Initialized with dynamic location biasing");
 #endif
@@ -67,8 +67,8 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
     /// <inheritdoc />
     public async Task<AutocompletePrediction[]> GetPredictionsAsync(
-        string input, 
-        string sessionToken, 
+        string input,
+        string sessionToken,
         CancellationToken ct = default)
     {
         // Validate input
@@ -144,7 +144,13 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
             IncrementAutocompleteCount();
 
 #if DEBUG
+            // Keep a small, non-noisy diagnostic summary in DEBUG builds.
             Debug.WriteLine($"[PlacesAutocompleteService] Autocomplete returned {predictions.Length} predictions in {stopwatch.ElapsedMilliseconds}ms");
+            if (predictions.Length > 0)
+            {
+                var p0 = predictions[0];
+                Debug.WriteLine($"[PlacesAutocompleteService] Example: text='{TruncateForLog(p0.Text?.Text, 120)}' main='{TruncateForLog(p0.StructuredFormat?.MainText?.Text, 120)}' secondary='{TruncateForLog(p0.StructuredFormat?.SecondaryText?.Text, 120)}'");
+            }
 #endif
 
             return predictions;
@@ -176,7 +182,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
     /// <inheritdoc />
     public async Task<PlaceDetails?> GetPlaceDetailsAsync(
-        string placeId, 
+        string placeId,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(placeId))
@@ -309,10 +315,10 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
                 {
                     circle = new
                     {
-                        center = new 
-                        { 
-                            latitude = userLocation.Latitude!.Value, 
-                            longitude = userLocation.Longitude!.Value 
+                        center = new
+                        {
+                            latitude = userLocation.Latitude!.Value,
+                            longitude = userLocation.Longitude!.Value
                         },
                         radius = 50000.0 // 50km radius
                     }
@@ -341,7 +347,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
     private async Task<AppLocation?> GetCachedUserLocationAsync(CancellationToken ct)
     {
         // Check cache first (valid for 5 minutes)
-        if (_cachedUserLocation != null && 
+        if (_cachedUserLocation != null &&
             DateTime.UtcNow - _locationCacheTime < LocationCacheExpiry)
         {
 #if DEBUG
@@ -411,7 +417,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
         // Check if manually disabled
         var disabledUntilStr = Preferences.Get(DisabledUntilKey, string.Empty);
-        if (!string.IsNullOrEmpty(disabledUntilStr) && 
+        if (!string.IsNullOrEmpty(disabledUntilStr) &&
             DateTime.TryParse(disabledUntilStr, out var disabledUntil))
         {
             if (DateTime.UtcNow < disabledUntil)
@@ -439,7 +445,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
         }
 
         // Warn at 80%
-        if (autocompleteCount > DailyAutocompleteLimit * 0.8 || 
+        if (autocompleteCount > DailyAutocompleteLimit * 0.8 ||
             detailsCount > DailyDetailsLimit * 0.8)
         {
 #if DEBUG
@@ -546,4 +552,12 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
         // TODO: Add to structured error log
         // For now, Debug output is sufficient
     }
+
+#if DEBUG
+    private static string TruncateForLog(string? value, int max)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        return value.Length <= max ? value : value[..max] + "...";
+    }
+#endif
 }

@@ -20,5 +20,8 @@ public partial class AppShell : Shell
         
         // DEBUG: Phase 1 test page for Places API
         Routing.RegisterRoute(nameof(Pages.PlacesTestPage), typeof(Pages.PlacesTestPage));
+        
+        // DEBUG: Phase 2 test page for LocationAutocompleteView component
+        Routing.RegisterRoute(nameof(Pages.LocationAutocompleteTestPage), typeof(Pages.LocationAutocompleteTestPage));
     }
 }
