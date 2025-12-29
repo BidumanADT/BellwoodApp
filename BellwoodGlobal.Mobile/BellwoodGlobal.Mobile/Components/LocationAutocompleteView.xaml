@@ -98,21 +98,23 @@
                             BorderColor="#2B2F36">
                             
                             <Frame.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnPredictionTapped" />
+                                <TapGestureRecognizer 
+                                    Tapped="OnPredictionTapped"
+                                    CommandParameter="{Binding .}" />
                             </Frame.GestureRecognizers>
 
                             <VerticalStackLayout Spacing="4">
                                 <!-- Main Text (Place name or street) -->
                                 <Label 
-                                    Text="{Binding Text.MainText.Text, TargetNullValue={Binding Description}}"
+                                    Text="{Binding MainTextDisplay}"
                                     TextColor="{StaticResource BellwoodCream}"
                                     FontSize="16"
                                     FontAttributes="Bold"
                                     LineBreakMode="TailTruncation" />
-                                
+
                                 <!-- Secondary Text (City, state, country) -->
                                 <Label 
-                                    Text="{Binding Text.SecondaryText.Text}"
+                                    Text="{Binding SecondaryTextDisplay}"
                                     TextColor="{StaticResource BellwoodCream}"
                                     Opacity="0.7"
                                     FontSize="14"

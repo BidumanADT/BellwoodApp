@@ -65,9 +65,15 @@ public partial class LocationAutocompleteView : ContentView
 
     private async void OnPredictionTapped(object? sender, TappedEventArgs e)
     {
-        if (sender is Frame frame && frame.BindingContext is AutocompletePrediction prediction)
+        // Use CommandParameter for stable tap handling (immune to template changes)
+        if (e.Parameter is AutocompletePrediction prediction)
         {
             await _viewModel.SelectPredictionAsync(prediction);
+        }
+        // Fallback to BindingContext if parameter not set (shouldn't happen with new XAML)
+        else if (sender is Frame frame && frame.BindingContext is AutocompletePrediction fallbackPrediction)
+        {
+            await _viewModel.SelectPredictionAsync(fallbackPrediction);
         }
     }
 
