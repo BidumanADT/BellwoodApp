@@ -6,6 +6,7 @@ using BellwoodGlobal.Mobile.Services;
 using System.Text.Json.Serialization;
 using BellwoodGlobal.Core.Domain;
 using BellwoodGlobal.Core.Helpers;
+using BellwoodGlobal.Mobile.ViewModels;
 
 namespace BellwoodGlobal.Mobile.Pages;
 
@@ -33,6 +34,11 @@ public partial class BookRidePage : ContentPage
     private bool _suppressPassengerCountEvents;
     private List<Passenger> _savedPassengers = new();
     private List<Models.Location> _savedLocations = new();
+    
+    // NEW: Store selected locations from autocomplete (with coordinates)
+    private Models.Location? _selectedPickupLocation;
+    private Models.Location? _selectedDropoffLocation;
+    
     private bool _allowReturnTailChange;
     private bool _requestsHasMeetOption;
     private bool _passengerCountDirty;
@@ -189,7 +195,19 @@ public partial class BookRidePage : ContentPage
 
     private void OnPickupLocationChanged(object? s, EventArgs e)
     {
-        PickupNewGrid.IsVisible = PickupLocationPicker.SelectedItem?.ToString() == LocationNew;
+        var isNewLocation = PickupLocationPicker.SelectedItem?.ToString() == LocationNew;
+        
+        // Show autocomplete + manual entry when "New Location" selected
+        PickupAutocompleteGrid.IsVisible = isNewLocation;
+        PickupNewGrid.IsVisible = isNewLocation;
+        
+        // Clear previous autocomplete selection when switching
+        if (isNewLocation)
+        {
+            _selectedPickupLocation = null;
+            PickupAutocomplete.Clear();
+        }
+        
         UpdatePickupStyleAirportUx();
     }
 
@@ -197,10 +215,21 @@ public partial class BookRidePage : ContentPage
     {
         var sel = DropoffPicker.SelectedItem?.ToString();
         var isAsDirected = sel == AsDirected;
+        var isNewLocation = sel == LocationNew;
 
         AsDirectedHoursGrid.IsVisible = isAsDirected;
         RoundTripGrid.IsVisible = !isAsDirected;
-        DropoffNewGrid.IsVisible = sel == LocationNew;
+        
+        // Show autocomplete + manual entry when "New Location" selected
+        DropoffAutocompleteGrid.IsVisible = isNewLocation;
+        DropoffNewGrid.IsVisible = isNewLocation;
+
+        // Clear previous autocomplete selection when switching
+        if (isNewLocation)
+        {
+            _selectedDropoffLocation = null;
+            DropoffAutocomplete.Clear();
+        }
 
         if (isAsDirected) RoundTripCheck.IsChecked = false;
 
@@ -210,6 +239,46 @@ public partial class BookRidePage : ContentPage
         UpdateReturnFlightUx();
         UpdatePickupStyleAirportUx();
         UpdateReturnPickupStyleAirportUx();
+    }
+
+    // NEW: Handle autocomplete selection for Pickup
+    private void OnPickupAutocompleteSelected(object? sender, LocationSelectedEventArgs e)
+    {
+        var location = e.Location;
+        
+        // Store the location object (has coordinates)
+        _selectedPickupLocation = location;
+        
+        // Populate manual entry fields
+        PickupNewLabel.Text = location.Label;
+        PickupNewAddress.Text = location.Address;
+        
+        // Update airport-specific UX
+        UpdatePickupStyleAirportUx();
+        
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[BookRidePage] Pickup autocomplete selected: {location.Label} @ {location.Latitude}, {location.Longitude}");
+#endif
+    }
+
+    // NEW: Handle autocomplete selection for Dropoff
+    private void OnDropoffAutocompleteSelected(object? sender, LocationSelectedEventArgs e)
+    {
+        var location = e.Location;
+        
+        // Store the location object (has coordinates)
+        _selectedDropoffLocation = location;
+        
+        // Populate manual entry fields
+        DropoffNewLabel.Text = location.Label;
+        DropoffNewAddress.Text = location.Address;
+        
+        // Update return pickup airport UX (dropoff becomes return pickup in round trip)
+        UpdateReturnPickupStyleAirportUx();
+        
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[BookRidePage] Dropoff autocomplete selected: {location.Label} @ {location.Latitude}, {location.Longitude}");
+#endif
     }
 
     private void OnRoundTripChanged(object? sender, CheckedChangedEventArgs e)
@@ -476,14 +545,25 @@ public partial class BookRidePage : ContentPage
             await DisplayAlert("Pickup", "Label and address are required.", "OK");
             return;
         }
-        var loc = new Models.Location { Label = label, Address = addr };
+        
+        // Create location object, preserving coordinates if from autocomplete
+        var loc = _selectedPickupLocation ?? new Models.Location { Label = label, Address = addr };
+        
+        // Update with current values (in case user edited after autocomplete)
+        loc.Label = label;
+        loc.Address = addr;
+        
         _savedLocations.Add(loc);
         var display = loc.ToString();
         var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
         PickupLocationPicker.Items.Insert(insertAt, display);
         PickupLocationPicker.SelectedIndex = insertAt;
+        
+        // Hide both autocomplete and manual entry grids
+        PickupAutocompleteGrid.IsVisible = false;
         PickupNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Pickup location added.", "OK");
+        
+        await DisplayAlert("Saved", $"Pickup location added{(_selectedPickupLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
         UpdatePickupStyleAirportUx();
     }
 
@@ -496,21 +576,39 @@ public partial class BookRidePage : ContentPage
             await DisplayAlert("Dropoff", "Label and address are required.", "OK");
             return;
         }
-        var loc = new Models.Location { Label = label, Address = addr };
+        
+        // Create location object, preserving coordinates if from autocomplete
+        var loc = _selectedDropoffLocation ?? new Models.Location { Label = label, Address = addr };
+        
+        // Update with current values (in case user edited after autocomplete)
+        loc.Label = label;
+        loc.Address = addr;
+        
         _savedLocations.Add(loc);
         var display = loc.ToString();
         var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1);
         DropoffPicker.Items.Insert(insertAt, display);
         DropoffPicker.SelectedIndex = insertAt;
+        
+        // Hide both autocomplete and manual entry grids
+        DropoffAutocompleteGrid.IsVisible = false;
         DropoffNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Dropoff location added.", "OK");
+        
+        await DisplayAlert("Saved", $"Dropoff location added{(_selectedDropoffLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
         UpdateReturnPickupStyleAirportUx();
     }
 
-    // ===== MAP PICKER HANDLERS =====
-
+    // UPDATED: "Pick from Maps" becomes "View in Maps" (optional, view-only)
     private async void OnPickPickupFromMaps(object? sender, EventArgs e)
     {
+        // If we have coordinates from autocomplete, open maps to that location
+        if (_selectedPickupLocation?.HasCoordinates == true)
+        {
+            await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
+            return;
+        }
+        
+        // Otherwise, fallback to old behavior (pick from maps + manual entry)
         var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
         {
             Title = "Select Pickup Location",
@@ -521,12 +619,13 @@ public partial class BookRidePage : ContentPage
 
         if (result.Success && result.Location is not null)
         {
+            _selectedPickupLocation = result.Location;
             PickupNewLabel.Text = result.Location.Label;
             PickupNewAddress.Text = result.Location.Address;
-
+            
 #if DEBUG
             if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Pickup coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Pickup coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
 #endif
         }
         else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
@@ -537,6 +636,14 @@ public partial class BookRidePage : ContentPage
 
     private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
     {
+        // If we have coordinates from autocomplete, open maps to that location
+        if (_selectedDropoffLocation?.HasCoordinates == true)
+        {
+            await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
+            return;
+        }
+        
+        // Otherwise, fallback to old behavior (pick from maps + manual entry)
         var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
         {
             Title = "Select Dropoff Location",
@@ -547,12 +654,13 @@ public partial class BookRidePage : ContentPage
 
         if (result.Success && result.Location is not null)
         {
+            _selectedDropoffLocation = result.Location;
             DropoffNewLabel.Text = result.Location.Label;
             DropoffNewAddress.Text = result.Location.Address;
-
+            
 #if DEBUG
             if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Dropoff coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Dropoff coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
 #endif
         }
         else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
