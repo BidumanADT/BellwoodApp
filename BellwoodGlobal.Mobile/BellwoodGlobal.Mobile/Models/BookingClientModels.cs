@@ -10,6 +10,13 @@ namespace BellwoodGlobal.Mobile.Models
     {
         public string Id { get; set; } = "";
         public DateTime CreatedUtc { get; set; }
+        
+        /// <summary>
+        /// Timezone-aware creation timestamp (converted to user's local timezone by API).
+        /// Use this for display instead of CreatedUtc to show correct local time.
+        /// </summary>
+        public DateTimeOffset CreatedDateTimeOffset { get; set; }
+        
         public string Status { get; set; } = "Requested"; // Requested, Confirmed, Declined, Cancelled
         
         /// <summary>
@@ -34,6 +41,13 @@ namespace BellwoodGlobal.Mobile.Models
     {
         public string Id { get; set; } = "";
         public DateTime CreatedUtc { get; set; }
+        
+        /// <summary>
+        /// Timezone-aware creation timestamp (converted to user's local timezone by API).
+        /// Use this for display instead of CreatedUtc to show correct local time.
+        /// </summary>
+        public DateTimeOffset CreatedDateTimeOffset { get; set; }
+        
         public string Status { get; set; } = "Requested";
         
         /// <summary>
