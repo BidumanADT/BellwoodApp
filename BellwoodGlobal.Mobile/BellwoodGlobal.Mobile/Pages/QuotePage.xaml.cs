@@ -1,11 +1,11 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Linq;
 using BellwoodGlobal.Mobile.Models;
 using BellwoodGlobal.Mobile.Services;
 using System.Text.Json.Serialization;
 using BellwoodGlobal.Core.Domain;
-
+using BellwoodGlobal.Mobile.ViewModels;
 
 namespace BellwoodGlobal.Mobile.Pages;
 
@@ -24,7 +24,6 @@ public partial class QuotePage : ContentPage
     private const string AsDirected = "As Directed";
     private bool _suppressPassengerCountEvents;
 
-
     // --- flight UI constants (avoid string typos) ---
     private const string FlightOptionTBD = "TBD";
     private const string FlightOptionCommercial = "Commercial Flight";
@@ -33,6 +32,10 @@ public partial class QuotePage : ContentPage
 
     private List<Passenger> _savedPassengers = new();
     private List<Models.Location> _savedLocations = new();
+
+    // NEW: Store selected locations from autocomplete (with coordinates)
+    private Models.Location? _selectedPickupLocation;
+    private Models.Location? _selectedDropoffLocation;
 
     // --- flight state for return logic ---
     private bool _allowReturnTailChange;     // private only
@@ -45,19 +48,19 @@ public partial class QuotePage : ContentPage
 
     // pax, checked, carry-on limits per class
     private readonly Dictionary<string, (int pax, int checkedBags, int carryOns)> _vehicleCaps = new()
-{
-    { "Sedan",    (2, 2, 4) },
-    { "S-Class",  (2, 2, 4) },
-    { "SUV",      (4, 4, 8) },
-    { "Sprinter", (8,10,20) },
-};
+    {
+        { "Sedan",    (2, 2, 4) },
+        { "S-Class",  (2, 2, 4) },
+        { "SUV",      (4, 4, 8) },
+        { "Sprinter", (8,10,20) },
+    };
 
     private (bool within, string? note, string? suggestion) EvaluateCapacity(
         int pax, int checkedBags, int carryOns, string vehicleClass)
     {
         if (!_vehicleCaps.TryGetValue(vehicleClass, out var caps))
         {
-            // Unknown class → assume OK
+            // Unknown class ? assume OK
             return (true, null, null);
         }
 
@@ -83,7 +86,7 @@ public partial class QuotePage : ContentPage
 
     private string? SuggestVehicle(int pax, int checkedBags, int carryOns, string current)
     {
-        // try “next sizes up”
+        // try "next sizes up"
         var order = new[] { "Sedan", "S-Class", "SUV", "Sprinter" };
 
         // start from the next class above current, if possible
@@ -99,7 +102,6 @@ public partial class QuotePage : ContentPage
         }
         return null; // nothing fits (rare)
     }
-
 
     private void RecomputeCapacityBanner()
     {
@@ -119,12 +121,11 @@ public partial class QuotePage : ContentPage
             return;
         }
 
-        // Respect prior “Keep Current” choice, but still show info
+        // Respect prior "Keep Current" choice, but still show info
         var keepTag = _userChoseToKeep ? " (user chose to keep current vehicle)" : "";
         CapacityBannerText.Text = $"{note}{keepTag}";
         CapacityBanner.IsVisible = true;
     }
-
 
     private static bool IsAirportText(string? text)
     {
@@ -220,7 +221,6 @@ public partial class QuotePage : ContentPage
         UpdateReturnPickupStyleAirportUx();
         RecomputeCapacityBanner();
         ReevaluateCapacityAndMaybeShowBanner();
-
     }
 
     private void OnPassengerChanged(object? sender, EventArgs e)
@@ -269,7 +269,19 @@ public partial class QuotePage : ContentPage
 
     private void OnPickupLocationChanged(object? s, EventArgs e)
     {
-        PickupNewGrid.IsVisible = PickupLocationPicker.SelectedItem?.ToString() == LocationNew;
+        var isNewLocation = PickupLocationPicker.SelectedItem?.ToString() == LocationNew;
+        
+        // Show autocomplete + manual entry when "New Location" selected
+        PickupAutocompleteGrid.IsVisible = isNewLocation;
+        PickupNewGrid.IsVisible = isNewLocation;
+        
+        // Clear previous autocomplete selection when switching
+        if (isNewLocation)
+        {
+            _selectedPickupLocation = null;
+            PickupAutocomplete.Clear();
+        }
+        
         UpdatePickupStyleAirportUx();
     }
 
@@ -277,10 +289,21 @@ public partial class QuotePage : ContentPage
     {
         var sel = DropoffPicker.SelectedItem?.ToString();
         var isAsDirected = sel == AsDirected;
+        var isNewLocation = sel == LocationNew;
 
         AsDirectedHoursGrid.IsVisible = isAsDirected;
         RoundTripGrid.IsVisible = !isAsDirected;
-        DropoffNewGrid.IsVisible = sel == LocationNew;
+        
+        // Show autocomplete + manual entry when "New Location" selected
+        DropoffAutocompleteGrid.IsVisible = isNewLocation;
+        DropoffNewGrid.IsVisible = isNewLocation;
+
+        // Clear previous autocomplete selection when switching
+        if (isNewLocation)
+        {
+            _selectedDropoffLocation = null;
+            DropoffAutocomplete.Clear();
+        }
 
         if (isAsDirected) RoundTripCheck.IsChecked = false;
 
@@ -299,7 +322,6 @@ public partial class QuotePage : ContentPage
 
         if (ReturnSection.IsVisible)
         {
-            // Default return to the pickup’s date/time; user can adjust
             ReturnDatePicker.Date = PickupDate.Date;
             ReturnTimePicker.Time = PickupTime.Time;
             SyncReturnMinAndSuggest();
@@ -312,14 +334,11 @@ public partial class QuotePage : ContentPage
 
     private void SyncReturnMinAndSuggest()
     {
-        // Enforce that return date can't be before pickup date
         ReturnDatePicker.MinimumDate = PickupDate.Date;
-
         if (ReturnSection.IsVisible)
         {
             if (ReturnDatePicker.Date < ReturnDatePicker.MinimumDate)
                 ReturnDatePicker.Date = PickupDate.Date;
-
             EnsureReturnAfterPickup(suggestIfInvalid: true);
         }
     }
@@ -331,7 +350,6 @@ public partial class QuotePage : ContentPage
 
         if (ret <= pickup && suggestIfInvalid)
         {
-            // Suggest a valid default
             var suggested = pickup.AddHours(2);
             ReturnDatePicker.Date = suggested.Date;
             ReturnTimePicker.Time = suggested.TimeOfDay;
@@ -344,27 +362,23 @@ public partial class QuotePage : ContentPage
 
         if (sel == FlightOptionCommercial)
         {
-            // Outbound
             FlightInfoGrid.IsVisible = true;
             FlightInfoLabel.Text = "Flight number";
             FlightInfoEntry.Placeholder = "e.g., AA1234";
-            // reset private-only toggle
             if (ReturnTailChangeSwitch.IsToggled) ReturnTailChangeSwitch.IsToggled = false;
             _allowReturnTailChange = false;
         }
         else if (sel == FlightOptionPrivate)
         {
-            // Outbound
             FlightInfoGrid.IsVisible = true;
             FlightInfoLabel.Text = "Tail number";
             FlightInfoEntry.Placeholder = "e.g., N123AB";
         }
-        else // TBD
+        else
         {
             FlightInfoGrid.IsVisible = false;
             FlightInfoEntry.Text = string.Empty;
-            ReturnFlightEntry.Text = "To be determined";
-
+            ReturnFlightEntry.Text = "";
             if (ReturnTailChangeSwitch.IsToggled) ReturnTailChangeSwitch.IsToggled = false;
             _allowReturnTailChange = false;
         }
@@ -376,16 +390,11 @@ public partial class QuotePage : ContentPage
     {
         var isRoundTrip = ReturnSection.IsVisible && RoundTripCheck.IsChecked;
         var sel = FlightInfoPicker.SelectedItem?.ToString();
-
         var isCommercial = sel == FlightOptionCommercial;
         var isPrivate = sel == FlightOptionPrivate;
 
-        // Show/hide the "change aircraft?" row (Private only)
         ReturnTailChangeRow.IsVisible = isRoundTrip && isPrivate;
 
-        // Show the return entry when:
-        // - Commercial (always requires its own return flight number), OR
-        // - Private and the switch is ON (changing aircraft)
         if (isRoundTrip && (isCommercial || (isPrivate && _allowReturnTailChange)))
         {
             ReturnFlightGrid.IsVisible = true;
@@ -403,7 +412,7 @@ public partial class QuotePage : ContentPage
     private void OnReturnTailChangeToggled(object? sender, ToggledEventArgs e)
     {
         _allowReturnTailChange = e.Value;
-        UpdateReturnFlightUx(); // show/hide the return entry accordingly
+        UpdateReturnFlightUx();
     }
 
     private void OnAddAdditionalPassenger(object? sender, EventArgs e)
@@ -422,7 +431,6 @@ public partial class QuotePage : ContentPage
     {
         if (sender is Button b && b.CommandParameter is string name)
             _additionalPassengers.Remove(name);
-        
         SetDefaultPassengerCountFromList();
         ReevaluateCapacityAndMaybeShowBanner();
     }
@@ -431,19 +439,17 @@ public partial class QuotePage : ContentPage
     {
         if (visible && !_requestsHasMeetOption)
         {
-            RequestsPicker.Items.Insert(0, ReqMeetAndGreet); // stick it near the top
+            RequestsPicker.Items.Insert(0, ReqMeetAndGreet);
             _requestsHasMeetOption = true;
         }
         else if (!visible && _requestsHasMeetOption)
         {
-            // clear selection if it was selected
             if (RequestsPicker.SelectedItem?.ToString() == ReqMeetAndGreet)
             {
                 RequestsPicker.SelectedIndex = -1;
                 NonAirportMeetGrid.IsVisible = false;
                 NonAirportMeetSignEntry.Text = string.Empty;
             }
-            // remove from items
             var idx = RequestsPicker.Items.IndexOf(ReqMeetAndGreet);
             if (idx >= 0) RequestsPicker.Items.RemoveAt(idx);
             _requestsHasMeetOption = false;
@@ -455,16 +461,14 @@ public partial class QuotePage : ContentPage
         var pickupLoc = ResolveLocation(PickupLocationPicker, PickupNewLabel, PickupNewAddress);
         var isAirportPickup = IsAirportText(pickupLoc);
 
-        // Airport → show style picker; Non-airport → hide style picker and use Additional Requests option
         PickupStyleRow.IsVisible = isAirportPickup;
         if (!isAirportPickup)
         {
             PickupSignGrid.IsVisible = false;
-            PickupStylePicker.SelectedIndex = 0; // curbside by default (hidden)
+            PickupStylePicker.SelectedIndex = 0;
         }
         EnsureRequestsMeetOptionVisible(!isAirportPickup);
 
-        // Show/hide sign for airport Meet & Greet
         var meetSelected = PickupStylePicker.SelectedItem?.ToString() == "Meet & Greet";
         PickupSignGrid.IsVisible = isAirportPickup && meetSelected;
     }
@@ -478,7 +482,6 @@ public partial class QuotePage : ContentPage
             return;
         }
 
-        // Return pickup location is the current Dropoff (or new dropoff)
         var dropLoc = ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress);
         var isAirportReturnPickup = IsAirportText(dropLoc);
 
@@ -495,16 +498,56 @@ public partial class QuotePage : ContentPage
         }
     }
 
+    // NEW: Handle autocomplete selection for Pickup
+    private void OnPickupAutocompleteSelected(object? sender, LocationSelectedEventArgs e)
+    {
+        var location = e.Location;
+        
+        // Store the location object (has coordinates)
+        _selectedPickupLocation = location;
+        
+        // Populate manual entry fields
+        PickupNewLabel.Text = location.Label;
+        PickupNewAddress.Text = location.Address;
+        
+        // Update airport-specific UX
+        UpdatePickupStyleAirportUx();
+        
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[QuotePage] Pickup autocomplete selected: {location.Label} @ {location.Latitude}, {location.Longitude}");
+#endif
+    }
+
+    // NEW: Handle autocomplete selection for Dropoff
+    private void OnDropoffAutocompleteSelected(object? sender, LocationSelectedEventArgs e)
+    {
+        var location = e.Location;
+        
+        // Store the location object (has coordinates)
+        _selectedDropoffLocation = location;
+        
+        // Populate manual entry fields
+        DropoffNewLabel.Text = location.Label;
+        DropoffNewAddress.Text = location.Address;
+        
+        // Update return pickup airport UX (dropoff becomes return pickup in round trip)
+        UpdateReturnPickupStyleAirportUx();
+        
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[QuotePage] Dropoff autocomplete selected: {location.Label} @ {location.Latitude}, {location.Longitude}");
+#endif
+    }
+
     private void SetDefaultPassengerCountFromList()
     {
-        if (_passengerCountDirty) return; 
-
+        if (_passengerCountDirty) return;
         var suggested = Math.Max(1, _additionalPassengers.Count + 1);
         _suppressPassengerCountEvents = true;
         PassengerCountStepper.Value = suggested;
         PassengerCountValueLabel.Text = $"{suggested}";
         _suppressPassengerCountEvents = false;
     }
+
     private void OnVehicleChanged(object? sender, EventArgs e)
     {
         _userChoseToKeep = false;
@@ -513,24 +556,24 @@ public partial class QuotePage : ContentPage
 
     private void OnPassengerCountChanged(object? sender, ValueChangedEventArgs e)
     {
-        if (_suppressPassengerCountEvents) return; 
-        _passengerCountDirty = true;               
+        if (_suppressPassengerCountEvents) return;
+        _passengerCountDirty = true;
         PassengerCountValueLabel.Text = $"{(int)e.NewValue}";
-        _userChoseToKeep = false; 
+        _userChoseToKeep = false;
         ReevaluateCapacityAndMaybeShowBanner();
     }
 
     private void OnCheckedBagsChanged(object? sender, ValueChangedEventArgs e)
     {
         CheckedBagsValueLabel.Text = $"{(int)e.NewValue}";
-        _userChoseToKeep = false; 
+        _userChoseToKeep = false;
         ReevaluateCapacityAndMaybeShowBanner();
     }
 
     private void OnCarryOnBagsChanged(object? sender, ValueChangedEventArgs e)
     {
         CarryOnBagsValueLabel.Text = $"{(int)e.NewValue}";
-        _userChoseToKeep = false;               // reset: inputs changed
+        _userChoseToKeep = false;
         ReevaluateCapacityAndMaybeShowBanner();
     }
 
@@ -554,7 +597,6 @@ public partial class QuotePage : ContentPage
             EmailAddress = (PassengerEmail.Text ?? "").Trim()
         };
         _savedPassengers.Add(p);
-        // Insert before "New Passenger"
         var insertAt = Math.Max(1, PassengerPicker.Items.Count - 1);
         PassengerPicker.Items.Insert(insertAt, p.ToString());
         PassengerPicker.SelectedIndex = insertAt;
@@ -571,15 +613,26 @@ public partial class QuotePage : ContentPage
             await DisplayAlert("Pickup", "Label and address are required.", "OK");
             return;
         }
-        var loc = new Models.Location { Label = label, Address = addr };
+        
+        // Create location object, preserving coordinates if from autocomplete
+        var loc = _selectedPickupLocation ?? new Models.Location { Label = label, Address = addr };
+        
+        // Update with current values (in case user edited after autocomplete)
+        loc.Label = label;
+        loc.Address = addr;
+        
         _savedLocations.Add(loc);
         var display = loc.ToString();
         var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
         PickupLocationPicker.Items.Insert(insertAt, display);
         PickupLocationPicker.SelectedIndex = insertAt;
+        
+        // Hide both autocomplete and manual entry grids
+        PickupAutocompleteGrid.IsVisible = false;
         PickupNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Pickup location added.", "OK");
-        UpdatePickupStyleAirportUx(); // re-evaluate airport logic
+        
+        await DisplayAlert("Saved", $"Pickup location added{(_selectedPickupLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+        UpdatePickupStyleAirportUx();
     }
 
     private async void OnSaveNewDropoff(object? sender, EventArgs e)
@@ -591,21 +644,39 @@ public partial class QuotePage : ContentPage
             await DisplayAlert("Dropoff", "Label and address are required.", "OK");
             return;
         }
-        var loc = new Models.Location { Label = label, Address = addr };
+        
+        // Create location object, preserving coordinates if from autocomplete
+        var loc = _selectedDropoffLocation ?? new Models.Location { Label = label, Address = addr };
+        
+        // Update with current values (in case user edited after autocomplete)
+        loc.Label = label;
+        loc.Address = addr;
+        
         _savedLocations.Add(loc);
         var display = loc.ToString();
         var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1); // after "As Directed"
         DropoffPicker.Items.Insert(insertAt, display);
         DropoffPicker.SelectedIndex = insertAt;
+        
+        // Hide both autocomplete and manual entry grids
+        DropoffAutocompleteGrid.IsVisible = false;
         DropoffNewGrid.IsVisible = false;
-        await DisplayAlert("Saved", "Dropoff location added.", "OK");
-        UpdateReturnPickupStyleAirportUx(); // re-evaluate airport logic for return
+        
+        await DisplayAlert("Saved", $"Dropoff location added{(_selectedDropoffLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+        UpdateReturnPickupStyleAirportUx();
     }
 
-    // ===== MAP PICKER HANDLERS =====
-    
+    // UPDATED: "Pick from Maps" becomes "View in Maps" (optional, view-only)
     private async void OnPickPickupFromMaps(object? sender, EventArgs e)
     {
+        // If we have coordinates from autocomplete, open maps to that location
+        if (_selectedPickupLocation?.HasCoordinates == true)
+        {
+            await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
+            return;
+        }
+        
+        // Otherwise, fallback to old behavior (pick from maps + manual entry)
         var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
         {
             Title = "Select Pickup Location",
@@ -616,12 +687,13 @@ public partial class QuotePage : ContentPage
 
         if (result.Success && result.Location is not null)
         {
+            _selectedPickupLocation = result.Location;
             PickupNewLabel.Text = result.Location.Label;
             PickupNewAddress.Text = result.Location.Address;
             
 #if DEBUG
             if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[QuotePage] Pickup coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Pickup coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
 #endif
         }
         else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
@@ -632,22 +704,31 @@ public partial class QuotePage : ContentPage
 
     private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
     {
+        // If we have coordinates from autocomplete, open maps to that location
+        if (_selectedDropoffLocation?.HasCoordinates == true)
+        {
+            await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
+            return;
+        }
+        
+        // Otherwise, fallback to old behavior (pick from maps + manual entry)
         var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
         {
             Title = "Select Dropoff Location",
             SuggestedLabel = (DropoffNewLabel.Text ?? "").Trim(),
             InitialAddress = (DropoffNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = false // Don't default to current location for dropoff
+            UseCurrentLocation = false
         });
 
         if (result.Success && result.Location is not null)
         {
+            _selectedDropoffLocation = result.Location;
             DropoffNewLabel.Text = result.Location.Label;
             DropoffNewAddress.Text = result.Location.Address;
             
 #if DEBUG
             if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[QuotePage] Dropoff coordinates: {result.Location.Latitude}, {result.Location.Longitude}");
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Dropoff coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
 #endif
         }
         else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
@@ -656,27 +737,18 @@ public partial class QuotePage : ContentPage
         }
     }
 
-    private static string ResolveLocation(Picker picker, Entry label, Entry address)
-    {
-        var sel = picker.SelectedItem?.ToString();
-        if (sel == LocationNew)
-            return $"{(label.Text ?? "").Trim()} - {(address.Text ?? "").Trim()}".Trim(' ', '-');
-        return sel ?? "";
-    }
-
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(_suggestedVehicleClass))
             VehiclePicker.SelectedItem = _suggestedVehicleClass;
-
-        _userChoseToKeep = false; // we just switched, allow future prompts
+        _userChoseToKeep = false;
         CapacityBanner.IsVisible = false;
-        ReevaluateCapacityAndMaybeShowBanner(); // re-check with the new class
+        ReevaluateCapacityAndMaybeShowBanner();
     }
 
     private void OnKeepCurrentVehicle(object? sender, EventArgs e)
     {
-        _userChoseToKeep = true;  // silence banner until inputs change
+        _userChoseToKeep = true;
         CapacityBanner.IsVisible = false;
     }
 
@@ -688,20 +760,17 @@ public partial class QuotePage : ContentPage
         var car = (int)CarryOnBagsStepper.Value;
 
         var (within, note, suggestion) = EvaluateCapacity(pax, chk, car, cls);
-
         _suggestedVehicleClass = suggestion;
 
         if (_userChoseToKeep)
         {
-            // user already said “Keep Current” for current state; only re-show if inputs change
             CapacityBanner.IsVisible = false;
             return;
         }
 
         if (!within && !string.IsNullOrWhiteSpace(suggestion))
         {
-            CapacityBannerText.Text = $"Looks tight for {cls}. Suggested: {suggestion}. " +
-                                      $"(pax={pax}, checked={chk}, carry-on={car})";
+            CapacityBannerText.Text = $"Looks tight for {cls}. Suggested: {suggestion}. (pax={pax}, checked={chk}, carry-on={car})";
             CapacityBanner.IsVisible = true;
         }
         else
@@ -712,7 +781,7 @@ public partial class QuotePage : ContentPage
 
     private async void OnBuildJson(object? sender, EventArgs e)
     {
-        // ---- Basic required fields
+        // Basic required fields
         if (string.IsNullOrWhiteSpace(BookerPhone.Text) || string.IsNullOrWhiteSpace(BookerEmail.Text))
         {
             await DisplayAlert("Required", "Booker phone and email are required.", "OK");
@@ -727,7 +796,6 @@ public partial class QuotePage : ContentPage
         var pickupDT = PickupDate.Date + PickupTime.Time;
         var isAsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected;
 
-        // Enforce pickup isn’t in the past / too soon (nice UX default)
         if (pickupDT <= DateTime.Now.AddMinutes(15))
         {
             await DisplayAlert("Pickup time", "Pickup should be at least 15 minutes from now.", "OK");
@@ -750,7 +818,6 @@ public partial class QuotePage : ContentPage
         string? dropLoc = isAsDirected ? null : ResolveLocation(DropoffPicker, DropoffNewLabel, DropoffNewAddress);
 
         var isAirportPickup = IsAirportText(pickupLoc);
-
         var outboundStyle = PickupStyle.Curbside;
         string? outboundSign = null;
 
@@ -783,14 +850,11 @@ public partial class QuotePage : ContentPage
             }
             else
             {
-                // (Optional) expose another Additional Request for return meet & greet
-                // For now default to Curbside unless you add a separate toggle for return.
                 returnStyle = PickupStyle.Curbside;
                 returnSign = null;
             }
         }
 
-        // Pickup must exist; Dropoff required when not As Directed
         if (string.IsNullOrWhiteSpace(pickupLoc))
         {
             await DisplayAlert("Pickup", "Please select or enter a pickup location.", "OK");
@@ -802,7 +866,7 @@ public partial class QuotePage : ContentPage
             return;
         }
 
-        // 1) Decide flight mode from picker
+        // Decide flight mode from picker
         var flightSel = FlightInfoPicker.SelectedItem?.ToString();
         var mode = flightSel == FlightOptionCommercial
             ? FlightMode.Commercial
@@ -810,7 +874,7 @@ public partial class QuotePage : ContentPage
                 ? FlightMode.Private
                 : FlightMode.None;
 
-        // --- Enforce per-leg flight rules BEFORE building state ---
+        // Enforce per-leg flight rules BEFORE building state
         if (mode == FlightMode.Commercial)
         {
             var outboundFlight = (FlightInfoEntry.Text ?? "").Trim();
@@ -850,7 +914,7 @@ public partial class QuotePage : ContentPage
             }
         }
 
-        // 2) Build the state (use your validated values)
+        // Build the state
         var state = new QuoteFormState
         {
             Booker = new Passenger
@@ -868,39 +932,28 @@ public partial class QuotePage : ContentPage
                 EmailAddress = string.IsNullOrWhiteSpace(PassengerEmail.Text) ? "" : PassengerEmail.Text
             },
             AdditionalPassengers = _additionalPassengers.ToList(),
-
             VehicleClass = VehiclePicker.SelectedItem?.ToString() ?? "Sedan",
             PickupDateTime = pickupDT,
             PickupLocation = pickupLoc,
-
             PickupStyle = outboundStyle,
             PickupSignText = outboundSign,
             ReturnPickupStyle = returnStyle,
             ReturnPickupSignText = returnSign,
-
             AsDirected = isAsDirected,
             Hours = isAsDirected ? (int?)Math.Max(1, (int)HoursStepper.Value) : null,
             DropoffLocation = isAsDirected ? null : dropLoc,
-
             RoundTrip = !isAsDirected && RoundTripCheck.IsChecked,
             ReturnPickupTime = retDT,
-
             AdditionalRequest = RequestsPicker.SelectedItem?.ToString(),
             AdditionalRequestOtherText = RequestOtherGrid.IsVisible ? (RequestOtherEntry.Text ?? "") : null,
-
             FlightMode = mode,
-
-            // outbound flight inputs from the outbound field
             OutboundFlightNumber = (mode == FlightMode.Commercial) ? (FlightInfoEntry.Text ?? "").Trim() : null,
             OutboundTailNumber = (mode == FlightMode.Private) ? (FlightInfoEntry.Text ?? "").Trim() : null,
-
-            // return flight inputs (from return controls)
             AllowReturnTailChange = _allowReturnTailChange,
             ReturnFlightNumber = (mode == FlightMode.Commercial && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null,
             ReturnTailNumber = (mode == FlightMode.Private && retDT is not null) ? (ReturnFlightEntry.Text ?? "").Trim() : null
         };
 
-        // 3) Build the QuoteDraft via the service
         state.PassengerCount = (int)PassengerCountStepper.Value;
         state.CheckedBags = (int)CheckedBagsStepper.Value;
         state.CarryOnBags = (int)CarryOnBagsStepper.Value;
@@ -927,7 +980,7 @@ public partial class QuotePage : ContentPage
             await DisplayAlert("Network", $"Could not submit to Admin: {ex.Message}", "OK");
         }
 
-        // 4) Show JSON
+        // Show JSON
         var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -938,9 +991,17 @@ public partial class QuotePage : ContentPage
         await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
     }
 
-   private async void OnCopyJson(object? sender, EventArgs e)
+    private async void OnCopyJson(object? sender, EventArgs e)
     {
         await Clipboard.SetTextAsync(JsonEditor.Text ?? "");
         await DisplayAlert("Copied", "Quote JSON copied to clipboard.", "OK");
+    }
+
+    private static string ResolveLocation(Picker picker, Entry label, Entry address)
+    {
+        var sel = picker.SelectedItem?.ToString();
+        if (sel == LocationNew)
+            return $"{(label.Text ?? "").Trim()} - {(address.Text ?? "").Trim()}".Trim(' ', '-');
+        return sel ?? "";
     }
 }
