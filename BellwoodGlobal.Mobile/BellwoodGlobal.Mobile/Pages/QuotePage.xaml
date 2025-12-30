@@ -3,6 +3,7 @@
     x:Class="BellwoodGlobal.Mobile.Pages.QuotePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:BellwoodGlobal.Mobile.Components"
     BackgroundColor="{StaticResource BellwoodInk}"
     Title="Get a Quote">
 
@@ -179,12 +180,25 @@
                 <TimePicker x:Name="PickupTime" TextColor="{StaticResource BellwoodCream}" BackgroundColor="{StaticResource BellwoodCharcoal}" />
             </HorizontalStackLayout>
             <Picker x:Name="PickupLocationPicker" Title="Select pickup location" />
+            
+            <!-- NEW: Autocomplete Component for Pickup -->
+            <Grid x:Name="PickupAutocompleteGrid" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" Margin="0,4,0,0">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Search for pickup address:" TextColor="{StaticResource BellwoodCream}" FontSize="14" />
+                    <components:LocationAutocompleteView 
+                        x:Name="PickupAutocomplete"
+                        Placeholder="Start typing an address..."
+                        LocationSelected="OnPickupAutocompleteSelected" />
+                    <Label Text="Or enter manually below:" TextColor="{StaticResource BellwoodPlaceholder}" FontSize="12" Margin="0,8,0,0" />
+                </VerticalStackLayout>
+            </Grid>
+            
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" RowSpacing="8">
                 <Label Text="New pickup label" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="PickupNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="🗺️ Pick from Maps" Clicked="OnPickPickupFromMaps" 
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="🗺️ View in Maps" Clicked="OnPickPickupFromMaps" 
                         BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodGold}" 
                         BorderColor="{StaticResource BellwoodGold}" BorderWidth="1" />
                 <Button Grid.Row="3" Grid.ColumnSpan="2" Text="Save Pickup Location" Clicked="OnSaveNewPickup"/>
@@ -244,12 +258,25 @@
             <!-- Dropoff -->
             <Label Text="Dropoff" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
             <Picker x:Name="DropoffPicker" Title="Select dropoff (or As Directed)" />
+            
+            <!-- NEW: Autocomplete Component for Dropoff -->
+            <Grid x:Name="DropoffAutocompleteGrid" IsVisible="False" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" Margin="0,4,0,0">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Search for dropoff address:" TextColor="{StaticResource BellwoodCream}" FontSize="14" />
+                    <components:LocationAutocompleteView 
+                        x:Name="DropoffAutocomplete"
+                        Placeholder="Start typing an address..."
+                        LocationSelected="OnDropoffAutocompleteSelected" />
+                    <Label Text="Or enter manually below:" TextColor="{StaticResource BellwoodPlaceholder}" FontSize="12" Margin="0,8,0,0" />
+                </VerticalStackLayout>
+            </Grid>
+            
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" IsVisible="False" x:Name="DropoffNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" RowSpacing="8">
                 <Label Text="New dropoff label" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="DropoffNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New dropoff address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="DropoffNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="🗺️ Pick from Maps" Clicked="OnPickDropoffFromMaps" 
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="🗺️ View in Maps" Clicked="OnPickDropoffFromMaps" 
                         BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodGold}" 
                         BorderColor="{StaticResource BellwoodGold}" BorderWidth="1" />
                 <Button Grid.Row="3" Grid.ColumnSpan="2" Text="Save Dropoff Location" Clicked="OnSaveNewDropoff"/>
