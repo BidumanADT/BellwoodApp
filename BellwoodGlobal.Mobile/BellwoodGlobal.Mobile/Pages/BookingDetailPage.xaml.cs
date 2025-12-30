@@ -85,7 +85,7 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
         PassengerTitle.Text = string.IsNullOrWhiteSpace(d.PassengerName) ? "Passenger" : d.PassengerName;
 
         SubHeader.Text =
-            $"{(string.IsNullOrWhiteSpace(d.VehicleClass) ? "Vehicle" : d.VehicleClass)}  •  Created {DateTimeHelper.FormatForDisplay(d.CreatedUtc)}";
+            $"{(string.IsNullOrWhiteSpace(d.VehicleClass) ? "Vehicle" : d.VehicleClass)}  •  Created {d.CreatedDateTimeOffset.LocalDateTime:g}";
 
         // Show Track Driver banner when driver status is OnRoute/InProgress/Dispatched
         // Check CurrentRideStatus first (driver-specific), fallback to Status if not available

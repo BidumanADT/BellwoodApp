@@ -216,7 +216,7 @@ public partial class BookingsPage : ContentPage
                 Meta =
                     $"Booker: {b.BookerName}   •   " +
                     $"Drop: {(string.IsNullOrWhiteSpace(b.DropoffLocation) ? "As Directed" : b.DropoffLocation)}   •   " +
-                    $"Created: {DateTimeHelper.FormatForDisplay(b.CreatedUtc)}",
+                    $"Created: {b.CreatedDateTimeOffset.LocalDateTime:g}",
                 Status = displayStatus,
                 StatusColor = StatusColorForDisplay(displayStatus)
             };
