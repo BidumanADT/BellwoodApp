@@ -18,6 +18,7 @@ public partial class BookRidePage : ContentPage
     private readonly IAdminApi _adminApi;
     private readonly IPaymentService _paymentService;
     private readonly ILocationPickerService _locationPicker;
+    private readonly IFormStateService _formStateService; // NEW: Phase 5 form persistence
 
     private List<PaymentMethod> _savedPaymentMethods = new();
     private const string PaymentMethodNew = "Add New Card";
@@ -44,6 +45,9 @@ public partial class BookRidePage : ContentPage
     private bool _passengerCountDirty;
     private string? _suggestedVehicleClass;
     private bool _userChoseToKeep;
+    
+    // NEW: Phase 5 - Flag to prevent auto-save after successful submission
+    private bool _submittedSuccessfully = false;
 
     public BookRidePage()
     {
@@ -53,6 +57,7 @@ public partial class BookRidePage : ContentPage
         _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
         _paymentService = ServiceHelper.GetRequiredService<IPaymentService>();
         _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
+        _formStateService = ServiceHelper.GetRequiredService<IFormStateService>(); // NEW: Phase 5
 
         InitializeBooker();
         InitializeData();
@@ -753,9 +758,7 @@ public partial class BookRidePage : ContentPage
             .Select(i => digitsOnly.Substring(i * 4, Math.Min(4, digitsOnly.Length - i * 4))));
 
         if (formatted != e.NewTextValue)
-        {
             entry.Text = formatted;
-        }
     }
 
     private void OnExpiryDateTextChanged(object? sender, TextChangedEventArgs e)
@@ -1090,8 +1093,12 @@ public partial class BookRidePage : ContentPage
         try
         {
             await _adminApi.SubmitBookingAsync(draft);
-
+            
+            // NEW: Set flag to prevent auto-save and clear saved form state
+            _submittedSuccessfully = true;
+            await _formStateService.ClearBookingFormStateAsync();
 #if DEBUG
+            System.Diagnostics.Debug.WriteLine("[BookRidePage] Form state cleared after successful submission");
             var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions
             {
                 WriteIndented = true,
@@ -1117,5 +1124,301 @@ public partial class BookRidePage : ContentPage
     {
         await Clipboard.SetTextAsync(JsonEditor.Text ?? "");
         await DisplayAlert("Copied", "Booking JSON copied to clipboard.", "OK");
+    }
+
+    // ===== PHASE 5: FORM STATE PERSISTENCE =====
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        // Check for saved form state
+        if (_formStateService.HasSavedBookingForm())
+        {
+            var shouldRestore = await DisplayAlert(
+                "Restore Draft?",
+                "You have an unsaved booking. Would you like to continue where you left off?",
+                "Yes, Restore",
+                "No, Start Fresh"
+            );
+
+            if (shouldRestore)
+            {
+                await RestoreFormStateAsync();
+            }
+            else
+            {
+                await _formStateService.ClearBookingFormStateAsync();
+            }
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+
+        // NEW: Phase 5 - Don't save if form was successfully submitted
+        if (_submittedSuccessfully)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[BookRidePage] Skipping auto-save (form was successfully submitted)");
+#endif
+            return;
+        }
+
+        // Auto-save form state (fire and forget)
+        _ = SaveFormStateAsync();
+    }
+
+    private async Task SaveFormStateAsync()
+    {
+        try
+        {
+            var state = new BookRidePageState
+            {
+                // Pickup Location
+                PickupLocationIndex = PickupLocationPicker.SelectedIndex >= 0 ? PickupLocationPicker.SelectedIndex : null,
+                PickupNewLabel = PickupNewLabel.Text,
+                PickupNewAddress = PickupNewAddress.Text,
+                PickupLatitude = _selectedPickupLocation?.Latitude,
+                PickupLongitude = _selectedPickupLocation?.Longitude,
+                PickupPlaceId = _selectedPickupLocation?.PlaceId,
+
+                // Dropoff Location
+                DropoffSelection = DropoffPicker.SelectedItem?.ToString(),
+                DropoffLocationIndex = DropoffPicker.SelectedIndex >= 0 ? DropoffPicker.SelectedIndex : null,
+                DropoffNewLabel = DropoffNewLabel.Text,
+                DropoffNewAddress = DropoffNewAddress.Text,
+                DropoffLatitude = _selectedDropoffLocation?.Latitude,
+                DropoffLongitude = _selectedDropoffLocation?.Longitude,
+                DropoffPlaceId = _selectedDropoffLocation?.PlaceId,
+
+                // Date/Time
+                PickupDate = PickupDate.Date,
+                PickupTime = PickupTime.Time,
+                ReturnDate = ReturnDatePicker.Date,
+                ReturnTime = ReturnTimePicker.Time,
+
+                // Vehicle & Passenger
+                VehiclePickerIndex = VehiclePicker.SelectedIndex >= 0 ? VehiclePicker.SelectedIndex : null,
+                PassengerPickerIndex = PassengerPicker.SelectedIndex >= 0 ? PassengerPicker.SelectedIndex : null,
+                PassengerFirstName = PassengerFirst.Text,
+                PassengerLastName = PassengerLast.Text,
+                PassengerPhone = PassengerPhone.Text,
+                PassengerEmail = PassengerEmail.Text,
+
+                // Additional Passengers
+                AdditionalPassengers = _additionalPassengers.ToList(),
+
+                // Round Trip
+                RoundTrip = RoundTripCheck.IsChecked,
+
+                // Luggage
+                PassengerCount = (int)PassengerCountStepper.Value,
+                CheckedBags = (int)CheckedBagsStepper.Value,
+                CarryOnBags = (int)CarryOnBagsStepper.Value,
+
+                // As Directed
+                AsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected,
+                Hours = (int)HoursStepper.Value,
+
+                // Flight Info
+                FlightInfoPickerIndex = FlightInfoPicker.SelectedIndex >= 0 ? FlightInfoPicker.SelectedIndex : null,
+                FlightInfoEntry = FlightInfoEntry.Text,
+                ReturnFlightEntry = ReturnFlightEntry.Text,
+                AllowReturnTailChange = _allowReturnTailChange,
+
+                // Pickup Style & Sign
+                PickupStylePickerIndex = PickupStylePicker.SelectedIndex >= 0 ? PickupStylePicker.SelectedIndex : null,
+                PickupSignEntry = PickupSignEntry.Text,
+                ReturnPickupStylePickerIndex = ReturnPickupStylePicker.SelectedIndex >= 0 ? ReturnPickupStylePicker.SelectedIndex : null,
+                ReturnPickupSignEntry = ReturnPickupSignEntry.Text,
+
+                // Requests
+                RequestsPickerIndex = RequestsPicker.SelectedIndex >= 0 ? RequestsPicker.SelectedIndex : null,
+                RequestOtherEntry = RequestOtherEntry.Text,
+                NonAirportMeetSignEntry = NonAirportMeetSignEntry.Text,
+
+                // Autocomplete in-progress text
+                AutocompleteSearchText_Pickup = PickupAutocomplete.SearchText,
+                AutocompleteSearchText_Dropoff = DropoffAutocomplete.SearchText,
+
+                // Payment (index only, never store card numbers!)
+                PaymentPickerIndex = PaymentPicker.SelectedIndex >= 0 ? PaymentPicker.SelectedIndex : null,
+                NewCardHolderName = CardholderNameEntry.Text,
+
+                LastModified = DateTime.UtcNow
+            };
+
+            await _formStateService.SaveBookingFormStateAsync(state);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[BookRidePage] Form state saved");
+#endif
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[BookRidePage] Error saving form state: {ex.Message}");
+#endif
+        }
+    }
+
+    private async Task RestoreFormStateAsync()
+    {
+        try
+        {
+            var state = await _formStateService.LoadBookingFormStateAsync();
+            if (state == null) return;
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[BookRidePage] Restoring form state from {state.LastModified}");
+#endif
+
+            // Restore pickers
+            if (state.PickupLocationIndex.HasValue && state.PickupLocationIndex.Value < PickupLocationPicker.Items.Count)
+                PickupLocationPicker.SelectedIndex = state.PickupLocationIndex.Value;
+
+            if (state.VehiclePickerIndex.HasValue && state.VehiclePickerIndex.Value < VehiclePicker.Items.Count)
+                VehiclePicker.SelectedIndex = state.VehiclePickerIndex.Value;
+
+            if (state.PassengerPickerIndex.HasValue && state.PassengerPickerIndex.Value < PassengerPicker.Items.Count)
+                PassengerPicker.SelectedIndex = state.PassengerPickerIndex.Value;
+
+            if (state.FlightInfoPickerIndex.HasValue && state.FlightInfoPickerIndex.Value < FlightInfoPicker.Items.Count)
+                FlightInfoPicker.SelectedIndex = state.FlightInfoPickerIndex.Value;
+
+            if (state.RequestsPickerIndex.HasValue && state.RequestsPickerIndex.Value < RequestsPicker.Items.Count)
+                RequestsPicker.SelectedIndex = state.RequestsPickerIndex.Value;
+
+            // Restore Dropoff picker
+            if (!string.IsNullOrWhiteSpace(state.DropoffSelection))
+            {
+                var dropoffIndex = DropoffPicker.Items.IndexOf(state.DropoffSelection);
+                if (dropoffIndex >= 0)
+                    DropoffPicker.SelectedIndex = dropoffIndex;
+            }
+            else if (state.DropoffLocationIndex.HasValue && state.DropoffLocationIndex.Value < DropoffPicker.Items.Count)
+            {
+                DropoffPicker.SelectedIndex = state.DropoffLocationIndex.Value;
+            }
+
+            // Restore Payment picker (wait for payment methods to load first)
+            if (_savedPaymentMethods.Any() && state.PaymentPickerIndex.HasValue && state.PaymentPickerIndex.Value < PaymentPicker.Items.Count)
+                PaymentPicker.SelectedIndex = state.PaymentPickerIndex.Value;
+
+            // Restore text fields
+            PickupNewLabel.Text = state.PickupNewLabel;
+            PickupNewAddress.Text = state.PickupNewAddress;
+            DropoffNewLabel.Text = state.DropoffNewLabel;
+            DropoffNewAddress.Text = state.DropoffNewAddress;
+
+            PassengerFirst.Text = state.PassengerFirstName;
+            PassengerLast.Text = state.PassengerLastName;
+            PassengerPhone.Text = state.PassengerPhone;
+            PassengerEmail.Text = state.PassengerEmail;
+
+            FlightInfoEntry.Text = state.FlightInfoEntry;
+            ReturnFlightEntry.Text = state.ReturnFlightEntry;
+            PickupSignEntry.Text = state.PickupSignEntry;
+            ReturnPickupSignEntry.Text = state.ReturnPickupSignEntry;
+            RequestOtherEntry.Text = state.RequestOtherEntry;
+            NonAirportMeetSignEntry.Text = state.NonAirportMeetSignEntry;
+
+            CardholderNameEntry.Text = state.NewCardHolderName;
+
+            // Restore coordinates
+            if (state.PickupLatitude.HasValue && state.PickupLongitude.HasValue)
+            {
+                _selectedPickupLocation = new Models.Location
+                {
+                    Label = state.PickupNewLabel ?? "",
+                    Address = state.PickupNewAddress ?? "",
+                    Latitude = state.PickupLatitude.Value,
+                    Longitude = state.PickupLongitude.Value,
+                    PlaceId = state.PickupPlaceId,
+                    IsVerified = true
+                };
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Restored pickup coordinates: {_selectedPickupLocation.Latitude}, {_selectedPickupLocation.Longitude}");
+#endif
+            }
+
+            if (state.DropoffLatitude.HasValue && state.DropoffLongitude.HasValue)
+            {
+                _selectedDropoffLocation = new Models.Location
+                {
+                    Label = state.DropoffNewLabel ?? "",
+                    Address = state.DropoffNewAddress ?? "",
+                    Latitude = state.DropoffLatitude.Value,
+                    Longitude = state.DropoffLongitude.Value,
+                    PlaceId = state.DropoffPlaceId,
+                    IsVerified = true
+                };
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Restored dropoff coordinates: {_selectedDropoffLocation.Latitude}, {_selectedDropoffLocation.Longitude}");
+#endif
+            }
+
+            // Restore date/time
+            if (state.PickupDate.HasValue)
+                PickupDate.Date = state.PickupDate.Value;
+            if (state.PickupTime.HasValue)
+                PickupTime.Time = state.PickupTime.Value;
+            if (state.ReturnDate.HasValue)
+                ReturnDatePicker.Date = state.ReturnDate.Value;
+            if (state.ReturnTime.HasValue)
+                ReturnTimePicker.Time = state.ReturnTime.Value;
+
+            // Restore checkboxes/switches
+            RoundTripCheck.IsChecked = state.RoundTrip;
+            ReturnTailChangeSwitch.IsToggled = state.AllowReturnTailChange;
+
+            // Restore steppers
+            _suppressPassengerCountEvents = true;
+            PassengerCountStepper.Value = state.PassengerCount;
+            CheckedBagsStepper.Value = state.CheckedBags;
+            CarryOnBagsStepper.Value = state.CarryOnBags;
+            HoursStepper.Value = state.Hours;
+            _suppressPassengerCountEvents = false;
+
+            // Update labels
+            PassengerCountValueLabel.Text = state.PassengerCount.ToString();
+            CheckedBagsValueLabel.Text = state.CheckedBags.ToString();
+            CarryOnBagsValueLabel.Text = state.CarryOnBags.ToString();
+            HoursValueLabel.Text = state.Hours.ToString();
+
+            // Restore additional passengers
+            _additionalPassengers.Clear();
+            if (state.AdditionalPassengers != null)
+            {
+                foreach (var pax in state.AdditionalPassengers)
+                    _additionalPassengers.Add(pax);
+            }
+
+            // Restore pickup style pickers
+            if (state.PickupStylePickerIndex.HasValue && state.PickupStylePickerIndex.Value < PickupStylePicker.Items.Count)
+                PickupStylePicker.SelectedIndex = state.PickupStylePickerIndex.Value;
+
+            if (state.ReturnPickupStylePickerIndex.HasValue && state.ReturnPickupStylePickerIndex.Value < ReturnPickupStylePicker.Items.Count)
+                ReturnPickupStylePicker.SelectedIndex = state.ReturnPickupStylePickerIndex.Value;
+
+            // Update UI based on restored state
+            UpdatePickupStyleAirportUx();
+            UpdateReturnPickupStyleAirportUx();
+            UpdateReturnFlightUx();
+            ReevaluateCapacityAndMaybeShowBanner();
+
+            await DisplayAlert("Draft Restored", "Your booking has been restored.", "OK");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[BookRidePage] Error restoring form state: {ex.Message}");
+#endif
+            await DisplayAlert("Restore Failed", "Could not restore your draft. Starting fresh.", "OK");
+        }
     }
 }
