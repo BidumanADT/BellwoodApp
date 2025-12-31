@@ -16,6 +16,7 @@ public partial class QuotePage : ContentPage
     private readonly IQuoteDraftBuilder _draftBuilder;
     private readonly IAdminApi _adminApi;
     private readonly ILocationPickerService _locationPicker;
+    private readonly IFormStateService _formStateService; // NEW: Phase 5 form persistence
 
     // --- passenger/location UI constants (avoid string typos) ---
     private const string PassengerSelf = "Booker (you)";
@@ -141,6 +142,7 @@ public partial class QuotePage : ContentPage
         _draftBuilder = ServiceHelper.GetRequiredService<IQuoteDraftBuilder>();
         _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
         _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
+        _formStateService = ServiceHelper.GetRequiredService<IFormStateService>(); // NEW: Phase 5
 
         // Booker
         var booker = _profile.GetBooker();
@@ -974,10 +976,17 @@ public partial class QuotePage : ContentPage
         try
         {
             await _adminApi.SubmitQuoteAsync(draft);
+            
+            // NEW: Clear saved form state after successful submission
+            await _formStateService.ClearQuoteFormStateAsync();
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[QuotePage] Form state cleared after successful submission");
+#endif
         }
         catch (Exception ex)
         {
             await DisplayAlert("Network", $"Could not submit to Admin: {ex.Message}", "OK");
+            return; // Don't show JSON or clear state if submission failed
         }
 
         // Show JSON
@@ -995,6 +1004,283 @@ public partial class QuotePage : ContentPage
     {
         await Clipboard.SetTextAsync(JsonEditor.Text ?? "");
         await DisplayAlert("Copied", "Quote JSON copied to clipboard.", "OK");
+    }
+
+    // ===== PHASE 5: FORM STATE PERSISTENCE =====
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        // Check for saved form state
+        if (_formStateService.HasSavedQuoteForm())
+        {
+            var shouldRestore = await DisplayAlert(
+                "Restore Draft?",
+                "You have an unsaved quote. Would you like to continue where you left off?",
+                "Yes, Restore",
+                "No, Start Fresh"
+            );
+
+            if (shouldRestore)
+            {
+                await RestoreFormStateAsync();
+            }
+            else
+            {
+                await _formStateService.ClearQuoteFormStateAsync();
+            }
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+
+        // Auto-save form state (fire and forget)
+        _ = SaveFormStateAsync();
+    }
+
+    private async Task SaveFormStateAsync()
+    {
+        try
+        {
+            var state = new QuotePageState
+            {
+                // Pickup Location
+                PickupLocationIndex = PickupLocationPicker.SelectedIndex >= 0 ? PickupLocationPicker.SelectedIndex : null,
+                PickupNewLabel = PickupNewLabel.Text,
+                PickupNewAddress = PickupNewAddress.Text,
+                PickupLatitude = _selectedPickupLocation?.Latitude,
+                PickupLongitude = _selectedPickupLocation?.Longitude,
+                PickupPlaceId = _selectedPickupLocation?.PlaceId,
+
+                // Dropoff Location
+                DropoffSelection = DropoffPicker.SelectedItem?.ToString(),
+                DropoffLocationIndex = DropoffPicker.SelectedIndex >= 0 ? DropoffPicker.SelectedIndex : null,
+                DropoffNewLabel = DropoffNewLabel.Text,
+                DropoffNewAddress = DropoffNewAddress.Text,
+                DropoffLatitude = _selectedDropoffLocation?.Latitude,
+                DropoffLongitude = _selectedDropoffLocation?.Longitude,
+                DropoffPlaceId = _selectedDropoffLocation?.PlaceId,
+
+                // Date/Time
+                PickupDate = PickupDate.Date,
+                PickupTime = PickupTime.Time,
+                ReturnDate = ReturnDatePicker.Date,
+                ReturnTime = ReturnTimePicker.Time,
+
+                // Vehicle & Passenger
+                VehiclePickerIndex = VehiclePicker.SelectedIndex >= 0 ? VehiclePicker.SelectedIndex : null,
+                PassengerPickerIndex = PassengerPicker.SelectedIndex >= 0 ? PassengerPicker.SelectedIndex : null,
+                PassengerFirstName = PassengerFirst.Text,
+                PassengerLastName = PassengerLast.Text,
+                PassengerPhone = PassengerPhone.Text,
+                PassengerEmail = PassengerEmail.Text,
+
+                // Additional Passengers
+                AdditionalPassengers = _additionalPassengers.ToList(),
+
+                // Round Trip
+                RoundTrip = RoundTripCheck.IsChecked,
+
+                // Luggage
+                PassengerCount = (int)PassengerCountStepper.Value,
+                CheckedBags = (int)CheckedBagsStepper.Value,
+                CarryOnBags = (int)CarryOnBagsStepper.Value,
+
+                // As Directed
+                AsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected,
+                Hours = (int)HoursStepper.Value,
+
+                // Flight Info
+                FlightInfoPickerIndex = FlightInfoPicker.SelectedIndex >= 0 ? FlightInfoPicker.SelectedIndex : null,
+                FlightInfoEntry = FlightInfoEntry.Text,
+                ReturnFlightEntry = ReturnFlightEntry.Text,
+                AllowReturnTailChange = _allowReturnTailChange,
+
+                // Pickup Style & Sign
+                PickupStylePickerIndex = PickupStylePicker.SelectedIndex >= 0 ? PickupStylePicker.SelectedIndex : null,
+                PickupSignEntry = PickupSignEntry.Text,
+                ReturnPickupStylePickerIndex = ReturnPickupStylePicker.SelectedIndex >= 0 ? ReturnPickupStylePicker.SelectedIndex : null,
+                ReturnPickupSignEntry = ReturnPickupSignEntry.Text,
+
+                // Requests
+                RequestsPickerIndex = RequestsPicker.SelectedIndex >= 0 ? RequestsPicker.SelectedIndex : null,
+                RequestOtherEntry = RequestOtherEntry.Text,
+                NonAirportMeetSignEntry = NonAirportMeetSignEntry.Text,
+
+                // Autocomplete in-progress text
+                AutocompleteSearchText_Pickup = PickupAutocomplete.SearchText,
+                AutocompleteSearchText_Dropoff = DropoffAutocomplete.SearchText,
+
+                LastModified = DateTime.UtcNow
+            };
+
+            await _formStateService.SaveQuoteFormStateAsync(state);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[QuotePage] Form state saved");
+#endif
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuotePage] Error saving form state: {ex.Message}");
+#endif
+        }
+    }
+
+    private async Task RestoreFormStateAsync()
+    {
+        try
+        {
+            var state = await _formStateService.LoadQuoteFormStateAsync();
+            if (state == null) return;
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuotePage] Restoring form state from {state.LastModified}");
+#endif
+
+            // Restore pickers
+            if (state.PickupLocationIndex.HasValue && state.PickupLocationIndex.Value < PickupLocationPicker.Items.Count)
+                PickupLocationPicker.SelectedIndex = state.PickupLocationIndex.Value;
+
+            if (state.VehiclePickerIndex.HasValue && state.VehiclePickerIndex.Value < VehiclePicker.Items.Count)
+                VehiclePicker.SelectedIndex = state.VehiclePickerIndex.Value;
+
+            if (state.PassengerPickerIndex.HasValue && state.PassengerPickerIndex.Value < PassengerPicker.Items.Count)
+                PassengerPicker.SelectedIndex = state.PassengerPickerIndex.Value;
+
+            if (state.FlightInfoPickerIndex.HasValue && state.FlightInfoPickerIndex.Value < FlightInfoPicker.Items.Count)
+                FlightInfoPicker.SelectedIndex = state.FlightInfoPickerIndex.Value;
+
+            if (state.RequestsPickerIndex.HasValue && state.RequestsPickerIndex.Value < RequestsPicker.Items.Count)
+                RequestsPicker.SelectedIndex = state.RequestsPickerIndex.Value;
+
+            // Restore Dropoff picker (handle As Directed and location indices)
+            if (!string.IsNullOrWhiteSpace(state.DropoffSelection))
+            {
+                var dropoffIndex = DropoffPicker.Items.IndexOf(state.DropoffSelection);
+                if (dropoffIndex >= 0)
+                    DropoffPicker.SelectedIndex = dropoffIndex;
+            }
+            else if (state.DropoffLocationIndex.HasValue && state.DropoffLocationIndex.Value < DropoffPicker.Items.Count)
+            {
+                DropoffPicker.SelectedIndex = state.DropoffLocationIndex.Value;
+            }
+
+            // Restore text fields
+            PickupNewLabel.Text = state.PickupNewLabel;
+            PickupNewAddress.Text = state.PickupNewAddress;
+            DropoffNewLabel.Text = state.DropoffNewLabel;
+            DropoffNewAddress.Text = state.DropoffNewAddress;
+
+            PassengerFirst.Text = state.PassengerFirstName;
+            PassengerLast.Text = state.PassengerLastName;
+            PassengerPhone.Text = state.PassengerPhone;
+            PassengerEmail.Text = state.PassengerEmail;
+
+            FlightInfoEntry.Text = state.FlightInfoEntry;
+            ReturnFlightEntry.Text = state.ReturnFlightEntry;
+            PickupSignEntry.Text = state.PickupSignEntry;
+            ReturnPickupSignEntry.Text = state.ReturnPickupSignEntry;
+            RequestOtherEntry.Text = state.RequestOtherEntry;
+            NonAirportMeetSignEntry.Text = state.NonAirportMeetSignEntry;
+
+            // Restore coordinates
+            if (state.PickupLatitude.HasValue && state.PickupLongitude.HasValue)
+            {
+                _selectedPickupLocation = new Models.Location
+                {
+                    Label = state.PickupNewLabel ?? "",
+                    Address = state.PickupNewAddress ?? "",
+                    Latitude = state.PickupLatitude.Value,
+                    Longitude = state.PickupLongitude.Value,
+                    PlaceId = state.PickupPlaceId,
+                    IsVerified = true
+                };
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Restored pickup coordinates: {_selectedPickupLocation.Latitude}, {_selectedPickupLocation.Longitude}");
+#endif
+            }
+
+            if (state.DropoffLatitude.HasValue && state.DropoffLongitude.HasValue)
+            {
+                _selectedDropoffLocation = new Models.Location
+                {
+                    Label = state.DropoffNewLabel ?? "",
+                    Address = state.DropoffNewAddress ?? "",
+                    Latitude = state.DropoffLatitude.Value,
+                    Longitude = state.DropoffLongitude.Value,
+                    PlaceId = state.DropoffPlaceId,
+                    IsVerified = true
+                };
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Restored dropoff coordinates: {_selectedDropoffLocation.Latitude}, {_selectedDropoffLocation.Longitude}");
+#endif
+            }
+
+            // Restore date/time
+            if (state.PickupDate.HasValue)
+                PickupDate.Date = state.PickupDate.Value;
+            if (state.PickupTime.HasValue)
+                PickupTime.Time = state.PickupTime.Value;
+            if (state.ReturnDate.HasValue)
+                ReturnDatePicker.Date = state.ReturnDate.Value;
+            if (state.ReturnTime.HasValue)
+                ReturnTimePicker.Time = state.ReturnTime.Value;
+
+            // Restore checkboxes/switches
+            RoundTripCheck.IsChecked = state.RoundTrip;
+            ReturnTailChangeSwitch.IsToggled = state.AllowReturnTailChange;
+
+            // Restore steppers
+            _suppressPassengerCountEvents = true;
+            PassengerCountStepper.Value = state.PassengerCount;
+            CheckedBagsStepper.Value = state.CheckedBags;
+            CarryOnBagsStepper.Value = state.CarryOnBags;
+            HoursStepper.Value = state.Hours;
+            _suppressPassengerCountEvents = false;
+
+            // Update labels
+            PassengerCountValueLabel.Text = state.PassengerCount.ToString();
+            CheckedBagsValueLabel.Text = state.CheckedBags.ToString();
+            CarryOnBagsValueLabel.Text = state.CarryOnBags.ToString();
+            HoursValueLabel.Text = state.Hours.ToString();
+
+            // Restore additional passengers
+            _additionalPassengers.Clear();
+            if (state.AdditionalPassengers != null)
+            {
+                foreach (var pax in state.AdditionalPassengers)
+                    _additionalPassengers.Add(pax);
+            }
+
+            // Restore pickup style pickers
+            if (state.PickupStylePickerIndex.HasValue && state.PickupStylePickerIndex.Value < PickupStylePicker.Items.Count)
+                PickupStylePicker.SelectedIndex = state.PickupStylePickerIndex.Value;
+
+            if (state.ReturnPickupStylePickerIndex.HasValue && state.ReturnPickupStylePickerIndex.Value < ReturnPickupStylePicker.Items.Count)
+                ReturnPickupStylePicker.SelectedIndex = state.ReturnPickupStylePickerIndex.Value;
+
+            // Update UI based on restored state
+            UpdatePickupStyleAirportUx();
+            UpdateReturnPickupStyleAirportUx();
+            UpdateReturnFlightUx();
+            ReevaluateCapacityAndMaybeShowBanner();
+
+            await DisplayAlert("Draft Restored", "Your quote has been restored.", "OK");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuotePage] Error restoring form state: {ex.Message}");
+#endif
+            await DisplayAlert("Restore Failed", "Could not restore your draft. Starting fresh.", "OK");
+        }
     }
 
     private static string ResolveLocation(Picker picker, Entry label, Entry address)
