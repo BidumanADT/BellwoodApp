@@ -50,26 +50,6 @@
                     CornerRadius="14" HeightRequest="56"
                     Clicked="OnBookRideClicked" />
 
-            <!-- DEBUG: Temporary button to access Places API test page (Phase 1) -->
-            <Button Text="🧪 Test Places API (Debug)"
-                    FontSize="14"
-                    TextColor="{StaticResource BellwoodGold}"
-                    BackgroundColor="Transparent"
-                    BorderColor="{StaticResource BellwoodGold}"
-                    BorderWidth="1"
-                    CornerRadius="8" HeightRequest="40"
-                    Clicked="OnPlacesTestClicked" />
-
-            <!-- DEBUG: Phase 2 component test page -->
-            <Button Text="🎨 Test Autocomplete Component (Phase 2)"
-                    FontSize="14"
-                    TextColor="{StaticResource BellwoodGold}"
-                    BackgroundColor="Transparent"
-                    BorderColor="{StaticResource BellwoodGold}"
-                    BorderWidth="1"
-                    CornerRadius="8" HeightRequest="40"
-                    Clicked="OnAutocompleteComponentTestClicked" />
-
             <Label Grid.Row="2" Margin="0,24,0,12"
                Text="BE the Bellwood Difference"
                HorizontalTextAlignment="Center"
