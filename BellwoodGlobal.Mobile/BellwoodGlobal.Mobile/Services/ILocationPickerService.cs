@@ -85,6 +85,9 @@ public interface ILocationPickerService
     /// <param name="options">Configuration options for the picker.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Result containing the selected location or error information.</returns>
+    [Obsolete("PickLocationAsync is deprecated. Use Google Places Autocomplete (LocationAutocompleteView) for location selection instead. " +
+              "This method remains available as a fallback but is no longer the recommended approach. " +
+              "Use OpenInMapsAsync() to view locations and OpenDirectionsAsync() for navigation.")]
     Task<LocationPickerResult> PickLocationAsync(LocationPickerOptions? options = null, CancellationToken ct = default);
 
     /// <summary>

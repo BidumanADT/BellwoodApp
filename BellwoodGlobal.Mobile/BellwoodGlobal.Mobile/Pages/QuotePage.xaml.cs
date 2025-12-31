@@ -671,75 +671,41 @@ public partial class QuotePage : ContentPage
         UpdateReturnPickupStyleAirportUx();
     }
 
-    // UPDATED: "Pick from Maps" becomes "View in Maps" (optional, view-only)
+    // UPDATED: "View in Maps" button - view-only when coordinates exist
     private async void OnPickPickupFromMaps(object? sender, EventArgs e)
     {
-        // If we have coordinates from autocomplete, open maps to that location
+        // If we have coordinates from autocomplete, open maps to that location (view-only)
         if (_selectedPickupLocation?.HasCoordinates == true)
         {
             await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
             return;
         }
         
-        // Otherwise, fallback to old behavior (pick from maps + manual entry)
-        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
-        {
-            Title = "Select Pickup Location",
-            SuggestedLabel = (PickupNewLabel.Text ?? "").Trim(),
-            InitialAddress = (PickupNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = true
-        });
-
-        if (result.Success && result.Location is not null)
-        {
-            _selectedPickupLocation = result.Location;
-            PickupNewLabel.Text = result.Location.Label;
-            PickupNewAddress.Text = result.Location.Address;
-            
-#if DEBUG
-            if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[QuotePage] Pickup coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
-#endif
-        }
-        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
-        }
+        // No coordinates - suggest using autocomplete instead
+        await DisplayAlert(
+            "Use Address Search",
+            "For best results, use the address search above to find your pickup location. " +
+            "This will provide precise coordinates and faster service.",
+            "OK"
+        );
     }
 
     private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
     {
-        // If we have coordinates from autocomplete, open maps to that location
+        // If we have coordinates from autocomplete, open maps to that location (view-only)
         if (_selectedDropoffLocation?.HasCoordinates == true)
         {
             await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
             return;
         }
         
-        // Otherwise, fallback to old behavior (pick from maps + manual entry)
-        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
-        {
-            Title = "Select Dropoff Location",
-            SuggestedLabel = (DropoffNewLabel.Text ?? "").Trim(),
-            InitialAddress = (DropoffNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = false
-        });
-
-        if (result.Success && result.Location is not null)
-        {
-            _selectedDropoffLocation = result.Location;
-            DropoffNewLabel.Text = result.Location.Label;
-            DropoffNewAddress.Text = result.Location.Address;
-            
-#if DEBUG
-            if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[QuotePage] Dropoff coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
-#endif
-        }
-        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
-        }
+        // No coordinates - suggest using autocomplete instead
+        await DisplayAlert(
+            "Use Address Search",
+            "For best results, use the address search above to find your dropoff location. " +
+            "This will provide precise coordinates and faster service.",
+            "OK"
+        );
     }
 
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)

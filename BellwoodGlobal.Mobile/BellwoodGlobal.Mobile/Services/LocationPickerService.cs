@@ -48,6 +48,7 @@ public sealed class LocationPickerService : ILocationPickerService
     }
 
     /// <inheritdoc />
+    [Obsolete("PickLocationAsync is deprecated. Use Google Places Autocomplete (LocationAutocompleteView) for location selection instead.")]
     public async Task<LocationPickerResult> PickLocationAsync(LocationPickerOptions? options = null, CancellationToken ct = default)
     {
         options ??= new LocationPickerOptions();
