@@ -7,11 +7,12 @@ namespace BellwoodGlobal.Mobile.Services
 {
     /// <summary>
     /// Implementation of form state persistence using MAUI Preferences.
+    /// State is stored per-user using email as the key suffix.
     /// </summary>
     public class FormStateService : IFormStateService
     {
-        private const string QuoteKey = "QuotePage_FormState";
-        private const string BookingKey = "BookRidePage_FormState";
+        private const string QuoteKeyPrefix = "QuotePage_FormState";
+        private const string BookingKeyPrefix = "BookRidePage_FormState";
         
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -19,17 +20,53 @@ namespace BellwoodGlobal.Mobile.Services
             PropertyNameCaseInsensitive = true
         };
 
+        // ===== Helper: Get User-Specific Key =====
+        
+        private static string GetUserSpecificKey(string prefix)
+        {
+            try
+            {
+                // Get current user's email from SecureStorage (set during login)
+                var userEmail = SecureStorage.GetAsync("user_email").Result;
+                
+                if (string.IsNullOrWhiteSpace(userEmail))
+                {
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine("[FormStateService] WARNING: No user_email in SecureStorage, using global key");
+#endif
+                    return prefix; // Fallback to global key if no user logged in
+                }
+                
+                // Create user-specific key: "QuotePage_FormState_alice.morgan@example.com"
+                var userKey = $"{prefix}_{userEmail}";
+                
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[FormStateService] Using user-specific key: {userKey}");
+#endif
+                
+                return userKey;
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[FormStateService] Error getting user key: {ex.Message}, using global key");
+#endif
+                return prefix; // Fallback on error
+            }
+        }
+
         // ===== Quote Form =====
 
         public Task SaveQuoteFormStateAsync(QuotePageState state)
         {
             try
             {
+                var key = GetUserSpecificKey(QuoteKeyPrefix);
                 var json = JsonSerializer.Serialize(state, JsonOptions);
-                Preferences.Set(QuoteKey, json);
+                Preferences.Set(key, json);
                 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[FormStateService] Saved Quote form state ({json.Length} chars)");
+                System.Diagnostics.Debug.WriteLine($"[FormStateService] Saved Quote form state for current user ({json.Length} chars)");
 #endif
             }
             catch (Exception ex)
@@ -46,12 +83,13 @@ namespace BellwoodGlobal.Mobile.Services
         {
             try
             {
-                var json = Preferences.Get(QuoteKey, string.Empty);
+                var key = GetUserSpecificKey(QuoteKeyPrefix);
+                var json = Preferences.Get(key, string.Empty);
                 
                 if (string.IsNullOrWhiteSpace(json))
                 {
 #if DEBUG
-                    System.Diagnostics.Debug.WriteLine("[FormStateService] No saved Quote form state found");
+                    System.Diagnostics.Debug.WriteLine("[FormStateService] No saved Quote form state found for current user");
 #endif
                     return Task.FromResult<QuotePageState?>(null);
                 }
@@ -59,7 +97,7 @@ namespace BellwoodGlobal.Mobile.Services
                 var state = JsonSerializer.Deserialize<QuotePageState>(json, JsonOptions);
                 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[FormStateService] Loaded Quote form state (last modified: {state?.LastModified})");
+                System.Diagnostics.Debug.WriteLine($"[FormStateService] Loaded Quote form state for current user (last modified: {state?.LastModified})");
 #endif
                 
                 return Task.FromResult(state);
@@ -77,10 +115,11 @@ namespace BellwoodGlobal.Mobile.Services
         {
             try
             {
-                Preferences.Remove(QuoteKey);
+                var key = GetUserSpecificKey(QuoteKeyPrefix);
+                Preferences.Remove(key);
                 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine("[FormStateService] Cleared Quote form state");
+                System.Diagnostics.Debug.WriteLine("[FormStateService] Cleared Quote form state for current user");
 #endif
             }
             catch (Exception ex)
@@ -95,8 +134,15 @@ namespace BellwoodGlobal.Mobile.Services
 
         public bool HasSavedQuoteForm()
         {
-            var json = Preferences.Get(QuoteKey, string.Empty);
-            return !string.IsNullOrWhiteSpace(json);
+            var key = GetUserSpecificKey(QuoteKeyPrefix);
+            var json = Preferences.Get(key, string.Empty);
+            var hasSaved = !string.IsNullOrWhiteSpace(json);
+            
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[FormStateService] HasSavedQuoteForm for current user: {hasSaved}");
+#endif
+            
+            return hasSaved;
         }
 
         // ===== Booking Form =====
@@ -105,11 +151,12 @@ namespace BellwoodGlobal.Mobile.Services
         {
             try
             {
+                var key = GetUserSpecificKey(BookingKeyPrefix);
                 var json = JsonSerializer.Serialize(state, JsonOptions);
-                Preferences.Set(BookingKey, json);
+                Preferences.Set(key, json);
                 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[FormStateService] Saved Booking form state ({json.Length} chars)");
+                System.Diagnostics.Debug.WriteLine($"[FormStateService] Saved Booking form state for current user ({json.Length} chars)");
 #endif
             }
             catch (Exception ex)
@@ -126,12 +173,13 @@ namespace BellwoodGlobal.Mobile.Services
         {
             try
             {
-                var json = Preferences.Get(BookingKey, string.Empty);
+                var key = GetUserSpecificKey(BookingKeyPrefix);
+                var json = Preferences.Get(key, string.Empty);
                 
                 if (string.IsNullOrWhiteSpace(json))
                 {
 #if DEBUG
-                    System.Diagnostics.Debug.WriteLine("[FormStateService] No saved Booking form state found");
+                    System.Diagnostics.Debug.WriteLine("[FormStateService] No saved Booking form state found for current user");
 #endif
                     return Task.FromResult<BookRidePageState?>(null);
                 }
@@ -139,7 +187,7 @@ namespace BellwoodGlobal.Mobile.Services
                 var state = JsonSerializer.Deserialize<BookRidePageState>(json, JsonOptions);
                 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[FormStateService] Loaded Booking form state (last modified: {state?.LastModified})");
+                System.Diagnostics.Debug.WriteLine($"[FormStateService] Loaded Booking form state for current user (last modified: {state?.LastModified})");
 #endif
                 
                 return Task.FromResult(state);
@@ -157,10 +205,11 @@ namespace BellwoodGlobal.Mobile.Services
         {
             try
             {
-                Preferences.Remove(BookingKey);
+                var key = GetUserSpecificKey(BookingKeyPrefix);
+                Preferences.Remove(key);
                 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine("[FormStateService] Cleared Booking form state");
+                System.Diagnostics.Debug.WriteLine("[FormStateService] Cleared Booking form state for current user");
 #endif
             }
             catch (Exception ex)
@@ -175,8 +224,15 @@ namespace BellwoodGlobal.Mobile.Services
 
         public bool HasSavedBookingForm()
         {
-            var json = Preferences.Get(BookingKey, string.Empty);
-            return !string.IsNullOrWhiteSpace(json);
+            var key = GetUserSpecificKey(BookingKeyPrefix);
+            var json = Preferences.Get(key, string.Empty);
+            var hasSaved = !string.IsNullOrWhiteSpace(json);
+            
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[FormStateService] HasSavedBookingForm for current user: {hasSaved}");
+#endif
+            
+            return hasSaved;
         }
     }
 }

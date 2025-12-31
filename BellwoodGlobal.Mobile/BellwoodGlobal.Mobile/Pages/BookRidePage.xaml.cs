@@ -45,6 +45,9 @@ public partial class BookRidePage : ContentPage
     private bool _passengerCountDirty;
     private string? _suggestedVehicleClass;
     private bool _userChoseToKeep;
+    
+    // NEW: Phase 5 - Flag to prevent auto-save after successful submission
+    private bool _submittedSuccessfully = false;
 
     public BookRidePage()
     {
@@ -1091,7 +1094,8 @@ public partial class BookRidePage : ContentPage
         {
             await _adminApi.SubmitBookingAsync(draft);
             
-            // NEW: Clear saved form state after successful submission
+            // NEW: Set flag to prevent auto-save and clear saved form state
+            _submittedSuccessfully = true;
             await _formStateService.ClearBookingFormStateAsync();
 #if DEBUG
             System.Diagnostics.Debug.WriteLine("[BookRidePage] Form state cleared after successful submission");
@@ -1152,6 +1156,15 @@ public partial class BookRidePage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+
+        // NEW: Phase 5 - Don't save if form was successfully submitted
+        if (_submittedSuccessfully)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[BookRidePage] Skipping auto-save (form was successfully submitted)");
+#endif
+            return;
+        }
 
         // Auto-save form state (fire and forget)
         _ = SaveFormStateAsync();

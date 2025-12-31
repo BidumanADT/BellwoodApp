@@ -42,6 +42,9 @@ public partial class QuotePage : ContentPage
     private bool _allowReturnTailChange;     // private only
     private bool _requestsHasMeetOption;
     private bool _passengerCountDirty;
+    
+    // NEW: Phase 5 - Flag to prevent auto-save after successful submission
+    private bool _submittedSuccessfully = false;
 
     // --- capacity evaluation ----
     private string? _suggestedVehicleClass;   // what we propose (e.g., "SUV")
@@ -977,7 +980,8 @@ public partial class QuotePage : ContentPage
         {
             await _adminApi.SubmitQuoteAsync(draft);
             
-            // NEW: Clear saved form state after successful submission
+            // NEW: Set flag to prevent auto-save and clear saved form state
+            _submittedSuccessfully = true;
             await _formStateService.ClearQuoteFormStateAsync();
 #if DEBUG
             System.Diagnostics.Debug.WriteLine("[QuotePage] Form state cleared after successful submission");
@@ -1036,6 +1040,15 @@ public partial class QuotePage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+
+        // NEW: Phase 5 - Don't save if form was successfully submitted
+        if (_submittedSuccessfully)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[QuotePage] Skipping auto-save (form was successfully submitted)");
+#endif
+            return;
+        }
 
         // Auto-save form state (fire and forget)
         _ = SaveFormStateAsync();
