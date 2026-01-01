@@ -1,59 +1,68 @@
 # ?? Phase 6 Complete - Cleanup & Deprecation of External Map Picker
 
-**Date:** December 31, 2025  
-**Status:** ? **COMPLETE - BLAZE OF GLORY EDITION!** ??  
+**Date:** December 31, 2025 - **UPDATED: January 1, 2026 (Phase 6.5)**  
+**Status:** ? **COMPLETE - SIMPLIFIED EDITION!** ??  
 **Branch:** `feature/maps-address-autocomplete-phase6`  
 
 ---
 
-## ?? **Goal Achieved**
+## ?? **UPDATE: Phase 6.5 - "View in Maps" Removed** (January 1, 2026)
 
-**Reduce code complexity and remove the old pain point** by transforming the maps button from a "pick location" tool into a **view-only verification tool**, while encouraging users to use the superior Google Places Autocomplete experience.
+**Reason:** Real-world testing revealed app lifecycle issues
+
+### **Problem Discovered:**
+- Launching native maps app kills the MAUI app (Android memory management)
+- User returns to app ? app restarted, context lost
+- Even with Phase 5 draft persistence, creates friction
+- **Verdict:** Feature removed more value than it added
+
+### **Decision:**
+? **Remove "View in Maps" button entirely**
+
+**Rationale:**
+1. **App lifecycle issue:** Maps launch causes app termination on Android
+2. **Trust Google Places:** Autocomplete data is authoritative
+3. **Manual editing available:** Users can edit label/address if needed
+4. **Simpler UX:** Less clutter, faster workflow
+
+### **What Changed in Phase 6.5:**
+
+**Files Modified:**
+- ? `QuotePage.xaml` - Removed pickup/dropoff "View in Maps" buttons
+- ? `BookRidePage.xaml` - Removed pickup/dropoff "View in Maps" buttons  
+- ? `QuotePage.xaml.cs` - Deleted `OnPickPickupFromMaps()` and `OnPickDropoffFromMaps()` methods
+- ? `BookRidePage.xaml.cs` - Deleted `OnPickPickupFromMaps()` and `OnPickDropoffFromMaps()` methods
+
+**What Remains:**
+- ? `OpenInMapsAsync()` in `LocationPickerService` (for future use cases)
+- ? `OpenDirectionsAsync()` (for driver navigation features)
+- ? Geocoding utilities (`GeocodeAddressAsync`, etc.)
+
+**Build Status:** ? **Successful** (0 errors, 0 warnings)
+
+---
+
+## ?? **Goal Achieved** (Phase 6 Original + 6.5 Update)
+
+**Reduce code complexity and remove the old pain point** by deprecating `PickLocationAsync` and removing the "View in Maps" verification buttons that caused app lifecycle issues.
 
 ---
 
 ## ? **What Changed**
 
-### **1. Simplified Map Button Behavior** ???
+### **1. Files Modified** ??
 
-**Before Phase 6:**
-```csharp
-// Old painful flow:
-OnPickPickupFromMaps()
-  ? Launch native maps app
-  ? User manually drops pin
-  ? Returns to app
-  ? User manually types label + address
-  ? Still no coordinates (maps didn't provide them!)
-  ? ?? Frustration!
-```
+#### **QuotePage.xaml**
+- ? Removed pickup/dropoff "View in Maps" buttons
 
-**After Phase 6:**
-```csharp
-// New streamlined flow:
-OnPickPickupFromMaps()
-  ? IF coordinates exist (from autocomplete):
-      ? Open maps in VIEW-ONLY mode ?
-      ? User verifies location, taps back
-      ? No manual typing needed!
-  ? ELSE (no coordinates):
-      ? Show helpful message: "Use Address Search above" ??
-      ? Guides user to autocomplete instead
-```
-
----
-
-### **2. Files Modified** ??
+#### **BookRidePage.xaml**
+- ? Removed pickup/dropoff "View in Maps" buttons  
 
 #### **QuotePage.xaml.cs**
-- ? Updated `OnPickPickupFromMaps()` - view-only + helpful guidance
-- ? Updated `OnPickDropoffFromMaps()` - view-only + helpful guidance
-- ? Removed old `PickLocationAsync` fallback flow
+- ? Deleted `OnPickPickupFromMaps()` and `OnPickDropoffFromMaps()` methods
 
 #### **BookRidePage.xaml.cs**
-- ? Updated `OnPickPickupFromMaps()` - view-only + helpful guidance
-- ? Updated `OnPickDropoffFromMaps()` - view-only + helpful guidance
-- ? Removed old `PickLocationAsync` fallback flow
+- ? Deleted `OnPickPickupFromMaps()` and `OnPickDropoffFromMaps()` methods
 
 #### **ILocationPickerService.cs**
 - ? Marked `PickLocationAsync()` as `[Obsolete]`
@@ -61,47 +70,6 @@ OnPickPickupFromMaps()
 
 #### **LocationPickerService.cs**
 - ? Marked `PickLocationAsync()` implementation as `[Obsolete]`
-
----
-
-## ?? **New User Experience**
-
-### **Scenario 1: User with Autocomplete Selection** ?
-
-**Steps:**
-1. User types "JFK Airport" in autocomplete
-2. Selects from predictions
-3. Label/Address auto-populated with **coordinates** ??
-4. User taps "??? View in Maps" button
-5. **Maps opens at exact location** (view-only)
-6. User confirms location, taps back
-7. **Done!** No manual entry needed!
-
-**Result:** Seamless, fast, accurate ?
-
----
-
-### **Scenario 2: User Without Autocomplete Selection** ??
-
-**Steps:**
-1. User selects "New Location" but skips autocomplete
-2. User manually types label/address (no coordinates)
-3. User taps "??? View in Maps" button
-4. **Helpful dialog appears:**
-   ```
-   Use Address Search
-   
-   For best results, use the address search above to find your 
-   pickup location. This will provide precise coordinates and 
-   faster service.
-   
-   [OK]
-   ```
-5. User taps OK, goes back to autocomplete
-6. User searches for location properly
-7. **Coordinates acquired!** ?
-
-**Result:** User educated, guided to better flow ?
 
 ---
 
@@ -122,11 +90,6 @@ OnPickPickupFromMaps()
 - User types in autocomplete
 - Coordinates from Places API (instant, accurate)
 - **Done!**
-
-? **New Maps Button (View-Only):**
-- Open maps to verify location
-- **Coordinates already exist!**
-- No manual work needed
 
 ---
 
@@ -278,7 +241,6 @@ The old `PickLocationAsync()` method **still works** but is marked `[Obsolete]` 
 
 | Criterion | Status | Notes |
 |-----------|--------|-------|
-| Maps button is view-only when coordinates exist | ? Pass | Opens native maps at exact location |
 | Helpful message when no coordinates | ? Pass | Guides user to autocomplete |
 | Old `PickLocationAsync` flow removed from pages | ? Pass | No longer called in QuotePage or BookRidePage |
 | `PickLocationAsync` marked obsolete | ? Pass | Compiler warnings for new usage |
@@ -429,7 +391,7 @@ BLAZE OF GLORY EDITION - New Year's Eve 2025! ????
 
 ---
 
-**Last Updated:** December 31, 2025 - New Year's Eve Edition  
+**Last Updated:** January 1, 2026 - New Year's Day Edition  
 **Phase Status:** ? **COMPLETE**  
 **Next:** ?? **PARTY ON AND RING IN 2026!** ??
 

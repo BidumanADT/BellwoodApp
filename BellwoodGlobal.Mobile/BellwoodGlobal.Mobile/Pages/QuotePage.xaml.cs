@@ -671,43 +671,6 @@ public partial class QuotePage : ContentPage
         UpdateReturnPickupStyleAirportUx();
     }
 
-    // UPDATED: "View in Maps" button - view-only when coordinates exist
-    private async void OnPickPickupFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location (view-only)
-        if (_selectedPickupLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
-            return;
-        }
-        
-        // No coordinates - suggest using autocomplete instead
-        await DisplayAlert(
-            "Use Address Search",
-            "For best results, use the address search above to find your pickup location. " +
-            "This will provide precise coordinates and faster service.",
-            "OK"
-        );
-    }
-
-    private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location (view-only)
-        if (_selectedDropoffLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
-            return;
-        }
-        
-        // No coordinates - suggest using autocomplete instead
-        await DisplayAlert(
-            "Use Address Search",
-            "For best results, use the address search above to find your dropoff location. " +
-            "This will provide precise coordinates and faster service.",
-            "OK"
-        );
-    }
-
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(_suggestedVehicleClass))

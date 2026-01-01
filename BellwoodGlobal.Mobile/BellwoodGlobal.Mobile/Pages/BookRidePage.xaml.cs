@@ -65,7 +65,8 @@ public partial class BookRidePage : ContentPage
         InitializeDefaults();
         InitializeEventHandlers();
 
-        _ = LoadPaymentMethodsAsync();
+        // REMOVED: Don't load payment methods in constructor - move to OnAppearing
+        // _ = LoadPaymentMethodsAsync();
     }
 
     private void InitializeBooker()
@@ -603,43 +604,6 @@ public partial class BookRidePage : ContentPage
         UpdateReturnPickupStyleAirportUx();
     }
 
-    // UPDATED: "View in Maps" button - view-only when coordinates exist
-    private async void OnPickPickupFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location (view-only)
-        if (_selectedPickupLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
-            return;
-        }
-        
-        // No coordinates - suggest using autocomplete instead
-        await DisplayAlert(
-            "Use Address Search",
-            "For best results, use the address search above to find your pickup location. " +
-            "This will provide precise coordinates and faster service.",
-            "OK"
-        );
-    }
-
-    private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location (view-only)
-        if (_selectedDropoffLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
-            return;
-        }
-        
-        // No coordinates - suggest using autocomplete instead
-        await DisplayAlert(
-            "Use Address Search",
-            "For best results, use the address search above to find your dropoff location. " +
-            "This will provide precise coordinates and faster service.",
-            "OK"
-        );
-    }
-
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(_suggestedVehicleClass))
@@ -1097,6 +1061,9 @@ public partial class BookRidePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        // Load payment methods FIRST (before checking for draft)
+        await LoadPaymentMethodsAsync();
 
         // Check for saved form state
         if (_formStateService.HasSavedBookingForm())
