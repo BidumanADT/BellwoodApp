@@ -65,7 +65,8 @@ public partial class BookRidePage : ContentPage
         InitializeDefaults();
         InitializeEventHandlers();
 
-        _ = LoadPaymentMethodsAsync();
+        // REMOVED: Don't load payment methods in constructor - move to OnAppearing
+        // _ = LoadPaymentMethodsAsync();
     }
 
     private void InitializeBooker()
@@ -603,77 +604,6 @@ public partial class BookRidePage : ContentPage
         UpdateReturnPickupStyleAirportUx();
     }
 
-    // UPDATED: "Pick from Maps" becomes "View in Maps" (optional, view-only)
-    private async void OnPickPickupFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location
-        if (_selectedPickupLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
-            return;
-        }
-        
-        // Otherwise, fallback to old behavior (pick from maps + manual entry)
-        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
-        {
-            Title = "Select Pickup Location",
-            SuggestedLabel = (PickupNewLabel.Text ?? "").Trim(),
-            InitialAddress = (PickupNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = true
-        });
-
-        if (result.Success && result.Location is not null)
-        {
-            _selectedPickupLocation = result.Location;
-            PickupNewLabel.Text = result.Location.Label;
-            PickupNewAddress.Text = result.Location.Address;
-            
-#if DEBUG
-            if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Pickup coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
-#endif
-        }
-        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
-        }
-    }
-
-    private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location
-        if (_selectedDropoffLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
-            return;
-        }
-        
-        // Otherwise, fallback to old behavior (pick from maps + manual entry)
-        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
-        {
-            Title = "Select Dropoff Location",
-            SuggestedLabel = (DropoffNewLabel.Text ?? "").Trim(),
-            InitialAddress = (DropoffNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = false // Don't default to current location for dropoff
-        });
-
-        if (result.Success && result.Location is not null)
-        {
-            _selectedDropoffLocation = result.Location;
-            DropoffNewLabel.Text = result.Location.Label;
-            DropoffNewAddress.Text = result.Location.Address;
-            
-#if DEBUG
-            if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[BookRidePage] Dropoff coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
-#endif
-        }
-        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
-        }
-    }
-
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(_suggestedVehicleClass))
@@ -1131,6 +1061,9 @@ public partial class BookRidePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        // Load payment methods FIRST (before checking for draft)
+        await LoadPaymentMethodsAsync();
 
         // Check for saved form state
         if (_formStateService.HasSavedBookingForm())
