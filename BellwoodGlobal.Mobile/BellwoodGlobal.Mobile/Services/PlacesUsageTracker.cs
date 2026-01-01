@@ -10,9 +10,10 @@ namespace BellwoodGlobal.Mobile.Services;
 public sealed class PlacesUsageTracker : IPlacesUsageTracker
 {
     // Quota limits (conservative estimates based on free tier)
-    // These are intentionally conservative to stay well within free tier
-    private const int MaxSessionsPerDay = 1000;        // ~30k requests/month free tier
-    private const int MaxDetailsPerDay = 500;          // ~15k requests/month free tier
+    // Free tier: 10,000 autocomplete sessions/month ? 322/day
+    // We set conservative limits with safety margin
+    private const int MaxSessionsPerDay = 300;         // ~9,300/month (well within 10k free tier)
+    private const int MaxDetailsPerDay = 300;          // ~9,300/month (conservative estimate)
     private const int MaxRequestsPer10Seconds = 10;    // Rate limiting (burst protection)
     private const int MaxDetailsPer60Seconds = 5;      // Rate limiting (abuse protection)
     

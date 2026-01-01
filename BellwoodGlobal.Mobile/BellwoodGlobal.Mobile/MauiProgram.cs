@@ -52,7 +52,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IDriverTrackingService, DriverTrackingService>();
         builder.Services.AddSingleton<IRideStatusService, RideStatusService>();
         builder.Services.AddSingleton<IPlacesAutocompleteService, PlacesAutocompleteService>();
-        builder.Services.AddSingleton<IFormStateService, FormStateService>(); // NEW: Phase 5 form persistence
+        builder.Services.AddSingleton<IPlacesUsageTracker, PlacesUsageTracker>(); // NEW: Phase 7 usage tracking
+        builder.Services.AddSingleton<IFormStateService, FormStateService>(); // Phase 5 form persistence
 
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();
