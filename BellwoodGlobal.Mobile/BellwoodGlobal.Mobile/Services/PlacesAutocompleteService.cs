@@ -18,7 +18,6 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILocationPickerService _locationPicker;
     private readonly IPlacesUsageTracker _usageTracker; // NEW: Phase 7 usage tracking
-    private readonly string _apiKey;
 
     // Quota tracking (persistent storage keys)
     private const string QuotaDateKey = "PlacesQuota_Date";
@@ -51,11 +50,6 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
         _httpClientFactory = httpClientFactory;
         _locationPicker = locationPicker;
         _usageTracker = usageTracker; // NEW: Phase 7
-
-        // Get API key from AndroidManifest.xml or platform config
-        // For now, using the key from AndroidManifest.xml
-        // TODO: Move to secure config/secrets management
-        _apiKey = "AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY";
 
 #if DEBUG
         Debug.WriteLine("[PlacesAutocompleteService] Initialized with dynamic location biasing and usage tracking");
