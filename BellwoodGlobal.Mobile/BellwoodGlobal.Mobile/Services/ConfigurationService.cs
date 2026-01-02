@@ -1,61 +1,132 @@
+using System.Text.Json;
+
 namespace BellwoodGlobal.Mobile.Services;
 
 /// <summary>
 /// Secure configuration service for sensitive application settings.
-/// Uses platform-specific secure storage in production.
+/// Reads from appsettings.json and environment variables.
 /// </summary>
 public sealed class ConfigurationService : IConfigurationService
 {
-    // Storage key for Places API key in SecureStorage
-    private const string PlacesApiKeyStorageKey = "GooglePlacesApiKey";
+    private readonly Dictionary<string, string> _settings;
+    
+    public ConfigurationService()
+    {
+        _settings = LoadSettings();
+    }
     
     /// <summary>
     /// Gets the Google Places API key.
     /// </summary>
     /// <returns>API key string</returns>
-    /// <exception cref="InvalidOperationException">If key not found in production</exception>
+    /// <exception cref="InvalidOperationException">If key not found</exception>
     public string GetPlacesApiKey()
     {
-#if DEBUG
-        // DEBUG MODE: Use hardcoded key for development
-        // TODO: Replace with build secrets in CI/CD pipeline
-        // This key should be injected at build time, not hardcoded
-        return "AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY";
-#else
-        // PRODUCTION MODE: Retrieve from secure storage
-        // Key should be stored during app first-run or deployment
-        try
-        {
-            var key = SecureStorage.GetAsync(PlacesApiKeyStorageKey).Result;
-            
-            if (string.IsNullOrEmpty(key))
-            {
-                throw new InvalidOperationException(
-                    "Places API key not found in secure storage. " +
-                    "Ensure the key is configured during app deployment.");
-            }
-            
-            return key;
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to retrieve Places API key from secure storage: {ex.Message}", 
-                ex);
-        }
-#endif
+        return GetSetting("GooglePlacesApiKey", "Google Places API key");
     }
     
     /// <summary>
-    /// Stores the Google Places API key in secure storage.
-    /// Used during app deployment or first-run setup.
+    /// Gets the Admin API base URL.
     /// </summary>
-    /// <param name="apiKey">The API key to store</param>
-    public async Task SetPlacesApiKeyAsync(string apiKey)
+    public string GetAdminApiUrl()
     {
-        if (string.IsNullOrWhiteSpace(apiKey))
-            throw new ArgumentException("API key cannot be empty", nameof(apiKey));
+        return GetSetting("AdminApiUrl", "Admin API URL");
+    }
+    
+    /// <summary>
+    /// Gets the Auth Server base URL.
+    /// </summary>
+    public string GetAuthServerUrl()
+    {
+        return GetSetting("AuthServerUrl", "Auth Server URL");
+    }
+    
+    /// <summary>
+    /// Gets the Rides API base URL.
+    /// </summary>
+    public string GetRidesApiUrl()
+    {
+        return GetSetting("RidesApiUrl", "Rides API URL");
+    }
+    
+    // ========== PRIVATE HELPERS ==========
+    
+    private string GetSetting(string key, string friendlyName)
+    {
+        if (_settings.TryGetValue(key, out var value))
+        {
+            // Check if value is an environment variable reference
+            if (value.StartsWith("ENV:", StringComparison.OrdinalIgnoreCase))
+            {
+                var envVarName = value.Substring(4); // Remove "ENV:" prefix
+                var envValue = Environment.GetEnvironmentVariable(envVarName);
+                
+                if (string.IsNullOrEmpty(envValue))
+                {
+                    throw new InvalidOperationException(
+                        $"{friendlyName} not found. " +
+                        $"Set environment variable '{envVarName}' or update appsettings.json");
+                }
+                
+                return envValue;
+            }
+            
+            return value;
+        }
         
-        await SecureStorage.SetAsync(PlacesApiKeyStorageKey, apiKey);
+        throw new InvalidOperationException(
+            $"{friendlyName} not found in configuration. " +
+            $"Check appsettings.json or appsettings.Development.json");
+    }
+    
+    private Dictionary<string, string> LoadSettings()
+    {
+        var settings = new Dictionary<string, string>();
+        
+        // Try to load appsettings.json (production/template)
+        TryLoadSettingsFile("appsettings.json", settings);
+        
+        // Try to load appsettings.Development.json (overrides production)
+        // This file should be in .gitignore with actual keys
+        TryLoadSettingsFile("appsettings.Development.json", settings);
+        
+        return settings;
+    }
+    
+    private void TryLoadSettingsFile(string filename, Dictionary<string, string> settings)
+    {
+        try
+        {
+            var filePath = Path.Combine(FileSystem.AppDataDirectory, filename);
+            
+            // If not in AppDataDirectory, try next to executable (for development)
+            if (!File.Exists(filePath))
+            {
+                // In MAUI, configuration files are embedded resources
+                // We'll read from the assembly
+                using var stream = FileSystem.OpenAppPackageFileAsync(filename).Result;
+                if (stream != null)
+                {
+                    using var reader = new StreamReader(stream);
+                    var json = reader.ReadToEnd();
+                    var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                    
+                    if (loaded != null)
+                    {
+                        foreach (var kvp in loaded)
+                        {
+                            settings[kvp.Key] = kvp.Value; // Overwrite if exists
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[ConfigurationService] Could not load {filename}: {ex.Message}");
+#endif
+            // Not critical - may not exist in all environments
+        }
     }
 }

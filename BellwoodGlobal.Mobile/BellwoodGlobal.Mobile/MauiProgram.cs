@@ -59,12 +59,17 @@ public static class MauiProgram
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();
 
-        builder.Services.AddHttpClient("admin", c =>
+        builder.Services.AddHttpClient("admin", (serviceProvider, c) =>
         {
+            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+            
 #if ANDROID
-            c.BaseAddress = new Uri("https://10.0.2.2:5206");
+            // Android emulator uses 10.0.2.2 to reach host machine
+            // In production, this should be the actual API URL
+            var baseUrl = configService.GetAdminApiUrl().Replace("localhost", "10.0.2.2");
+            c.BaseAddress = new Uri(baseUrl);
 #else
-            c.BaseAddress = new Uri("https://localhost:5206");
+            c.BaseAddress = new Uri(configService.GetAdminApiUrl());
 #endif
             c.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
@@ -127,12 +132,15 @@ public static class MauiProgram
         });
 
         // Auth Server client
-        builder.Services.AddHttpClient("auth", c =>
+        builder.Services.AddHttpClient("auth", (serviceProvider, c) =>
         {
+            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+            
 #if ANDROID
-            c.BaseAddress = new Uri("https://10.0.2.2:5001");
+            var baseUrl = configService.GetAuthServerUrl().Replace("localhost", "10.0.2.2");
+            c.BaseAddress = new Uri(baseUrl);
 #else
-            c.BaseAddress = new Uri("https://localhost:5001");
+            c.BaseAddress = new Uri(configService.GetAuthServerUrl());
 #endif
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         })
@@ -148,12 +156,15 @@ public static class MauiProgram
 #endif
 
         // Rides API client (protected)
-        builder.Services.AddHttpClient("rides", c =>
+        builder.Services.AddHttpClient("rides", (serviceProvider, c) =>
         {
+            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+            
 #if ANDROID
-            c.BaseAddress = new Uri("https://10.0.2.2:5005");
+            var baseUrl = configService.GetRidesApiUrl().Replace("localhost", "10.0.2.2");
+            c.BaseAddress = new Uri(baseUrl);
 #else
-            c.BaseAddress = new Uri("https://localhost:5005");
+            c.BaseAddress = new Uri(configService.GetRidesApiUrl());
 #endif
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         })

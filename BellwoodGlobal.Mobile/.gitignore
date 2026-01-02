@@ -1,0 +1,117 @@
+# ========================================
+# Bellwood Mobile App - Git Ignore
+# ========================================
+
+# ========================================
+# SECURITY: NEVER COMMIT THESE FILES
+# ========================================
+# Development configuration with actual API keys
+appsettings.Development.json
+
+# Environment variable files
+.env
+.env.local
+.env.*.local
+
+# ========================================
+# Visual Studio / Rider
+# ========================================
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# ========================================
+# .NET / NuGet
+# ========================================
+*.cache
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ========================================
+# MAUI / Xamarin
+# ========================================
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+*.ap_
+*.apk
+*.aab
+
+# iOS
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ========================================
+# Platform Specific
+# ========================================
+# macOS
+.DS_Store
+AppleDouble
+LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ========================================
+# Development Tools
+# ========================================
+# Resharper
+_ReSharper*/
+*.ReSharper.user
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ========================================
+# Temporary Files
+# ========================================
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+*.log
+*.tlog
+
+# ========================================
+# SAFE TO COMMIT (Templates)
+# ========================================
+# appsettings.json - production template with ENV: placeholders
+# This is SAFE to commit as it contains no actual keys
+!appsettings.json

@@ -11,4 +11,19 @@ public interface IConfigurationService
     /// In RELEASE mode, retrieves from secure storage.
     /// </summary>
     string GetPlacesApiKey();
+
+    /// <summary>
+    /// Gets the Admin API base URL.
+    /// </summary>
+    string GetAdminApiUrl();
+
+    /// <summary>
+    /// Gets the Auth Server base URL.
+    /// </summary>
+    string GetAuthServerUrl();
+
+    /// <summary>
+    /// Gets the Rides API base URL.
+    /// </summary>
+    string GetRidesApiUrl();
 }
