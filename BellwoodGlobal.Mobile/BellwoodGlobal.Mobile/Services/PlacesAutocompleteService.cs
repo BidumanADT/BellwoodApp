@@ -17,7 +17,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILocationPickerService _locationPicker;
-    private readonly string _apiKey;
+    private readonly IPlacesUsageTracker _usageTracker; // NEW: Phase 7 usage tracking
 
     // Quota tracking (persistent storage keys)
     private const string QuotaDateKey = "PlacesQuota_Date";
@@ -44,18 +44,15 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
     public PlacesAutocompleteService(
         IHttpClientFactory httpClientFactory,
-        ILocationPickerService locationPicker)
+        ILocationPickerService locationPicker,
+        IPlacesUsageTracker usageTracker) // NEW: Phase 7
     {
         _httpClientFactory = httpClientFactory;
         _locationPicker = locationPicker;
-
-        // Get API key from AndroidManifest.xml or platform config
-        // For now, using the key from AndroidManifest.xml
-        // TODO: Move to secure config/secrets management
-        _apiKey = "AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY";
+        _usageTracker = usageTracker; // NEW: Phase 7
 
 #if DEBUG
-        Debug.WriteLine("[PlacesAutocompleteService] Initialized with dynamic location biasing");
+        Debug.WriteLine("[PlacesAutocompleteService] Initialized with dynamic location biasing and usage tracking");
 #endif
     }
 
@@ -89,17 +86,30 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
             return Array.Empty<AutocompletePrediction>();
         }
 
-        // Check quota
-        if (IsQuotaExceeded())
+        // NEW: Phase 7 - Check if autocomplete is disabled due to quota
+        if (_usageTracker.IsAutocompleteDisabled())
         {
 #if DEBUG
-            Debug.WriteLine("[PlacesAutocompleteService] GetPredictionsAsync: Quota exceeded");
+            Debug.WriteLine("[PlacesAutocompleteService] GetPredictionsAsync: Autocomplete DISABLED (quota exceeded)");
 #endif
             return Array.Empty<AutocompletePrediction>();
         }
 
-        // Rate limiting
+        // NEW: Phase 7 - Check rate limiting
+        if (_usageTracker.IsRateLimited())
+        {
+#if DEBUG
+            Debug.WriteLine("[PlacesAutocompleteService] GetPredictionsAsync: RATE LIMITED");
+#endif
+            await Task.Delay(500, ct); // Brief pause
+            return Array.Empty<AutocompletePrediction>();
+        }
+
+        // Rate limiting (existing)
         await EnforceRateLimitAsync(ct);
+
+        // NEW: Phase 7 - Record request
+        _usageTracker.RecordAutocompleteRequest();
 
         var stopwatch = Stopwatch.StartNew();
 
@@ -131,6 +141,8 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
             if (!response.IsSuccessStatusCode)
             {
+                // NEW: Phase 7 - Record error
+                _usageTracker.RecordError();
                 await HandleErrorResponseAsync("Autocomplete", response);
                 return Array.Empty<AutocompletePrediction>();
             }
@@ -139,9 +151,6 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
                 cancellationToken: ct);
 
             var predictions = result?.GetPredictions().ToArray() ?? Array.Empty<AutocompletePrediction>();
-
-            // Increment quota counter
-            IncrementAutocompleteCount();
 
 #if DEBUG
             // Keep a small, non-noisy diagnostic summary in DEBUG builds.
@@ -167,6 +176,8 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 #if DEBUG
             Debug.WriteLine($"[PlacesAutocompleteService] Autocomplete network error: {ex.Message}");
 #endif
+            // NEW: Phase 7 - Record error
+            _usageTracker.RecordError();
             LogError("Autocomplete", "NetworkError", ex.Message);
             return Array.Empty<AutocompletePrediction>();
         }
@@ -175,6 +186,8 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 #if DEBUG
             Debug.WriteLine($"[PlacesAutocompleteService] Autocomplete error: {ex}");
 #endif
+            // NEW: Phase 7 - Record error
+            _usageTracker.RecordError();
             LogError("Autocomplete", "UnexpectedError", ex.Message);
             return Array.Empty<AutocompletePrediction>();
         }
@@ -193,14 +206,17 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
             return null;
         }
 
-        // Check quota
-        if (IsQuotaExceeded())
+        // NEW: Phase 7 - Check if disabled
+        if (_usageTracker.IsAutocompleteDisabled())
         {
 #if DEBUG
-            Debug.WriteLine("[PlacesAutocompleteService] GetPlaceDetailsAsync: Quota exceeded");
+            Debug.WriteLine("[PlacesAutocompleteService] GetPlaceDetailsAsync: Autocomplete DISABLED (quota exceeded)");
 #endif
             return null;
         }
+
+        // NEW: Phase 7 - Record Place Details call
+        _usageTracker.RecordPlaceDetailsCall();
 
         var stopwatch = Stopwatch.StartNew();
 
@@ -227,15 +243,14 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
             if (!response.IsSuccessStatusCode)
             {
+                // NEW: Phase 7 - Record error
+                _usageTracker.RecordError();
                 await HandleErrorResponseAsync("PlaceDetails", response);
                 return null;
             }
 
             var result = await response.Content.ReadFromJsonAsync<PlaceDetails>(
                 cancellationToken: ct);
-
-            // Increment quota counter
-            IncrementDetailsCount();
 
 #if DEBUG
             if (result != null)
@@ -258,6 +273,8 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 #if DEBUG
             Debug.WriteLine($"[PlacesAutocompleteService] Place Details network error: {ex.Message}");
 #endif
+            // NEW: Phase 7 - Record error
+            _usageTracker.RecordError();
             LogError("PlaceDetails", "NetworkError", ex.Message);
             return null;
         }
@@ -266,6 +283,8 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 #if DEBUG
             Debug.WriteLine($"[PlacesAutocompleteService] Place Details error: {ex}");
 #endif
+            // NEW: Phase 7 - Record error
+            _usageTracker.RecordError();
             LogError("PlaceDetails", "UnexpectedError", ex.Message);
             return null;
         }
@@ -403,83 +422,6 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
         _lastAutocompleteRequest = DateTime.UtcNow;
     }
 
-    private bool IsQuotaExceeded()
-    {
-        var today = DateTime.Today.ToString("yyyyMMdd");
-        var storedDate = Preferences.Get(QuotaDateKey, string.Empty);
-
-        // Reset if new day
-        if (storedDate != today)
-        {
-            ResetQuotaCounters(today);
-            return false;
-        }
-
-        // Check if manually disabled
-        var disabledUntilStr = Preferences.Get(DisabledUntilKey, string.Empty);
-        if (!string.IsNullOrEmpty(disabledUntilStr) &&
-            DateTime.TryParse(disabledUntilStr, out var disabledUntil))
-        {
-            if (DateTime.UtcNow < disabledUntil)
-            {
-#if DEBUG
-                Debug.WriteLine($"[PlacesAutocompleteService] Quota disabled until {disabledUntil}");
-#endif
-                return true;
-            }
-        }
-
-        // Check daily limits
-        var autocompleteCount = Preferences.Get(AutocompleteCountKey, 0);
-        var detailsCount = Preferences.Get(DetailsCountKey, 0);
-
-        if (autocompleteCount >= DailyAutocompleteLimit || detailsCount >= DailyDetailsLimit)
-        {
-#if DEBUG
-            Debug.WriteLine($"[PlacesAutocompleteService] Daily quota exceeded: AC={autocompleteCount}/{DailyAutocompleteLimit}, Details={detailsCount}/{DailyDetailsLimit}");
-#endif
-            // Disable until midnight UTC
-            var midnightUtc = DateTime.UtcNow.Date.AddDays(1);
-            Preferences.Set(DisabledUntilKey, midnightUtc.ToString("O"));
-            return true;
-        }
-
-        // Warn at 80%
-        if (autocompleteCount > DailyAutocompleteLimit * 0.8 ||
-            detailsCount > DailyDetailsLimit * 0.8)
-        {
-#if DEBUG
-            Debug.WriteLine($"[PlacesAutocompleteService] Warning: Approaching daily quota (80%)");
-#endif
-        }
-
-        return false;
-    }
-
-    private void ResetQuotaCounters(string newDate)
-    {
-        Preferences.Set(QuotaDateKey, newDate);
-        Preferences.Set(AutocompleteCountKey, 0);
-        Preferences.Set(DetailsCountKey, 0);
-        Preferences.Remove(DisabledUntilKey);
-
-#if DEBUG
-        Debug.WriteLine($"[PlacesAutocompleteService] Quota counters reset for {newDate}");
-#endif
-    }
-
-    private void IncrementAutocompleteCount()
-    {
-        var count = Preferences.Get(AutocompleteCountKey, 0);
-        Preferences.Set(AutocompleteCountKey, count + 1);
-    }
-
-    private void IncrementDetailsCount()
-    {
-        var count = Preferences.Get(DetailsCountKey, 0);
-        Preferences.Set(DetailsCountKey, count + 1);
-    }
-
     private void LogRequest(string endpoint, HttpStatusCode statusCode, long latencyMs)
     {
 #if DEBUG
@@ -526,9 +468,7 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
 
             case (HttpStatusCode)429: // Too Many Requests
                 LogError(endpoint, "QuotaExceeded", "Rate limit or quota exceeded");
-                // Disable for an hour
-                var disableUntil = DateTime.UtcNow.AddHours(1);
-                Preferences.Set(DisabledUntilKey, disableUntil.ToString("O"));
+                // Tracker will handle disabling
                 break;
 
             case HttpStatusCode.InternalServerError: // 500

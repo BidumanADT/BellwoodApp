@@ -34,9 +34,10 @@ public partial class LocationAutocompleteView : ContentView
     {
         InitializeComponent();
 
-        // Initialize ViewModel
+        // Initialize ViewModel with dependencies from DI
         var placesService = ServiceHelper.GetRequiredService<IPlacesAutocompleteService>();
-        _viewModel = new LocationAutocompleteViewModel(placesService);
+        var usageTracker = ServiceHelper.GetRequiredService<IPlacesUsageTracker>(); // NEW: Phase 7
+        _viewModel = new LocationAutocompleteViewModel(placesService, usageTracker);
         
         // Subscribe to ViewModel events
         _viewModel.LocationSelected += OnViewModelLocationSelected;
