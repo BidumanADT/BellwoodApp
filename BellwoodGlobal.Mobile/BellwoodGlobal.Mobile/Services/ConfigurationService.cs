@@ -8,20 +8,51 @@ namespace BellwoodGlobal.Mobile.Services;
 /// </summary>
 public sealed class ConfigurationService : IConfigurationService
 {
-    private readonly Dictionary<string, string> _settings;
+    private readonly Dictionary<string, string> _settings = new();
+    private bool _isInitialized = false;
     
-    public ConfigurationService()
+    /// <summary>
+    /// Initializes configuration by loading settings files asynchronously.
+    /// This prevents blocking the UI thread during app startup.
+    /// </summary>
+    public async Task InitializeAsync()
     {
-        _settings = LoadSettings();
+        if (_isInitialized)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[ConfigurationService] Already initialized, skipping");
+#endif
+            return;
+        }
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[ConfigurationService] Starting async initialization...");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+#endif
+
+        // Try to load appsettings.json (production/template)
+        await TryLoadSettingsFileAsync("appsettings.json");
+        
+        // Try to load appsettings.Development.json (overrides production)
+        // This file should be in .gitignore with actual keys
+        await TryLoadSettingsFileAsync("appsettings.Development.json");
+        
+        _isInitialized = true;
+
+#if DEBUG
+        sw.Stop();
+        System.Diagnostics.Debug.WriteLine($"[ConfigurationService] Initialization complete in {sw.ElapsedMilliseconds}ms. Loaded {_settings.Count} settings.");
+#endif
     }
     
     /// <summary>
     /// Gets the Google Places API key.
     /// </summary>
     /// <returns>API key string</returns>
-    /// <exception cref="InvalidOperationException">If key not found</exception>
+    /// <exception cref="InvalidOperationException">If key not found or service not initialized</exception>
     public string GetPlacesApiKey()
     {
+        EnsureInitialized();
         return GetSetting("GooglePlacesApiKey", "Google Places API key");
     }
     
@@ -30,6 +61,7 @@ public sealed class ConfigurationService : IConfigurationService
     /// </summary>
     public string GetAdminApiUrl()
     {
+        EnsureInitialized();
         return GetSetting("AdminApiUrl", "Admin API URL");
     }
     
@@ -38,6 +70,7 @@ public sealed class ConfigurationService : IConfigurationService
     /// </summary>
     public string GetAuthServerUrl()
     {
+        EnsureInitialized();
         return GetSetting("AuthServerUrl", "Auth Server URL");
     }
     
@@ -46,10 +79,21 @@ public sealed class ConfigurationService : IConfigurationService
     /// </summary>
     public string GetRidesApiUrl()
     {
+        EnsureInitialized();
         return GetSetting("RidesApiUrl", "Rides API URL");
     }
     
     // ========== PRIVATE HELPERS ==========
+    
+    private void EnsureInitialized()
+    {
+        if (!_isInitialized)
+        {
+            throw new InvalidOperationException(
+                "ConfigurationService has not been initialized. " +
+                "Call InitializeAsync() during app startup before using any Get* methods.");
+        }
+    }
     
     private string GetSetting(string key, string friendlyName)
     {
@@ -79,45 +123,28 @@ public sealed class ConfigurationService : IConfigurationService
             $"Check appsettings.json or appsettings.Development.json");
     }
     
-    private Dictionary<string, string> LoadSettings()
-    {
-        var settings = new Dictionary<string, string>();
-        
-        // Try to load appsettings.json (production/template)
-        TryLoadSettingsFile("appsettings.json", settings);
-        
-        // Try to load appsettings.Development.json (overrides production)
-        // This file should be in .gitignore with actual keys
-        TryLoadSettingsFile("appsettings.Development.json", settings);
-        
-        return settings;
-    }
-    
-    private void TryLoadSettingsFile(string filename, Dictionary<string, string> settings)
+    private async Task TryLoadSettingsFileAsync(string filename)
     {
         try
         {
-            var filePath = Path.Combine(FileSystem.AppDataDirectory, filename);
-            
-            // If not in AppDataDirectory, try next to executable (for development)
-            if (!File.Exists(filePath))
+            // In MAUI, configuration files are embedded resources
+            using var stream = await FileSystem.OpenAppPackageFileAsync(filename);
+            if (stream != null)
             {
-                // In MAUI, configuration files are embedded resources
-                // We'll read from the assembly
-                using var stream = FileSystem.OpenAppPackageFileAsync(filename).Result;
-                if (stream != null)
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
+                var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                
+                if (loaded != null)
                 {
-                    using var reader = new StreamReader(stream);
-                    var json = reader.ReadToEnd();
-                    var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                    
-                    if (loaded != null)
+                    foreach (var kvp in loaded)
                     {
-                        foreach (var kvp in loaded)
-                        {
-                            settings[kvp.Key] = kvp.Value; // Overwrite if exists
-                        }
+                        _settings[kvp.Key] = kvp.Value; // Overwrite if exists
                     }
+                    
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[ConfigurationService] Loaded {loaded.Count} settings from {filename}");
+#endif
                 }
             }
         }

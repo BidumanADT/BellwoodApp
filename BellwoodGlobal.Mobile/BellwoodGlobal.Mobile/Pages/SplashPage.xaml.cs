@@ -8,11 +8,13 @@ namespace BellwoodGlobal.Mobile.Pages;
 public partial class SplashPage : ContentPage
 {
     private readonly IAuthService _auth;
+    private readonly IConfigurationService _config;
 
-    public SplashPage(IAuthService auth)
+    public SplashPage(IAuthService auth, IConfigurationService config)
     {
         InitializeComponent();
         _auth = auth;
+        _config = config;
     }
 
     protected override async void OnAppearing()
@@ -21,6 +23,17 @@ public partial class SplashPage : ContentPage
 
         try
         {
+            // PHASE 1 PERFORMANCE FIX: Initialize configuration asynchronously
+            // This prevents blocking the UI thread during app startup
+#if DEBUG
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+#endif
+            await _config.InitializeAsync();
+#if DEBUG
+            sw.Stop();
+            System.Diagnostics.Debug.WriteLine($"[SplashPage] Configuration initialized in {sw.ElapsedMilliseconds}ms");
+#endif
+
             // Defensive checks so we never NRE
             if (Logo is not null)
             {
