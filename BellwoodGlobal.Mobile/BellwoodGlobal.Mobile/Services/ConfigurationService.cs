@@ -12,7 +12,7 @@ public sealed class ConfigurationService : IConfigurationService
     private bool _isInitialized = false;
     
     /// <summary>
-    /// Initializes configuration by loading settings files asynchronously.
+    /// Initializes configuration by loading settings files asynchronously ON A BACKGROUND THREAD.
     /// This prevents blocking the UI thread during app startup.
     /// </summary>
     public async Task InitializeAsync()
@@ -30,12 +30,16 @@ public sealed class ConfigurationService : IConfigurationService
         var sw = System.Diagnostics.Stopwatch.StartNew();
 #endif
 
-        // Try to load appsettings.json (production/template)
-        await TryLoadSettingsFileAsync("appsettings.json");
-        
-        // Try to load appsettings.Development.json (overrides production)
-        // This file should be in .gitignore with actual keys
-        await TryLoadSettingsFileAsync("appsettings.Development.json");
+        // PERFORMANCE FIX: Run file I/O on background thread to avoid blocking UI
+        await Task.Run(async () =>
+        {
+            // Try to load appsettings.json (production/template)
+            await TryLoadSettingsFileAsync("appsettings.json");
+            
+            // Try to load appsettings.Development.json (overrides production)
+            // This file should be in .gitignore with actual keys
+            await TryLoadSettingsFileAsync("appsettings.Development.json");
+        });
         
         _isInitialized = true;
 
@@ -137,9 +141,13 @@ public sealed class ConfigurationService : IConfigurationService
                 
                 if (loaded != null)
                 {
-                    foreach (var kvp in loaded)
+                    // Use lock for thread-safety since we're on background thread
+                    lock (_settings)
                     {
-                        _settings[kvp.Key] = kvp.Value; // Overwrite if exists
+                        foreach (var kvp in loaded)
+                        {
+                            _settings[kvp.Key] = kvp.Value; // Overwrite if exists
+                        }
                     }
                     
 #if DEBUG

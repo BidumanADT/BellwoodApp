@@ -23,6 +23,9 @@ public partial class SplashPage : ContentPage
 
         try
         {
+            // PERFORMANCE FIX: Allow first frame to render before doing heavy work
+            await Task.Yield();
+
             // PHASE 1 PERFORMANCE FIX: Initialize configuration asynchronously
             // This prevents blocking the UI thread during app startup
 #if DEBUG
