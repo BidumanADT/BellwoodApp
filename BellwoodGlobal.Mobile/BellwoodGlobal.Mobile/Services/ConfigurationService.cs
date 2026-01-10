@@ -10,21 +10,40 @@ public sealed class ConfigurationService : IConfigurationService
 {
     private readonly Dictionary<string, string> _settings = new();
     private bool _isInitialized = false;
+    private Task? _initializationTask;
     
     /// <summary>
     /// Initializes configuration by loading settings files asynchronously ON A BACKGROUND THREAD.
     /// This prevents blocking the UI thread during app startup.
+    /// This method is idempotent and can be called multiple times safely.
     /// </summary>
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
+        // If already initialized, return completed task
         if (_isInitialized)
         {
 #if DEBUG
             System.Diagnostics.Debug.WriteLine("[ConfigurationService] Already initialized, skipping");
 #endif
-            return;
+            return Task.CompletedTask;
         }
 
+        // If initialization is in progress, return the existing task
+        if (_initializationTask != null)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[ConfigurationService] Initialization already in progress, waiting...");
+#endif
+            return _initializationTask;
+        }
+
+        // Start initialization
+        _initializationTask = InitializeInternalAsync();
+        return _initializationTask;
+    }
+
+    private async Task InitializeInternalAsync()
+    {
 #if DEBUG
         System.Diagnostics.Debug.WriteLine("[ConfigurationService] Starting async initialization...");
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -39,7 +58,7 @@ public sealed class ConfigurationService : IConfigurationService
             // Try to load appsettings.Development.json (overrides production)
             // This file should be in .gitignore with actual keys
             await TryLoadSettingsFileAsync("appsettings.Development.json");
-        });
+        }).ConfigureAwait(false); // Don't capture sync context
         
         _isInitialized = true;
 
@@ -101,25 +120,29 @@ public sealed class ConfigurationService : IConfigurationService
     
     private string GetSetting(string key, string friendlyName)
     {
-        if (_settings.TryGetValue(key, out var value))
+        // Use lock since settings might be accessed from multiple threads
+        lock (_settings)
         {
-            // Check if value is an environment variable reference
-            if (value.StartsWith("ENV:", StringComparison.OrdinalIgnoreCase))
+            if (_settings.TryGetValue(key, out var value))
             {
-                var envVarName = value.Substring(4); // Remove "ENV:" prefix
-                var envValue = Environment.GetEnvironmentVariable(envVarName);
-                
-                if (string.IsNullOrEmpty(envValue))
+                // Check if value is an environment variable reference
+                if (value.StartsWith("ENV:", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidOperationException(
-                        $"{friendlyName} not found. " +
-                        $"Set environment variable '{envVarName}' or update appsettings.json");
+                    var envVarName = value.Substring(4); // Remove "ENV:" prefix
+                    var envValue = Environment.GetEnvironmentVariable(envVarName);
+                    
+                    if (string.IsNullOrEmpty(envValue))
+                    {
+                        throw new InvalidOperationException(
+                            $"{friendlyName} not found. " +
+                            $"Set environment variable '{envVarName}' or update appsettings.json");
+                    }
+                    
+                    return envValue;
                 }
                 
-                return envValue;
+                return value;
             }
-            
-            return value;
         }
         
         throw new InvalidOperationException(
@@ -132,11 +155,11 @@ public sealed class ConfigurationService : IConfigurationService
         try
         {
             // In MAUI, configuration files are embedded resources
-            using var stream = await FileSystem.OpenAppPackageFileAsync(filename);
+            using var stream = await FileSystem.OpenAppPackageFileAsync(filename).ConfigureAwait(false);
             if (stream != null)
             {
                 using var reader = new StreamReader(stream);
-                var json = await reader.ReadToEndAsync();
+                var json = await reader.ReadToEndAsync().ConfigureAwait(false);
                 var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
                 
                 if (loaded != null)

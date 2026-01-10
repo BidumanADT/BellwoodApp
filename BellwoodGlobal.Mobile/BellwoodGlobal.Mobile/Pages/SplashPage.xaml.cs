@@ -23,36 +23,21 @@ public partial class SplashPage : ContentPage
 
         try
         {
-            // PERFORMANCE FIX: Allow first frame to render before doing heavy work
-            await Task.Yield();
+            // PERFORMANCE FIX: Start config loading in background, but DON'T WAIT FOR IT
+            // Config is only needed when HTTP clients are first used (after login)
+            _ = _config.InitializeAsync(); // Fire and forget
 
-            // PHASE 1 PERFORMANCE FIX: Initialize configuration asynchronously
-            // This prevents blocking the UI thread during app startup
 #if DEBUG
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-#endif
-            await _config.InitializeAsync();
-#if DEBUG
-            sw.Stop();
-            System.Diagnostics.Debug.WriteLine($"[SplashPage] Configuration initialized in {sw.ElapsedMilliseconds}ms");
+            System.Diagnostics.Debug.WriteLine("[SplashPage] Config initialization started in background (not blocking)");
 #endif
 
-            // Defensive checks so we never NRE
-            if (Logo is not null)
-            {
-                Logo.Opacity = 0;
-                Logo.Scale = 0.8;
-                await Logo.FadeTo(1, 400, Easing.CubicOut);
-                await Logo.ScaleTo(1.0, 400, Easing.CubicOut);
-            }
+            // Show splash animation WITHOUT waiting for config
+            await AnimateSplashAsync();
 
             // Create Shell as the new root
             Application.Current!.MainPage = new AppShell();
 
-            // Small pause so splash is visible
-            await Task.Delay(400);
-
-            // Do auth check AFTER Shell is root
+            // Do auth check
             var token = await _auth.GetValidTokenAsync();
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -71,5 +56,20 @@ public partial class SplashPage : ContentPage
             Application.Current!.MainPage = new AppShell();
             await Shell.Current.GoToAsync("//LoginPage");
         }
+    }
+
+    private async Task AnimateSplashAsync()
+    {
+        // Defensive checks so we never NRE
+        if (Logo is not null)
+        {
+            Logo.Opacity = 0;
+            Logo.Scale = 0.8;
+            await Logo.FadeTo(1, 400, Easing.CubicOut);
+            await Logo.ScaleTo(1.0, 400, Easing.CubicOut);
+        }
+
+        // Small pause so splash is visible (minimum 800ms total)
+        await Task.Delay(400);
     }
 }
