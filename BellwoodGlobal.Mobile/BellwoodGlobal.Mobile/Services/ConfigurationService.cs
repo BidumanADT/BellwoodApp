@@ -8,20 +8,74 @@ namespace BellwoodGlobal.Mobile.Services;
 /// </summary>
 public sealed class ConfigurationService : IConfigurationService
 {
-    private readonly Dictionary<string, string> _settings;
+    private readonly Dictionary<string, string> _settings = new();
+    private bool _isInitialized = false;
+    private Task? _initializationTask;
     
-    public ConfigurationService()
+    /// <summary>
+    /// Initializes configuration by loading settings files asynchronously ON A BACKGROUND THREAD.
+    /// This prevents blocking the UI thread during app startup.
+    /// This method is idempotent and can be called multiple times safely.
+    /// </summary>
+    public Task InitializeAsync()
     {
-        _settings = LoadSettings();
+        // If already initialized, return completed task
+        if (_isInitialized)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[ConfigurationService] Already initialized, skipping");
+#endif
+            return Task.CompletedTask;
+        }
+
+        // If initialization is in progress, return the existing task
+        if (_initializationTask != null)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[ConfigurationService] Initialization already in progress, waiting...");
+#endif
+            return _initializationTask;
+        }
+
+        // Start initialization
+        _initializationTask = InitializeInternalAsync();
+        return _initializationTask;
+    }
+
+    private async Task InitializeInternalAsync()
+    {
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[ConfigurationService] Starting async initialization...");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+#endif
+
+        // PERFORMANCE FIX: Run file I/O on background thread to avoid blocking UI
+        await Task.Run(async () =>
+        {
+            // Try to load appsettings.json (production/template)
+            await TryLoadSettingsFileAsync("appsettings.json");
+            
+            // Try to load appsettings.Development.json (overrides production)
+            // This file should be in .gitignore with actual keys
+            await TryLoadSettingsFileAsync("appsettings.Development.json");
+        }).ConfigureAwait(false); // Don't capture sync context
+        
+        _isInitialized = true;
+
+#if DEBUG
+        sw.Stop();
+        System.Diagnostics.Debug.WriteLine($"[ConfigurationService] Initialization complete in {sw.ElapsedMilliseconds}ms. Loaded {_settings.Count} settings.");
+#endif
     }
     
     /// <summary>
     /// Gets the Google Places API key.
     /// </summary>
     /// <returns>API key string</returns>
-    /// <exception cref="InvalidOperationException">If key not found</exception>
+    /// <exception cref="InvalidOperationException">If key not found or service not initialized</exception>
     public string GetPlacesApiKey()
     {
+        EnsureInitialized();
         return GetSetting("GooglePlacesApiKey", "Google Places API key");
     }
     
@@ -30,6 +84,7 @@ public sealed class ConfigurationService : IConfigurationService
     /// </summary>
     public string GetAdminApiUrl()
     {
+        EnsureInitialized();
         return GetSetting("AdminApiUrl", "Admin API URL");
     }
     
@@ -38,6 +93,7 @@ public sealed class ConfigurationService : IConfigurationService
     /// </summary>
     public string GetAuthServerUrl()
     {
+        EnsureInitialized();
         return GetSetting("AuthServerUrl", "Auth Server URL");
     }
     
@@ -46,32 +102,47 @@ public sealed class ConfigurationService : IConfigurationService
     /// </summary>
     public string GetRidesApiUrl()
     {
+        EnsureInitialized();
         return GetSetting("RidesApiUrl", "Rides API URL");
     }
     
     // ========== PRIVATE HELPERS ==========
     
+    private void EnsureInitialized()
+    {
+        if (!_isInitialized)
+        {
+            throw new InvalidOperationException(
+                "ConfigurationService has not been initialized. " +
+                "Call InitializeAsync() during app startup before using any Get* methods.");
+        }
+    }
+    
     private string GetSetting(string key, string friendlyName)
     {
-        if (_settings.TryGetValue(key, out var value))
+        // Use lock since settings might be accessed from multiple threads
+        lock (_settings)
         {
-            // Check if value is an environment variable reference
-            if (value.StartsWith("ENV:", StringComparison.OrdinalIgnoreCase))
+            if (_settings.TryGetValue(key, out var value))
             {
-                var envVarName = value.Substring(4); // Remove "ENV:" prefix
-                var envValue = Environment.GetEnvironmentVariable(envVarName);
-                
-                if (string.IsNullOrEmpty(envValue))
+                // Check if value is an environment variable reference
+                if (value.StartsWith("ENV:", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidOperationException(
-                        $"{friendlyName} not found. " +
-                        $"Set environment variable '{envVarName}' or update appsettings.json");
+                    var envVarName = value.Substring(4); // Remove "ENV:" prefix
+                    var envValue = Environment.GetEnvironmentVariable(envVarName);
+                    
+                    if (string.IsNullOrEmpty(envValue))
+                    {
+                        throw new InvalidOperationException(
+                            $"{friendlyName} not found. " +
+                            $"Set environment variable '{envVarName}' or update appsettings.json");
+                    }
+                    
+                    return envValue;
                 }
                 
-                return envValue;
+                return value;
             }
-            
-            return value;
         }
         
         throw new InvalidOperationException(
@@ -79,45 +150,32 @@ public sealed class ConfigurationService : IConfigurationService
             $"Check appsettings.json or appsettings.Development.json");
     }
     
-    private Dictionary<string, string> LoadSettings()
-    {
-        var settings = new Dictionary<string, string>();
-        
-        // Try to load appsettings.json (production/template)
-        TryLoadSettingsFile("appsettings.json", settings);
-        
-        // Try to load appsettings.Development.json (overrides production)
-        // This file should be in .gitignore with actual keys
-        TryLoadSettingsFile("appsettings.Development.json", settings);
-        
-        return settings;
-    }
-    
-    private void TryLoadSettingsFile(string filename, Dictionary<string, string> settings)
+    private async Task TryLoadSettingsFileAsync(string filename)
     {
         try
         {
-            var filePath = Path.Combine(FileSystem.AppDataDirectory, filename);
-            
-            // If not in AppDataDirectory, try next to executable (for development)
-            if (!File.Exists(filePath))
+            // In MAUI, configuration files are embedded resources
+            using var stream = await FileSystem.OpenAppPackageFileAsync(filename).ConfigureAwait(false);
+            if (stream != null)
             {
-                // In MAUI, configuration files are embedded resources
-                // We'll read from the assembly
-                using var stream = FileSystem.OpenAppPackageFileAsync(filename).Result;
-                if (stream != null)
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync().ConfigureAwait(false);
+                var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                
+                if (loaded != null)
                 {
-                    using var reader = new StreamReader(stream);
-                    var json = reader.ReadToEnd();
-                    var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                    
-                    if (loaded != null)
+                    // Use lock for thread-safety since we're on background thread
+                    lock (_settings)
                     {
                         foreach (var kvp in loaded)
                         {
-                            settings[kvp.Key] = kvp.Value; // Overwrite if exists
+                            _settings[kvp.Key] = kvp.Value; // Overwrite if exists
                         }
                     }
+                    
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[ConfigurationService] Loaded {loaded.Count} settings from {filename}");
+#endif
                 }
             }
         }
