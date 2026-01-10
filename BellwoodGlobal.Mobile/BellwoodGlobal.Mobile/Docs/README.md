@@ -12,7 +12,8 @@
 | **Address Autocomplete Implementation** | `Feature-GooglePlacesAutocomplete.md` |
 | **Driver Location Tracking** | `Feature-LocationTracking.md` |
 | **Performance Optimization Details** | `Improvement-Performance.md` |
-| **User Account Isolation Planning** | `Planning-UserAccountIsolation.md` |
+| **User Account Isolation (Mobile App)** | `Planning-UserAccountIsolation.md` |
+| **Data Access Enforcement (Full Platform)** | `Planning-DataAccessEnforcement.md` |
 | **All Bug Fixes** | `Reference-BugFixes.md` |
 | **API Keys & Secrets Management** | `Guide-ConfigurationSecurity.md` |
 | **Google Cloud Setup** | `HowTo-SetupGoogleCloud.md` |
@@ -72,18 +73,16 @@
 - Smooth app startup
 
 **Related Docs:**
-- `Performance-Fix-Quick-Reference.md` - Quick debugging
-- `Performance-Improvement-Plan.md` - Original plan
-- `Ready-To-Merge-Summary.md` - Merge checklist
+- `DOCUMENTATION-REORGANIZATION-SUMMARY.md` - Doc cleanup summary
 
 ---
 
 ### Planning & Future Work ??
 
-#### 4. **User Account & Data Isolation**
+#### 4. **User Account & Data Isolation (Mobile App)**
 **File:** `Planning-UserAccountIsolation.md`  
 **Status:** ?? Analysis Complete (Next Priority)  
-**What:** Ensure users only see their own data
+**What:** Ensure mobile app users only see their own data
 
 **Critical Issues:**
 - All users see all quotes/bookings (privacy issue)
@@ -97,12 +96,40 @@
 
 **Related Docs:**
 - `Next-Steps-UserAccountIsolation.md` - Step-by-step roadmap
+- `Planning-DataAccessEnforcement.md` - Full platform plan
+
+---
+
+#### 5. **Data Access Enforcement (Full Platform)** ??
+**File:** `Planning-DataAccessEnforcement.md`  
+**Status:** ?? **NEW** - Planning Complete  
+**What:** Comprehensive RBAC and data isolation across all components
+
+**Scope:**
+- Passenger Mobile App
+- Driver Mobile App
+- Admin Web Portal
+- Admin API
+- AuthServer
+
+**Critical Changes:**
+- Add `CreatedByUserId` to all entities
+- Implement ownership filtering
+- Add `dispatcher` and `concierge` roles
+- Audit trail logging
+- Field-level masking for dispatchers
+
+**Timeline:** 2-3 weeks  
+**Priority:** ?? **CRITICAL - BLOCKS ALPHA**
+
+**Related Docs:**
+- `Planning-UserAccountIsolation.md` - Mobile app specifics
 
 ---
 
 ### Reference Materials ??
 
-#### 5. **Bug Fixes Reference**
+#### 6. **Bug Fixes Reference**
 **File:** `Reference-BugFixes.md`  
 **Status:** ? Maintained  
 **What:** Complete history of all bugs fixed
@@ -114,7 +141,7 @@
 
 ---
 
-#### 6. **Configuration & Security Guide**
+#### 7. **Configuration & Security Guide**
 **File:** `Guide-ConfigurationSecurity.md`  
 **Status:** ? Complete  
 **What:** ConfigurationService, API keys, secure storage
@@ -129,7 +156,7 @@
 
 ### How-To Guides ???
 
-#### 7. **Google Cloud Console Setup**
+#### 8. **Google Cloud Console Setup**
 **File:** `HowTo-SetupGoogleCloud.md`  
 **Status:** ? Complete  
 **What:** Step-by-step Google Cloud configuration
@@ -142,7 +169,7 @@
 
 ---
 
-#### 8. **Access Places Test Page**
+#### 9. **Access Places Test Page**
 **File:** `How-To-Access-PlacesTestPage.md`  
 **Status:** ? Complete  
 **What:** How to access test pages for development
@@ -151,7 +178,7 @@
 
 ### Testing Guides ??
 
-#### 9. **Google Places Autocomplete Testing**
+#### 10. **Google Places Autocomplete Testing**
 **File:** `Testing-GooglePlacesAutocomplete.md`  
 **Status:** ? Complete  
 **What:** Comprehensive test scenarios for autocomplete
@@ -164,7 +191,7 @@
 
 ---
 
-#### 10. **Location Tracking Testing**
+#### 11. **Location Tracking Testing**
 **File:** `Testing-LocationTracking.md`  
 **Status:** ? Complete  
 **What:** Driver tracking test guide
@@ -179,7 +206,7 @@
 
 ### Legacy/Deprecated ??
 
-#### 11. **Location Picker Service**
+#### 12. **Location Picker Service**
 **Files:** `LocationPickerService.md`, `LocationPickerService-Testing.md`  
 **Status:** ?? Deprecated (Replaced by Places Autocomplete)  
 **What:** Old native maps integration
@@ -188,7 +215,7 @@
 
 ---
 
-#### 12. **Passenger App Admin API Alignment**
+#### 13. **Passenger App Admin API Alignment**
 **File:** `PassengerApp-AdminAPI-Alignment-Verification.md`  
 **Status:** ? Reference  
 **What:** Documentation of API endpoint alignment
@@ -234,15 +261,21 @@ The `Archive/` folder contains historical documents:
 1. Google Places Autocomplete (Phases 0-7)
 2. Driver Location Tracking
 3. Performance Optimization (ready to merge)
+4. Documentation Reorganization
 
 ### ?? In Progress
 *Nothing actively in progress*
 
-### ?? Next Priority
-**User Account & Data Isolation**
+### ?? Next Priority (Choose One)
+**Option A: User Account Isolation (Mobile App Only)**
 - Read: `Planning-UserAccountIsolation.md`
 - Follow: `Next-Steps-UserAccountIsolation.md`
-- Estimated: 1.5-2 weeks
+- Estimated: 1-2 weeks (mobile app focus)
+
+**Option B: Data Access Enforcement (Full Platform)** ? **RECOMMENDED**
+- Read: `Planning-DataAccessEnforcement.md`
+- Includes: Mobile app + backend + admin portal
+- Estimated: 2-3 weeks (comprehensive solution)
 
 ### ? Future
 - Physical device testing
@@ -278,6 +311,11 @@ The `Archive/` folder contains historical documents:
 2. Follow the test scenarios
 3. Report any failures in bug reference doc
 
+### "I need to understand data access / security"
+1. Start with `Planning-DataAccessEnforcement.md` (full platform)
+2. Or `Planning-UserAccountIsolation.md` (mobile app only)
+3. Check `Feature-LocationTracking.md` for authorization example
+
 ---
 
 ## ?? **Documentation Health**
@@ -286,15 +324,15 @@ The `Archive/` folder contains historical documents:
 |----------|-----------|--------|
 | Features | 2 | ? Up to date |
 | Improvements | 1 | ? Complete |
-| Planning | 2 | ? Current |
-| Guides | 2 | ? Maintained |
+| Planning | 3 | ? Current |
+| Guides | 1 | ? Maintained |
 | Testing | 2 | ? Complete |
 | Reference | 2 | ? Updated |
 | How-To | 2 | ? Complete |
 | Legacy | 3 | ?? Deprecated |
 | Archive | 54 | ?? Historical |
 
-**Total Active Documents:** 13  
+**Total Active Documents:** 17  
 **Total Archive Documents:** 54  
 **Documentation Coverage:** ? Excellent
 
@@ -376,11 +414,14 @@ The `Archive/` folder contains historical documents:
 ? Follow `HowTo-SetupGoogleCloud.md` (20 min)
 
 **Working on user isolation?**  
-? Start with `Planning-UserAccountIsolation.md` (30 min)
+? Start with `Planning-UserAccountIsolation.md` (mobile) or `Planning-DataAccessEnforcement.md` (full platform) (30 min)
+
+**Understanding security model?**  
+? Read `Planning-DataAccessEnforcement.md` (comprehensive RBAC overview) (45 min)
 
 ---
 
-**Version:** 2.0 (Consolidated & Organized)  
+**Version:** 2.1 (Added Data Access Enforcement Planning)  
 **Maintained By:** Development Team  
 **Last Major Reorganization:** January 10, 2026
 
