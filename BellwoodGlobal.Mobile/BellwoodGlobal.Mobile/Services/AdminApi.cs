@@ -51,6 +51,50 @@ namespace BellwoodGlobal.Mobile.Services
         public async Task<QuoteDetail?> GetQuoteAsync(string id)
             => await _http.GetFromJsonAsync<QuoteDetail>($"/quotes/{id}", _json);
 
+        public async Task<AcceptQuoteResponse> AcceptQuoteAsync(string quoteId)
+        {
+            using var res = await _http.PostAsync($"/quotes/{quoteId}/accept", null);
+
+            if (res.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var error = await res.Content.ReadFromJsonAsync<QuoteErrorResponse>(_json);
+                throw new InvalidOperationException(error?.Error ?? "Cannot accept quote");
+            }
+
+            if (res.StatusCode == HttpStatusCode.Forbidden)
+            {
+                throw new UnauthorizedAccessException("You don't have permission to accept this quote");
+            }
+
+            res.EnsureSuccessStatusCode();
+
+            var result = await res.Content.ReadFromJsonAsync<AcceptQuoteResponse>(_json);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(
+                $"[AdminApi] Quote {quoteId} accepted successfully. Booking created: {result?.BookingId}");
+#endif
+
+            return result ?? throw new InvalidOperationException("Failed to accept quote");
+        }
+
+        public async Task CancelQuoteAsync(string quoteId)
+        {
+            using var res = await _http.PostAsync($"/quotes/{quoteId}/cancel", null);
+
+            if (res.StatusCode == HttpStatusCode.BadRequest)
+            {
+                var error = await res.Content.ReadFromJsonAsync<QuoteErrorResponse>(_json);
+                throw new InvalidOperationException(error?.Error ?? "Cannot cancel quote");
+            }
+
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Quote {quoteId} cancelled successfully");
+#endif
+        }
+
         // ========== BOOKINGS ==========
         public async Task SubmitBookingAsync(QuoteDraft draft)
         {
