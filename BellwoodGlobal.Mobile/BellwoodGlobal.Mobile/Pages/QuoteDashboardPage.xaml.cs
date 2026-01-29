@@ -10,6 +10,7 @@ public partial class QuoteDashboardPage : ContentPage
     private readonly ObservableCollection<RowVm> _rows = new();
     private string _filter = "All";
     private string _search = "";
+    private System.Timers.Timer? _pollingTimer;
 
     public QuoteDashboardPage()
     {
@@ -22,6 +23,67 @@ public partial class QuoteDashboardPage : ContentPage
     {
         base.OnAppearing();
         await LoadAsync();
+        StartPolling();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        StopPolling();
+    }
+
+    private void StartPolling()
+    {
+        // Poll every 30 seconds for quote status updates
+        _pollingTimer = new System.Timers.Timer(30_000);
+        _pollingTimer.Elapsed += async (s, e) => await RefreshQuotesAsync();
+        _pollingTimer.Start();
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[QuoteDashboard] Polling started (30s interval)");
+#endif
+    }
+
+    private void StopPolling()
+    {
+        _pollingTimer?.Stop();
+        _pollingTimer?.Dispose();
+        _pollingTimer = null;
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[QuoteDashboard] Polling stopped");
+#endif
+    }
+
+    private async Task RefreshQuotesAsync()
+    {
+        try
+        {
+            var items = await _admin.GetQuotesAsync(100);
+            var vms = items
+                .Where(FilterFn)
+                .Where(SearchFn)
+                .Select(RowVm.From)
+                .ToList();
+
+            // Update UI on main thread
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _rows.Clear();
+                foreach (var vm in vms) _rows.Add(vm);
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Refreshed: {vms.Count} quotes displayed");
+#endif
+            });
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't interrupt user with alerts during polling
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Polling refresh failed: {ex.Message}");
+#endif
+        }
     }
 
     private async Task LoadAsync()
