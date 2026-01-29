@@ -14,9 +14,9 @@
 		<!-- Filter buttons -->
 		<HorizontalStackLayout Grid.Row="0" Spacing="8">
 			<Button x:Name="AllBtn" Text="All" Clicked="OnFilterClicked" />
-			<Button x:Name="PendingBtn" Text="Pending" Clicked="OnFilterClicked" />
-			<Button x:Name="PricedBtn" Text="Priced" Clicked="OnFilterClicked" />
-			<Button x:Name="DeclinedBtn" Text="Declined" Clicked="OnFilterClicked" />
+			<Button x:Name="AwaitingBtn" Text="Awaiting Response" Clicked="OnFilterClicked" />
+			<Button x:Name="RespondedBtn" Text="Response Received" Clicked="OnFilterClicked" />
+			<Button x:Name="CancelledBtn" Text="Cancelled" Clicked="OnFilterClicked" />
 		</HorizontalStackLayout>
 
 		<!-- Search -->

@@ -83,7 +83,7 @@ public partial class QuoteDashboardPage : ContentPage
 
         _filter = b.Text ?? "All";
         // quick visual toggle
-        foreach (var btn in new[] { AllBtn, PendingBtn, PricedBtn, DeclinedBtn })
+        foreach (var btn in new[] { AllBtn, AwaitingBtn, RespondedBtn, CancelledBtn })
         {
             var isActive = btn == b;
             btn.BackgroundColor = isActive ? (Color)Application.Current.Resources["BellwoodGold"]
@@ -101,21 +101,29 @@ public partial class QuoteDashboardPage : ContentPage
         await LoadAsync();
     }
 
-    // Map backend status -> customer-facing label
+    // Map backend status -> customer-facing label (Phase Alpha + backward compatibility)
     private static readonly Dictionary<string, string> DisplayStatusMap =
         new(StringComparer.OrdinalIgnoreCase)
         {
-            ["Submitted"] = "Submitted",
-            ["InReview"] = "Pending",
-            ["Priced"] = "Priced",
-            ["Sent"] = "Quoted",
-            ["Closed"] = "Closed",
-            ["Rejected"] = "Declined"
+            // Phase Alpha statuses (new)
+            ["Pending"] = "Awaiting Response",
+            ["Acknowledged"] = "Under Review",
+            ["Responded"] = "Response Received",
+            ["Accepted"] = "Booking Created",
+            ["Cancelled"] = "Cancelled",
+            
+            // Legacy statuses (backward compatibility)
+            ["Submitted"] = "Awaiting Response",      // Map to Pending
+            ["InReview"] = "Under Review",            // Map to Acknowledged
+            ["Priced"] = "Response Received",         // Map to Responded
+            ["Sent"] = "Response Received",           // Map to Responded
+            ["Closed"] = "Booking Created",           // Map to Accepted
+            ["Rejected"] = "Cancelled"                // Map to Cancelled
         };
 
     private static string ToDisplayStatus(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return "Submitted";
+        if (string.IsNullOrWhiteSpace(raw)) return "Awaiting Response";
 
         // If the API ever sends numeric enums, try to parse them defensively:
         if (int.TryParse(raw, out var n) && Enum.IsDefined(typeof(AdminStatus), n))
@@ -128,25 +136,26 @@ public partial class QuoteDashboardPage : ContentPage
 
     private enum AdminStatus { Submitted = 0, InReview = 1, Priced = 2, Sent = 3, Closed = 4, Rejected = 5 }
 
-    // Color map for display labels
+    // Color map for display labels (Phase Alpha colors)
     private static Color StatusColorForDisplay(string display)
     {
         var d = (display ?? "").ToLowerInvariant();
         return d switch
         {
-            "submitted" or "pending" => TryGetColor("ChipPending", Colors.Goldenrod),
-            "priced" or "quoted" => TryGetColor("ChipPriced", Colors.SeaGreen),
-            "declined" => TryGetColor("ChipDeclined", Colors.IndianRed),
-            "closed" => TryGetColor("ChipOther", Colors.Gray),
-            _ => TryGetColor("ChipOther", Colors.Gray),
+            "awaiting response" => Colors.Orange,          // Pending
+            "under review" => Colors.Blue,                 // Acknowledged
+            "response received" => Colors.Green,           // Responded
+            "booking created" => Colors.Gray,              // Accepted
+            "cancelled" => Colors.Red,                     // Cancelled
+            
+            // Legacy fallbacks
+            "submitted" or "pending" => Colors.Orange,
+            "priced" or "quoted" => Colors.Green,
+            "declined" => Colors.Red,
+            "closed" => Colors.Gray,
+            
+            _ => Colors.Gray,
         };
-    }
-
-    private static Color TryGetColor(string key, Color fallback)
-    {
-        if (Application.Current?.Resources.TryGetValue(key, out var v) == true && v is Color c)
-            return c;
-        return fallback;
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)
@@ -170,6 +179,13 @@ public partial class QuoteDashboardPage : ContentPage
         public static RowVm From(QuoteListItem q)
         {
             var displayStatus = ToDisplayStatus(q.Status);
+            
+            // Show estimated price for responded quotes
+            var statusWithPrice = displayStatus;
+            if (displayStatus == "Response Received" && q.EstimatedPrice.HasValue)
+            {
+                statusWithPrice = $"{displayStatus} - ${q.EstimatedPrice.Value:F2}";
+            }
 
             return new RowVm
             {
@@ -180,7 +196,7 @@ public partial class QuoteDashboardPage : ContentPage
                     $"Booker: {q.BookerName}   •   " +
                     $"Drop: {(string.IsNullOrWhiteSpace(q.DropoffLocation) ? "As Directed" : q.DropoffLocation)}   •   " +
                     $"Created: {q.CreatedUtc.ToLocalTime():g}",
-                Status = displayStatus,
+                Status = statusWithPrice,
                 StatusColor = StatusColorForDisplay(displayStatus)
             };
         }
