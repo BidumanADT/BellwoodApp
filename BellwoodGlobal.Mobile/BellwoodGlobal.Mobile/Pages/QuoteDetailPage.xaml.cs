@@ -163,6 +163,46 @@ public partial class QuoteDetailPage : ContentPage, IQueryAttributable
         PaxLine.Text = (paxObj is null) ? "—"
             : $"{paxObj} — {EmptyAsNA(paxObj.PhoneNumber)} — {EmptyAsNA(paxObj.EmailAddress)}";
 
+        // Phase Alpha: Dispatcher Response Section
+        var showResponse = displayStatus is "Response Received" or "Booking Created";
+        ResponseCard.IsVisible = showResponse;
+        
+        if (showResponse && d.EstimatedPrice.HasValue)
+        {
+            EstimatedPriceLabel.Text = $"${d.EstimatedPrice.Value:F2}";
+            
+            if (d.EstimatedPickupTime.HasValue)
+            {
+                EstimatedPickupLabel.Text = d.EstimatedPickupTime.Value.ToLocalTime().ToString("MMM dd, yyyy @ h:mm tt");
+            }
+            else
+            {
+                EstimatedPickupLabel.Text = "Not specified";
+            }
+            
+            if (!string.IsNullOrWhiteSpace(d.Notes))
+            {
+                NotesSection.IsVisible = true;
+                NotesLabel.Text = d.Notes;
+            }
+            else
+            {
+                NotesSection.IsVisible = false;
+            }
+            
+            // Show status-specific message
+            if (displayStatus == "Response Received")
+            {
+                ResponseMessage.IsVisible = true;
+                ResponseMessage.Text = "We've prepared an estimate for your trip!";
+            }
+            else if (displayStatus == "Booking Created")
+            {
+                ResponseMessage.IsVisible = true;
+                ResponseMessage.Text = "This quote has been accepted. Your booking is ready!";
+            }
+        }
+
 #if DEBUG
         JsonCard.IsVisible = true;
         JsonEditor.Text = JsonSerializer.Serialize(d, _jsonOpts);
@@ -171,31 +211,47 @@ public partial class QuoteDetailPage : ContentPage, IQueryAttributable
 
     private static string EmptyAsNA(string? v) => string.IsNullOrWhiteSpace(v) ? "N/A" : v;
 
-    // Same friendly mapping used on the dashboard
+    // Same friendly mapping used on the dashboard (Phase Alpha + backward compatibility)
     private static readonly Dictionary<string, string> DisplayStatusMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Submitted"] = "Submitted",
-        ["InReview"] = "Pending",
-        ["Priced"] = "Priced",
-        ["Sent"] = "Quoted",
-        ["Closed"] = "Closed",
-        ["Rejected"] = "Declined"
+        // Phase Alpha statuses (new)
+        ["Pending"] = "Awaiting Response",
+        ["Acknowledged"] = "Under Review",
+        ["Responded"] = "Response Received",
+        ["Accepted"] = "Booking Created",
+        ["Cancelled"] = "Cancelled",
+        
+        // Legacy statuses (backward compatibility)
+        ["Submitted"] = "Awaiting Response",
+        ["InReview"] = "Under Review",
+        ["Priced"] = "Response Received",
+        ["Sent"] = "Response Received",
+        ["Closed"] = "Booking Created",
+        ["Rejected"] = "Cancelled"
     };
 
     private static string ToDisplayStatus(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return "Submitted";
+        if (string.IsNullOrWhiteSpace(raw)) return "Awaiting Response";
         return DisplayStatusMap.TryGetValue(raw, out var friendly) ? friendly : raw;
     }
 
     private static Color StatusColorForDisplay(string display) =>
         (display ?? "").ToLowerInvariant() switch
         {
-            "submitted" or "pending" => (Color)Application.Current!.Resources["ChipPending"],
-            "priced" or "quoted" => (Color)Application.Current!.Resources["ChipPriced"],
-            "declined" => (Color)Application.Current!.Resources["ChipDeclined"],
-            "closed" => (Color)Application.Current!.Resources["ChipOther"],
-            _ => (Color)Application.Current!.Resources["ChipOther"]
+            "awaiting response" => Colors.Orange,
+            "under review" => Colors.Blue,
+            "response received" => Colors.Green,
+            "booking created" => Colors.Gray,
+            "cancelled" => Colors.Red,
+            
+            // Legacy fallbacks
+            "submitted" or "pending" => Colors.Orange,
+            "priced" or "quoted" => Colors.Green,
+            "declined" => Colors.Red,
+            "closed" => Colors.Gray,
+            
+            _ => Colors.Gray
         };
 
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
