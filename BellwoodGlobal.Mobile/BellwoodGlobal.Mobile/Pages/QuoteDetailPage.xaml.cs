@@ -252,8 +252,87 @@ public partial class QuoteDetailPage : ContentPage, IQueryAttributable
     // Phase Alpha: Button Event Handlers (placeholders for next commit)
     private async void OnAcceptQuoteClicked(object? sender, EventArgs e)
     {
-        // TODO: Implement accept quote logic in next commit
-        await DisplayAlert("Coming Soon", "Accept quote functionality will be implemented in the next step.", "OK");
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            await DisplayAlert("Error", "Quote ID is missing.", "OK");
+            return;
+        }
+
+        // Disable button to prevent double-clicks
+        AcceptButton.IsEnabled = false;
+
+        try
+        {
+            // Call API to accept quote
+            var result = await _admin.AcceptQuoteAsync(Id);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(
+                $"[QuoteDetail] Quote {Id} accepted. Booking created: {result.BookingId}");
+#endif
+
+            // Show success message
+            var navigateToBooking = await DisplayAlert(
+                "Success!",
+                "Quote accepted! Your booking has been created.",
+                "View Booking",
+                "OK");
+
+            if (navigateToBooking && !string.IsNullOrWhiteSpace(result.BookingId))
+            {
+                // Navigate to booking detail page
+                await Shell.Current.GoToAsync($"{nameof(BookingDetailPage)}?id={result.BookingId}");
+            }
+            else
+            {
+                // Go back to quote dashboard
+                await Shell.Current.GoToAsync("..");
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violation (e.g., wrong status)
+            await DisplayAlert(
+                "Cannot Accept Quote",
+                ex.Message,
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Accept failed (business rule): {ex.Message}");
+#endif
+
+            // Reload quote to get current status
+            await LoadAsync(Id);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Permission denied (shouldn't happen for own quotes)
+            await DisplayAlert(
+                "Access Denied",
+                "You don't have permission to accept this quote.",
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Accept failed (unauthorized): {ex.Message}");
+#endif
+        }
+        catch (Exception ex)
+        {
+            // Generic error
+            await DisplayAlert(
+                "Error",
+                $"Failed to accept quote: {ex.Message}",
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Accept failed (error): {ex.Message}");
+#endif
+        }
+        finally
+        {
+            // Re-enable button
+            AcceptButton.IsEnabled = true;
+        }
     }
 
     private async void OnCancelQuoteClicked(object? sender, EventArgs e)
