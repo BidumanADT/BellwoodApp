@@ -11,6 +11,8 @@ public partial class QuoteDashboardPage : ContentPage
     private string _filter = "All";
     private string _search = "";
     private System.Timers.Timer? _pollingTimer;
+    private Dictionary<string, string> _previousStatuses = new();
+    private System.Timers.Timer? _notificationTimer;
 
     public QuoteDashboardPage()
     {
@@ -66,11 +68,36 @@ public partial class QuoteDashboardPage : ContentPage
                 .Select(RowVm.From)
                 .ToList();
 
+            // Detect status changes (Phase Alpha)
+            var changedQuotes = new List<string>();
+            foreach (var item in items)
+            {
+                var currentStatus = item.Status ?? "";
+                if (_previousStatuses.TryGetValue(item.Id, out var previousStatus))
+                {
+                    if (previousStatus != currentStatus)
+                    {
+                        changedQuotes.Add(item.PassengerName ?? "A quote");
+#if DEBUG
+                        System.Diagnostics.Debug.WriteLine(
+                            $"[QuoteDashboard] Status change detected: {item.Id} ({previousStatus} → {currentStatus})");
+#endif
+                    }
+                }
+                _previousStatuses[item.Id] = currentStatus;
+            }
+
             // Update UI on main thread
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 _rows.Clear();
                 foreach (var vm in vms) _rows.Add(vm);
+
+                // Show notification if status changes detected
+                if (changedQuotes.Count > 0)
+                {
+                    ShowNotification(changedQuotes);
+                }
 
 #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Refreshed: {vms.Count} quotes displayed");
@@ -100,6 +127,13 @@ public partial class QuoteDashboardPage : ContentPage
 
             _rows.Clear();
             foreach (var vm in vms) _rows.Add(vm);
+
+            // Initialize previous statuses (Phase Alpha)
+            _previousStatuses.Clear();
+            foreach (var item in items)
+            {
+                _previousStatuses[item.Id] = item.Status ?? "";
+            }
         }
         catch (Exception ex)
         {
@@ -226,6 +260,63 @@ public partial class QuoteDashboardPage : ContentPage
             await Shell.Current.GoToAsync("..");
         else
             await Shell.Current.GoToAsync("//MainPage"); 
+    }
+
+    // Phase Alpha: Notification Banner
+    private void ShowNotification(List<string> changedQuotes)
+    {
+        // Cancel any existing auto-dismiss timer
+        _notificationTimer?.Stop();
+        _notificationTimer?.Dispose();
+
+        // Set notification message
+        if (changedQuotes.Count == 1)
+        {
+            NotificationMessage.Text = $"Quote for {changedQuotes[0]} has been updated";
+        }
+        else if (changedQuotes.Count <= 3)
+        {
+            NotificationMessage.Text = $"{changedQuotes.Count} quotes have been updated";
+        }
+        else
+        {
+            NotificationMessage.Text = $"{changedQuotes.Count} quotes have been updated";
+        }
+
+        // Show banner
+        NotificationBanner.IsVisible = true;
+
+        // Auto-dismiss after 5 seconds
+        _notificationTimer = new System.Timers.Timer(5000);
+        _notificationTimer.Elapsed += (s, e) =>
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                NotificationBanner.IsVisible = false;
+            });
+            _notificationTimer?.Dispose();
+            _notificationTimer = null;
+        };
+        _notificationTimer.Start();
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Notification shown: {changedQuotes.Count} quote(s) updated");
+#endif
+    }
+
+    private void OnDismissNotification(object? sender, EventArgs e)
+    {
+        // Cancel auto-dismiss timer
+        _notificationTimer?.Stop();
+        _notificationTimer?.Dispose();
+        _notificationTimer = null;
+
+        // Hide banner
+        NotificationBanner.IsVisible = false;
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[QuoteDashboard] Notification dismissed by user");
+#endif
     }
 
     // --- lightweight row VM ---
