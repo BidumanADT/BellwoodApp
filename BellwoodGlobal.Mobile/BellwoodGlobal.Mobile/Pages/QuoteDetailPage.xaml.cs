@@ -335,16 +335,93 @@ public partial class QuoteDetailPage : ContentPage, IQueryAttributable
         }
     }
 
+    // Phase Alpha: Cancel Quote Flow
     private async void OnCancelQuoteClicked(object? sender, EventArgs e)
     {
-        // TODO: Implement cancel quote logic in next commit
-        await DisplayAlert("Coming Soon", "Cancel quote functionality will be implemented in the next step.", "OK");
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            await DisplayAlert("Error", "Quote ID is missing.", "OK");
+            return;
+        }
+
+        // Confirm cancellation
+        var confirm = await DisplayAlert(
+            "Cancel Quote?",
+            "Are you sure you want to cancel this quote request? This action cannot be undone.",
+            "Yes, Cancel",
+            "No");
+
+        if (!confirm)
+            return;
+
+        // Disable button to prevent double-clicks
+        CancelButton.IsEnabled = false;
+
+        try
+        {
+            // Call API to cancel quote
+            await _admin.CancelQuoteAsync(Id);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Quote {Id} cancelled successfully");
+#endif
+
+            // Show success message
+            await DisplayAlert(
+                "Quote Cancelled",
+                "Your quote request has been cancelled.",
+                "OK");
+
+            // Go back to quote dashboard
+            await Shell.Current.GoToAsync("..");
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violation (e.g., already accepted, cannot cancel)
+            await DisplayAlert(
+                "Cannot Cancel Quote",
+                ex.Message,
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Cancel failed (business rule): {ex.Message}");
+#endif
+
+            // Reload quote to get current status
+            await LoadAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            // Generic error
+            await DisplayAlert(
+                "Error",
+                $"Failed to cancel quote: {ex.Message}",
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Cancel failed (error): {ex.Message}");
+#endif
+        }
+        finally
+        {
+            // Re-enable button
+            CancelButton.IsEnabled = true;
+        }
     }
 
+    // Phase Alpha: View Booking (for accepted quotes)
     private async void OnViewBookingClicked(object? sender, EventArgs e)
     {
-        // TODO: Navigate to booking detail page
-        await DisplayAlert("Coming Soon", "Navigate to booking detail will be implemented in the next step.", "OK");
+        // For "Booking Created" status, we need to find the booking ID
+        // The API doesn't currently return it in QuoteDetail, so we'll navigate to bookings list
+        // In a future enhancement, we could store the bookingId in QuoteDetail or query for it
+        
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Navigating to bookings page from accepted quote {Id}");
+#endif
+
+        // Navigate to bookings page where user can see their new booking
+        await Shell.Current.GoToAsync($"{nameof(BookingsPage)}");
     }
 
     private static string EmptyAsNA(string? v) => string.IsNullOrWhiteSpace(v) ? "N/A" : v;
