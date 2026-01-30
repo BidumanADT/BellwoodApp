@@ -168,6 +168,46 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Phase Alpha: Action Buttons -->
+            <VerticalStackLayout x:Name="ActionButtonsSection" Spacing="12" Margin="0,8,0,16" IsVisible="False">
+                
+                <!-- Accept Quote Button (Primary Action) -->
+                <Button x:Name="AcceptButton"
+                        Text="✓ Accept Quote &amp; Create Booking"
+                        Clicked="OnAcceptQuoteClicked"
+                        BackgroundColor="{StaticResource BellwoodGold}"
+                        TextColor="{StaticResource BellwoodInk}"
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        HeightRequest="50"
+                        CornerRadius="8"
+                        IsVisible="False" />
+                
+                <!-- Cancel Quote Button (Secondary Action) -->
+                <Button x:Name="CancelButton"
+                        Text="✕ Cancel Quote Request"
+                        Clicked="OnCancelQuoteClicked"
+                        BackgroundColor="{StaticResource BellwoodCharcoal}"
+                        TextColor="{StaticResource BellwoodCream}"
+                        FontAttributes="Bold"
+                        FontSize="14"
+                        HeightRequest="44"
+                        CornerRadius="8"
+                        IsVisible="False" />
+                
+                <!-- View Booking Button (for Accepted quotes) -->
+                <Button x:Name="ViewBookingButton"
+                        Text="→ View Booking"
+                        Clicked="OnViewBookingClicked"
+                        BackgroundColor="{StaticResource BellwoodGold}"
+                        TextColor="{StaticResource BellwoodInk}"
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        HeightRequest="50"
+                        CornerRadius="8"
+                        IsVisible="False" />
+            </VerticalStackLayout>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

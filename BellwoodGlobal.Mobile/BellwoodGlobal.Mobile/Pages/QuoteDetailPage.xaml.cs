@@ -203,10 +203,69 @@ public partial class QuoteDetailPage : ContentPage, IQueryAttributable
             }
         }
 
+        // Phase Alpha: Action Buttons (dynamic based on status)
+        UpdateActionButtons(displayStatus);
+
 #if DEBUG
         JsonCard.IsVisible = true;
         JsonEditor.Text = JsonSerializer.Serialize(d, _jsonOpts);
 #endif
+    }
+
+    private void UpdateActionButtons(string displayStatus)
+    {
+        // Reset all buttons
+        AcceptButton.IsVisible = false;
+        CancelButton.IsVisible = false;
+        ViewBookingButton.IsVisible = false;
+        ActionButtonsSection.IsVisible = false;
+
+        switch (displayStatus)
+        {
+            case "Awaiting Response":
+            case "Under Review":
+                // Only show Cancel button
+                CancelButton.IsVisible = true;
+                ActionButtonsSection.IsVisible = true;
+                break;
+
+            case "Response Received":
+                // Show both Accept and Cancel buttons
+                AcceptButton.IsVisible = true;
+                CancelButton.IsVisible = true;
+                ActionButtonsSection.IsVisible = true;
+                break;
+
+            case "Booking Created":
+                // Show View Booking button
+                ViewBookingButton.IsVisible = true;
+                ActionButtonsSection.IsVisible = true;
+                break;
+
+            case "Cancelled":
+                // No buttons (read-only)
+                ActionButtonsSection.IsVisible = false;
+                break;
+        }
+    }
+
+    // Phase Alpha: Button Event Handlers (placeholders for next commit)
+    private async void OnAcceptQuoteClicked(object? sender, EventArgs e)
+    {
+        // TODO: Implement accept quote logic in next commit
+        await DisplayAlert("Coming Soon", "Accept quote functionality will be implemented in the next step.", "OK");
+    }
+
+    private async void OnCancelQuoteClicked(object? sender, EventArgs e)
+    {
+        // TODO: Implement cancel quote logic in next commit
+        await DisplayAlert("Coming Soon", "Cancel quote functionality will be implemented in the next step.", "OK");
+    }
+
+    private async void OnViewBookingClicked(object? sender, EventArgs e)
+    {
+        // TODO: Navigate to booking detail page
+        await DisplayAlert("Coming Soon", "Navigate to booking detail will be implemented in the next step.", "OK");
     }
 
     private static string EmptyAsNA(string? v) => string.IsNullOrWhiteSpace(v) ? "N/A" : v;
