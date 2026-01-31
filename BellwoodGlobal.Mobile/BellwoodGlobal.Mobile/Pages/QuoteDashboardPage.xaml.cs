@@ -10,6 +10,9 @@ public partial class QuoteDashboardPage : ContentPage
     private readonly ObservableCollection<RowVm> _rows = new();
     private string _filter = "All";
     private string _search = "";
+    private System.Timers.Timer? _pollingTimer;
+    private Dictionary<string, string> _previousStatuses = new();
+    private System.Timers.Timer? _notificationTimer;
 
     public QuoteDashboardPage()
     {
@@ -22,6 +25,92 @@ public partial class QuoteDashboardPage : ContentPage
     {
         base.OnAppearing();
         await LoadAsync();
+        StartPolling();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        StopPolling();
+    }
+
+    private void StartPolling()
+    {
+        // Poll every 30 seconds for quote status updates
+        _pollingTimer = new System.Timers.Timer(30_000);
+        _pollingTimer.Elapsed += async (s, e) => await RefreshQuotesAsync();
+        _pollingTimer.Start();
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[QuoteDashboard] Polling started (30s interval)");
+#endif
+    }
+
+    private void StopPolling()
+    {
+        _pollingTimer?.Stop();
+        _pollingTimer?.Dispose();
+        _pollingTimer = null;
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[QuoteDashboard] Polling stopped");
+#endif
+    }
+
+    private async Task RefreshQuotesAsync()
+    {
+        try
+        {
+            var items = await _admin.GetQuotesAsync(100);
+            var vms = items
+                .Where(FilterFn)
+                .Where(SearchFn)
+                .Select(RowVm.From)
+                .ToList();
+
+            // Detect status changes (Phase Alpha)
+            var changedQuotes = new List<string>();
+            foreach (var item in items)
+            {
+                var currentStatus = item.Status ?? "";
+                if (_previousStatuses.TryGetValue(item.Id, out var previousStatus))
+                {
+                    if (previousStatus != currentStatus)
+                    {
+                        changedQuotes.Add(item.PassengerName ?? "A quote");
+#if DEBUG
+                        System.Diagnostics.Debug.WriteLine(
+                            $"[QuoteDashboard] Status change detected: {item.Id} ({previousStatus} → {currentStatus})");
+#endif
+                    }
+                }
+                _previousStatuses[item.Id] = currentStatus;
+            }
+
+            // Update UI on main thread
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _rows.Clear();
+                foreach (var vm in vms) _rows.Add(vm);
+
+                // Show notification if status changes detected
+                if (changedQuotes.Count > 0)
+                {
+                    ShowNotification(changedQuotes);
+                }
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Refreshed: {vms.Count} quotes displayed");
+#endif
+            });
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't interrupt user with alerts during polling
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Polling refresh failed: {ex.Message}");
+#endif
+        }
     }
 
     private async Task LoadAsync()
@@ -38,6 +127,13 @@ public partial class QuoteDashboardPage : ContentPage
 
             _rows.Clear();
             foreach (var vm in vms) _rows.Add(vm);
+
+            // Initialize previous statuses (Phase Alpha)
+            _previousStatuses.Clear();
+            foreach (var item in items)
+            {
+                _previousStatuses[item.Id] = item.Status ?? "";
+            }
         }
         catch (Exception ex)
         {
@@ -83,7 +179,7 @@ public partial class QuoteDashboardPage : ContentPage
 
         _filter = b.Text ?? "All";
         // quick visual toggle
-        foreach (var btn in new[] { AllBtn, PendingBtn, PricedBtn, DeclinedBtn })
+        foreach (var btn in new[] { AllBtn, AwaitingBtn, RespondedBtn, CancelledBtn })
         {
             var isActive = btn == b;
             btn.BackgroundColor = isActive ? (Color)Application.Current.Resources["BellwoodGold"]
@@ -101,21 +197,29 @@ public partial class QuoteDashboardPage : ContentPage
         await LoadAsync();
     }
 
-    // Map backend status -> customer-facing label
+    // Map backend status -> customer-facing label (Phase Alpha + backward compatibility)
     private static readonly Dictionary<string, string> DisplayStatusMap =
         new(StringComparer.OrdinalIgnoreCase)
         {
-            ["Submitted"] = "Submitted",
-            ["InReview"] = "Pending",
-            ["Priced"] = "Priced",
-            ["Sent"] = "Quoted",
-            ["Closed"] = "Closed",
-            ["Rejected"] = "Declined"
+            // Phase Alpha statuses (new)
+            ["Pending"] = "Awaiting Response",
+            ["Acknowledged"] = "Under Review",
+            ["Responded"] = "Response Received",
+            ["Accepted"] = "Booking Created",
+            ["Cancelled"] = "Cancelled",
+            
+            // Legacy statuses (backward compatibility)
+            ["Submitted"] = "Awaiting Response",      // Map to Pending
+            ["InReview"] = "Under Review",            // Map to Acknowledged
+            ["Priced"] = "Response Received",         // Map to Responded
+            ["Sent"] = "Response Received",           // Map to Responded
+            ["Closed"] = "Booking Created",           // Map to Accepted
+            ["Rejected"] = "Cancelled"                // Map to Cancelled
         };
 
     private static string ToDisplayStatus(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return "Submitted";
+        if (string.IsNullOrWhiteSpace(raw)) return "Awaiting Response";
 
         // If the API ever sends numeric enums, try to parse them defensively:
         if (int.TryParse(raw, out var n) && Enum.IsDefined(typeof(AdminStatus), n))
@@ -128,25 +232,26 @@ public partial class QuoteDashboardPage : ContentPage
 
     private enum AdminStatus { Submitted = 0, InReview = 1, Priced = 2, Sent = 3, Closed = 4, Rejected = 5 }
 
-    // Color map for display labels
+    // Color map for display labels (Phase Alpha colors)
     private static Color StatusColorForDisplay(string display)
     {
         var d = (display ?? "").ToLowerInvariant();
         return d switch
         {
-            "submitted" or "pending" => TryGetColor("ChipPending", Colors.Goldenrod),
-            "priced" or "quoted" => TryGetColor("ChipPriced", Colors.SeaGreen),
-            "declined" => TryGetColor("ChipDeclined", Colors.IndianRed),
-            "closed" => TryGetColor("ChipOther", Colors.Gray),
-            _ => TryGetColor("ChipOther", Colors.Gray),
+            "awaiting response" => Colors.Orange,          // Pending
+            "under review" => Colors.Blue,                 // Acknowledged
+            "response received" => Colors.Green,           // Responded
+            "booking created" => Colors.Gray,              // Accepted
+            "cancelled" => Colors.Red,                     // Cancelled
+            
+            // Legacy fallbacks
+            "submitted" or "pending" => Colors.Orange,
+            "priced" or "quoted" => Colors.Green,
+            "declined" => Colors.Red,
+            "closed" => Colors.Gray,
+            
+            _ => Colors.Gray,
         };
-    }
-
-    private static Color TryGetColor(string key, Color fallback)
-    {
-        if (Application.Current?.Resources.TryGetValue(key, out var v) == true && v is Color c)
-            return c;
-        return fallback;
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)
@@ -155,6 +260,63 @@ public partial class QuoteDashboardPage : ContentPage
             await Shell.Current.GoToAsync("..");
         else
             await Shell.Current.GoToAsync("//MainPage"); 
+    }
+
+    // Phase Alpha: Notification Banner
+    private void ShowNotification(List<string> changedQuotes)
+    {
+        // Cancel any existing auto-dismiss timer
+        _notificationTimer?.Stop();
+        _notificationTimer?.Dispose();
+
+        // Set notification message
+        if (changedQuotes.Count == 1)
+        {
+            NotificationMessage.Text = $"Quote for {changedQuotes[0]} has been updated";
+        }
+        else if (changedQuotes.Count <= 3)
+        {
+            NotificationMessage.Text = $"{changedQuotes.Count} quotes have been updated";
+        }
+        else
+        {
+            NotificationMessage.Text = $"{changedQuotes.Count} quotes have been updated";
+        }
+
+        // Show banner
+        NotificationBanner.IsVisible = true;
+
+        // Auto-dismiss after 5 seconds
+        _notificationTimer = new System.Timers.Timer(5000);
+        _notificationTimer.Elapsed += (s, e) =>
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                NotificationBanner.IsVisible = false;
+            });
+            _notificationTimer?.Dispose();
+            _notificationTimer = null;
+        };
+        _notificationTimer.Start();
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[QuoteDashboard] Notification shown: {changedQuotes.Count} quote(s) updated");
+#endif
+    }
+
+    private void OnDismissNotification(object? sender, EventArgs e)
+    {
+        // Cancel auto-dismiss timer
+        _notificationTimer?.Stop();
+        _notificationTimer?.Dispose();
+        _notificationTimer = null;
+
+        // Hide banner
+        NotificationBanner.IsVisible = false;
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[QuoteDashboard] Notification dismissed by user");
+#endif
     }
 
     // --- lightweight row VM ---
@@ -170,6 +332,13 @@ public partial class QuoteDashboardPage : ContentPage
         public static RowVm From(QuoteListItem q)
         {
             var displayStatus = ToDisplayStatus(q.Status);
+            
+            // Show estimated price for responded quotes
+            var statusWithPrice = displayStatus;
+            if (displayStatus == "Response Received" && q.EstimatedPrice.HasValue)
+            {
+                statusWithPrice = $"{displayStatus} - ${q.EstimatedPrice.Value:F2}";
+            }
 
             return new RowVm
             {
@@ -180,7 +349,7 @@ public partial class QuoteDashboardPage : ContentPage
                     $"Booker: {q.BookerName}   •   " +
                     $"Drop: {(string.IsNullOrWhiteSpace(q.DropoffLocation) ? "As Directed" : q.DropoffLocation)}   •   " +
                     $"Created: {q.CreatedUtc.ToLocalTime():g}",
-                Status = displayStatus,
+                Status = statusWithPrice,
                 StatusColor = StatusColorForDisplay(displayStatus)
             };
         }

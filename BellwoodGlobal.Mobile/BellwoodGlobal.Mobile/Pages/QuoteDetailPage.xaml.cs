@@ -163,39 +163,310 @@ public partial class QuoteDetailPage : ContentPage, IQueryAttributable
         PaxLine.Text = (paxObj is null) ? "—"
             : $"{paxObj} — {EmptyAsNA(paxObj.PhoneNumber)} — {EmptyAsNA(paxObj.EmailAddress)}";
 
+        // Phase Alpha: Dispatcher Response Section
+        var showResponse = displayStatus is "Response Received" or "Booking Created";
+        ResponseCard.IsVisible = showResponse;
+        
+        if (showResponse && d.EstimatedPrice.HasValue)
+        {
+            EstimatedPriceLabel.Text = $"${d.EstimatedPrice.Value:F2}";
+            
+            if (d.EstimatedPickupTime.HasValue)
+            {
+                EstimatedPickupLabel.Text = d.EstimatedPickupTime.Value.ToLocalTime().ToString("MMM dd, yyyy @ h:mm tt");
+            }
+            else
+            {
+                EstimatedPickupLabel.Text = "Not specified";
+            }
+            
+            if (!string.IsNullOrWhiteSpace(d.Notes))
+            {
+                NotesSection.IsVisible = true;
+                NotesLabel.Text = d.Notes;
+            }
+            else
+            {
+                NotesSection.IsVisible = false;
+            }
+            
+            // Show status-specific message
+            if (displayStatus == "Response Received")
+            {
+                ResponseMessage.IsVisible = true;
+                ResponseMessage.Text = "We've prepared an estimate for your trip!";
+            }
+            else if (displayStatus == "Booking Created")
+            {
+                ResponseMessage.IsVisible = true;
+                ResponseMessage.Text = "This quote has been accepted. Your booking is ready!";
+            }
+        }
+
+        // Phase Alpha: Action Buttons (dynamic based on status)
+        UpdateActionButtons(displayStatus);
+
 #if DEBUG
         JsonCard.IsVisible = true;
         JsonEditor.Text = JsonSerializer.Serialize(d, _jsonOpts);
 #endif
     }
 
+    private void UpdateActionButtons(string displayStatus)
+    {
+        // Reset all buttons
+        AcceptButton.IsVisible = false;
+        CancelButton.IsVisible = false;
+        ViewBookingButton.IsVisible = false;
+        ActionButtonsSection.IsVisible = false;
+
+        switch (displayStatus)
+        {
+            case "Awaiting Response":
+            case "Under Review":
+                // Only show Cancel button
+                CancelButton.IsVisible = true;
+                ActionButtonsSection.IsVisible = true;
+                break;
+
+            case "Response Received":
+                // Show both Accept and Cancel buttons
+                AcceptButton.IsVisible = true;
+                CancelButton.IsVisible = true;
+                ActionButtonsSection.IsVisible = true;
+                break;
+
+            case "Booking Created":
+                // Show View Booking button
+                ViewBookingButton.IsVisible = true;
+                ActionButtonsSection.IsVisible = true;
+                break;
+
+            case "Cancelled":
+                // No buttons (read-only)
+                ActionButtonsSection.IsVisible = false;
+                break;
+        }
+    }
+
+    // Phase Alpha: Button Event Handlers (placeholders for next commit)
+    private async void OnAcceptQuoteClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            await DisplayAlert("Error", "Quote ID is missing.", "OK");
+            return;
+        }
+
+        // Disable button to prevent double-clicks
+        AcceptButton.IsEnabled = false;
+
+        try
+        {
+            // Call API to accept quote
+            var result = await _admin.AcceptQuoteAsync(Id);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(
+                $"[QuoteDetail] Quote {Id} accepted. Booking created: {result.BookingId}");
+#endif
+
+            // Show success message
+            var navigateToBooking = await DisplayAlert(
+                "Success!",
+                "Quote accepted! Your booking has been created.",
+                "View Booking",
+                "OK");
+
+            if (navigateToBooking && !string.IsNullOrWhiteSpace(result.BookingId))
+            {
+                // Navigate to booking detail page
+                await Shell.Current.GoToAsync($"{nameof(BookingDetailPage)}?id={result.BookingId}");
+            }
+            else
+            {
+                // Go back to quote dashboard
+                await Shell.Current.GoToAsync("..");
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violation (e.g., wrong status)
+            await DisplayAlert(
+                "Cannot Accept Quote",
+                ex.Message,
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Accept failed (business rule): {ex.Message}");
+#endif
+
+            // Reload quote to get current status
+            await LoadAsync(Id);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Permission denied (shouldn't happen for own quotes)
+            await DisplayAlert(
+                "Access Denied",
+                "You don't have permission to accept this quote.",
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Accept failed (unauthorized): {ex.Message}");
+#endif
+        }
+        catch (Exception ex)
+        {
+            // Generic error
+            await DisplayAlert(
+                "Error",
+                $"Failed to accept quote: {ex.Message}",
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Accept failed (error): {ex.Message}");
+#endif
+        }
+        finally
+        {
+            // Re-enable button
+            AcceptButton.IsEnabled = true;
+        }
+    }
+
+    // Phase Alpha: Cancel Quote Flow
+    private async void OnCancelQuoteClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            await DisplayAlert("Error", "Quote ID is missing.", "OK");
+            return;
+        }
+
+        // Confirm cancellation
+        var confirm = await DisplayAlert(
+            "Cancel Quote?",
+            "Are you sure you want to cancel this quote request? This action cannot be undone.",
+            "Yes, Cancel",
+            "No");
+
+        if (!confirm)
+            return;
+
+        // Disable button to prevent double-clicks
+        CancelButton.IsEnabled = false;
+
+        try
+        {
+            // Call API to cancel quote
+            await _admin.CancelQuoteAsync(Id);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Quote {Id} cancelled successfully");
+#endif
+
+            // Show success message
+            await DisplayAlert(
+                "Quote Cancelled",
+                "Your quote request has been cancelled.",
+                "OK");
+
+            // Go back to quote dashboard
+            await Shell.Current.GoToAsync("..");
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violation (e.g., already accepted, cannot cancel)
+            await DisplayAlert(
+                "Cannot Cancel Quote",
+                ex.Message,
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Cancel failed (business rule): {ex.Message}");
+#endif
+
+            // Reload quote to get current status
+            await LoadAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            // Generic error
+            await DisplayAlert(
+                "Error",
+                $"Failed to cancel quote: {ex.Message}",
+                "OK");
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Cancel failed (error): {ex.Message}");
+#endif
+        }
+        finally
+        {
+            // Re-enable button
+            CancelButton.IsEnabled = true;
+        }
+    }
+
+    // Phase Alpha: View Booking (for accepted quotes)
+    private async void OnViewBookingClicked(object? sender, EventArgs e)
+    {
+        // For "Booking Created" status, we need to find the booking ID
+        // The API doesn't currently return it in QuoteDetail, so we'll navigate to bookings list
+        // In a future enhancement, we could store the bookingId in QuoteDetail or query for it
+        
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[QuoteDetail] Navigating to bookings page from accepted quote {Id}");
+#endif
+
+        // Navigate to bookings page where user can see their new booking
+        await Shell.Current.GoToAsync($"{nameof(BookingsPage)}");
+    }
+
     private static string EmptyAsNA(string? v) => string.IsNullOrWhiteSpace(v) ? "N/A" : v;
 
-    // Same friendly mapping used on the dashboard
+    // Same friendly mapping used on the dashboard (Phase Alpha + backward compatibility)
     private static readonly Dictionary<string, string> DisplayStatusMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Submitted"] = "Submitted",
-        ["InReview"] = "Pending",
-        ["Priced"] = "Priced",
-        ["Sent"] = "Quoted",
-        ["Closed"] = "Closed",
-        ["Rejected"] = "Declined"
+        // Phase Alpha statuses (new)
+        ["Pending"] = "Awaiting Response",
+        ["Acknowledged"] = "Under Review",
+        ["Responded"] = "Response Received",
+        ["Accepted"] = "Booking Created",
+        ["Cancelled"] = "Cancelled",
+        
+        // Legacy statuses (backward compatibility)
+        ["Submitted"] = "Awaiting Response",
+        ["InReview"] = "Under Review",
+        ["Priced"] = "Response Received",
+        ["Sent"] = "Response Received",
+        ["Closed"] = "Booking Created",
+        ["Rejected"] = "Cancelled"
     };
 
     private static string ToDisplayStatus(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return "Submitted";
+        if (string.IsNullOrWhiteSpace(raw)) return "Awaiting Response";
         return DisplayStatusMap.TryGetValue(raw, out var friendly) ? friendly : raw;
     }
 
     private static Color StatusColorForDisplay(string display) =>
         (display ?? "").ToLowerInvariant() switch
         {
-            "submitted" or "pending" => (Color)Application.Current!.Resources["ChipPending"],
-            "priced" or "quoted" => (Color)Application.Current!.Resources["ChipPriced"],
-            "declined" => (Color)Application.Current!.Resources["ChipDeclined"],
-            "closed" => (Color)Application.Current!.Resources["ChipOther"],
-            _ => (Color)Application.Current!.Resources["ChipOther"]
+            "awaiting response" => Colors.Orange,
+            "under review" => Colors.Blue,
+            "response received" => Colors.Green,
+            "booking created" => Colors.Gray,
+            "cancelled" => Colors.Red,
+            
+            // Legacy fallbacks
+            "submitted" or "pending" => Colors.Orange,
+            "priced" or "quoted" => Colors.Green,
+            "declined" => Colors.Red,
+            "closed" => Colors.Gray,
+            
+            _ => Colors.Gray
         };
 
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");

@@ -11,6 +11,21 @@ namespace BellwoodGlobal.Mobile.Services
         Task SubmitQuoteAsync(QuoteDraft draft);
         Task<IReadOnlyList<QuoteListItem>> GetQuotesAsync(int take = 50);
         Task<QuoteDetail?> GetQuoteAsync(string id);
+        
+        /// <summary>
+        /// Accepts a quote and converts it to a booking.
+        /// Only allowed for quotes in "Responded" status owned by the current user.
+        /// </summary>
+        /// <param name="quoteId">The ID of the quote to accept.</param>
+        /// <returns>Response containing the new booking ID for navigation.</returns>
+        Task<AcceptQuoteResponse> AcceptQuoteAsync(string quoteId);
+        
+        /// <summary>
+        /// Cancels a quote request.
+        /// Only allowed for quotes in Pending/Acknowledged/Responded status.
+        /// </summary>
+        /// <param name="quoteId">The ID of the quote to cancel.</param>
+        Task CancelQuoteAsync(string quoteId);
 
         // ========== BOOKINGS ==========
         /// <summary>
