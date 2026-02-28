@@ -55,5 +55,12 @@ namespace BellwoodGlobal.Mobile.Services
         /// </summary>
         /// <param name="rideId">The ride ID to get driver location for.</param>
         Task<DriverLocation?> GetDriverLocationAsync(string rideId);
+
+        // ========== BOOKER PROFILE ==========
+        /// <summary>
+        /// Fetches the authenticated booker's profile from GET /api/bookers/me.
+        /// Returns null if the profile does not exist or the request fails.
+        /// </summary>
+        Task<BookerProfile?> GetBookerProfileAsync();
     }
 }

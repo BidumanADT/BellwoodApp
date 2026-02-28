@@ -65,9 +65,9 @@
 
             <!-- Booker (read only) -->
             <Label Text="Booker" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" 
-                  RowDefinitions="Auto,Auto,Auto,Auto" 
-                  BackgroundColor="{StaticResource BellwoodCharcoal}" 
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"
+                  RowDefinitions="Auto,Auto,Auto,Auto"
+                  BackgroundColor="{StaticResource BellwoodCharcoal}"
                   Padding="12">
                 <Label Text="First Name" Grid.Row="0" Grid.Column="0" />
                 <Entry x:Name="BookerFirst" Grid.Row="0" Grid.Column="1" IsReadOnly="True" />
@@ -78,6 +78,12 @@
                 <Label Text="Email" Grid.Row="3" Grid.Column="0" />
                 <Entry x:Name="BookerEmail" Grid.Row="3" Grid.Column="1" IsReadOnly="True" />
             </Grid>
+            <Label x:Name="BookerIncompleteLabel"
+                   Text="Profile incomplete — set your name and phone in the Admin Portal."
+                   TextColor="{StaticResource BellwoodGold}"
+                   FontSize="12"
+                   IsVisible="False"
+                   Margin="0,2,0,4" />
 
             <!-- Passenger selection -->
             <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontSize="20" />

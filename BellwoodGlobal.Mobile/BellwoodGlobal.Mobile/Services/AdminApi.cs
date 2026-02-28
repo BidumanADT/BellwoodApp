@@ -137,6 +137,12 @@ namespace BellwoodGlobal.Mobile.Services
 #endif
         }
 
+        // ========== BOOKER PROFILE ==========
+        // HttpRequestException (with StatusCode) is intentionally not caught here so that
+        // ProfileService can distinguish 401/403 from network/server errors for logging and retry.
+        public Task<BookerProfile?> GetBookerProfileAsync()
+            => _http.GetFromJsonAsync<BookerProfile>("/api/bookers/me", _json);
+
         // ========== DRIVER TRACKING ==========
         /// <summary>
         /// Gets the current driver location for a ride using the passenger-safe endpoint.
