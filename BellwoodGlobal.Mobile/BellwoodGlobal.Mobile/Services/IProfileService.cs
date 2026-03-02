@@ -7,7 +7,23 @@ namespace BellwoodGlobal.Mobile.Services;
 public interface IProfileService
 {
     // ========== Booker =========
-    Passenger GetBooker();
+
+    /// <summary>
+    /// Fetches the booker profile from GET /api/bookers/me and caches it.
+    /// Idempotent: subsequent calls are no-ops once loaded.
+    /// Safe to call from every OnAppearing.
+    /// </summary>
+    Task LoadProfileAsync();
+
+    /// <summary>
+    /// True once LoadProfileAsync has completed at least once (success or failure).
+    /// </summary>
+    bool IsProfileLoaded { get; }
+
+    /// <summary>
+    /// Returns the cached booker as a Passenger, or null if not yet loaded / profile not found.
+    /// </summary>
+    Passenger? GetBooker();
 
     // ========== Passengers =========
     IReadOnlyList<Passenger> GetSavedPassengers();

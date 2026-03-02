@@ -147,12 +147,7 @@ public partial class QuotePage : ContentPage
         _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
         _formStateService = ServiceHelper.GetRequiredService<IFormStateService>(); // NEW: Phase 5
 
-        // Booker
-        var booker = _profile.GetBooker();
-        BookerFirst.Text = booker.FirstName;
-        BookerLast.Text = booker.LastName;
-        BookerPhone.Text = booker.PhoneNumber;
-        BookerEmail.Text = booker.EmailAddress;
+        // Booker fields are populated asynchronously from OnAppearing → LoadBookerAsync().
 
         // Data
         _savedPassengers = _profile.GetSavedPassengers().ToList();
@@ -945,6 +940,9 @@ public partial class QuotePage : ContentPage
     {
         base.OnAppearing();
 
+        // Ensure booker profile is loaded from AdminAPI and displayed.
+        await LoadBookerAsync();
+
         // Check for saved form state
         if (_formStateService.HasSavedQuoteForm())
         {
@@ -963,6 +961,39 @@ public partial class QuotePage : ContentPage
             {
                 await _formStateService.ClearQuoteFormStateAsync();
             }
+        }
+    }
+
+    /// <summary>
+    /// Ensures the booker profile is fetched (if not already cached) and
+    /// populates the read-only booker fields.  Shows an advisory label when
+    /// the profile is missing or incomplete.
+    /// </summary>
+    private async Task LoadBookerAsync()
+    {
+        if (!_profile.IsProfileLoaded)
+            await _profile.LoadProfileAsync();
+
+        var booker = _profile.GetBooker();
+        var hasProfile = booker is not null
+            && (!string.IsNullOrWhiteSpace(booker.FirstName)
+                || !string.IsNullOrWhiteSpace(booker.EmailAddress));
+
+        if (hasProfile)
+        {
+            BookerFirst.Text = booker!.FirstName;
+            BookerLast.Text  = booker.LastName;
+            BookerPhone.Text = booker.PhoneNumber ?? "";
+            BookerEmail.Text = booker.EmailAddress ?? "";
+            BookerIncompleteLabel.IsVisible = false;
+        }
+        else
+        {
+            BookerFirst.Text = "";
+            BookerLast.Text  = "";
+            BookerPhone.Text = "";
+            BookerEmail.Text = "";
+            BookerIncompleteLabel.IsVisible = true;
         }
     }
 

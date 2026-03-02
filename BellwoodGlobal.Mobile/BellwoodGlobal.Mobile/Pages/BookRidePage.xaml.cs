@@ -59,7 +59,7 @@ public partial class BookRidePage : ContentPage
         _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
         _formStateService = ServiceHelper.GetRequiredService<IFormStateService>(); // NEW: Phase 5
 
-        InitializeBooker();
+        // Booker fields populated asynchronously from OnAppearing → LoadBookerAsync().
         InitializeData();
         InitializePickers();
         InitializeDefaults();
@@ -69,13 +69,37 @@ public partial class BookRidePage : ContentPage
         // _ = LoadPaymentMethodsAsync();
     }
 
-    private void InitializeBooker()
+    /// <summary>
+    /// Ensures the booker profile is fetched (if not already cached) and
+    /// populates the read-only booker fields.  Shows an advisory label when
+    /// the profile is missing or incomplete.
+    /// </summary>
+    private async Task LoadBookerAsync()
     {
+        if (!_profile.IsProfileLoaded)
+            await _profile.LoadProfileAsync();
+
         var booker = _profile.GetBooker();
-        BookerFirst.Text = booker.FirstName;
-        BookerLast.Text = booker.LastName;
-        BookerPhone.Text = booker.PhoneNumber;
-        BookerEmail.Text = booker.EmailAddress;
+        var hasProfile = booker is not null
+            && (!string.IsNullOrWhiteSpace(booker.FirstName)
+                || !string.IsNullOrWhiteSpace(booker.EmailAddress));
+
+        if (hasProfile)
+        {
+            BookerFirst.Text = booker!.FirstName;
+            BookerLast.Text  = booker.LastName;
+            BookerPhone.Text = booker.PhoneNumber ?? "";
+            BookerEmail.Text = booker.EmailAddress ?? "";
+            BookerIncompleteLabel.IsVisible = false;
+        }
+        else
+        {
+            BookerFirst.Text = "";
+            BookerLast.Text  = "";
+            BookerPhone.Text = "";
+            BookerEmail.Text = "";
+            BookerIncompleteLabel.IsVisible = true;
+        }
     }
 
     private void InitializeData()
@@ -1061,6 +1085,9 @@ public partial class BookRidePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        // Ensure booker profile is loaded from AdminAPI and displayed.
+        await LoadBookerAsync();
 
         // Load payment methods FIRST (before checking for draft)
         await LoadPaymentMethodsAsync();
