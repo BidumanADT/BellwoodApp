@@ -140,8 +140,128 @@ namespace BellwoodGlobal.Mobile.Services
         // ========== BOOKER PROFILE ==========
         // HttpRequestException (with StatusCode) is intentionally not caught here so that
         // ProfileService can distinguish 401/403 from network/server errors for logging and retry.
-        public Task<BookerProfile?> GetBookerProfileAsync()
-            => _http.GetFromJsonAsync<BookerProfile>("/api/bookers/me", _json);
+
+        public async Task<BookerProfile?> GetProfileAsync()
+        {
+            var response = await _http.GetAsync("/profile");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return null;
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<BookerProfile>(_json);
+        }
+
+        public Task<BookerProfile?> GetBookerProfileAsync() => GetProfileAsync();
+
+        public async Task UpdateProfileAsync(string firstName, string lastName, string? phoneNumber, string? emailAddress)
+        {
+            var body = new { firstName, lastName, phoneNumber, emailAddress };
+            using var res = await _http.PutAsJsonAsync("/profile", body, _json);
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Profile updated: {firstName} {lastName}");
+#endif
+        }
+
+        // ========== SAVED PASSENGERS ==========
+
+        public async Task<List<SavedPassengerDto>> GetSavedPassengersAsync()
+        {
+            var items = await _http.GetFromJsonAsync<List<SavedPassengerDto>>("/profile/passengers", _json)
+                        ?? new List<SavedPassengerDto>();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] /profile/passengers -> {items.Count} items");
+#endif
+            return items;
+        }
+
+        public async Task<SavedPassengerDto?> CreateSavedPassengerAsync(SavePassengerRequest request)
+        {
+            using var res = await _http.PostAsJsonAsync("/profile/passengers", request, _json);
+            res.EnsureSuccessStatusCode();
+
+            var created = await res.Content.ReadFromJsonAsync<SavedPassengerDto>(_json);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Created passenger: {created?.FirstName} {created?.LastName} (id={created?.Id})");
+#endif
+            return created;
+        }
+
+        public async Task UpdateSavedPassengerAsync(Guid id, SavePassengerRequest request)
+        {
+            using var res = await _http.PutAsJsonAsync($"/profile/passengers/{id}", request, _json);
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Updated passenger id={id}");
+#endif
+        }
+
+        public async Task DeleteSavedPassengerAsync(Guid id)
+        {
+            using var res = await _http.DeleteAsync($"/profile/passengers/{id}");
+
+            // 404 is acceptable — record already gone
+            if (res.StatusCode == HttpStatusCode.NotFound) return;
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Deleted passenger id={id}");
+#endif
+        }
+
+        // ========== SAVED LOCATIONS ==========
+
+        public async Task<List<SavedLocationDto>> GetSavedLocationsAsync()
+        {
+            var items = await _http.GetFromJsonAsync<List<SavedLocationDto>>("/profile/locations", _json)
+                        ?? new List<SavedLocationDto>();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] /profile/locations -> {items.Count} items");
+#endif
+            return items;
+        }
+
+        public async Task<SavedLocationDto?> CreateSavedLocationAsync(SaveLocationRequest request)
+        {
+            using var res = await _http.PostAsJsonAsync("/profile/locations", request, _json);
+            res.EnsureSuccessStatusCode();
+
+            var created = await res.Content.ReadFromJsonAsync<SavedLocationDto>(_json);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Created location: {created?.Label} (id={created?.Id})");
+#endif
+            return created;
+        }
+
+        public async Task UpdateSavedLocationAsync(Guid id, SaveLocationRequest request)
+        {
+            using var res = await _http.PutAsJsonAsync($"/profile/locations/{id}", request, _json);
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Updated location id={id}");
+#endif
+        }
+
+        public async Task DeleteSavedLocationAsync(Guid id)
+        {
+            using var res = await _http.DeleteAsync($"/profile/locations/{id}");
+
+            // 404 is acceptable — record already gone
+            if (res.StatusCode == HttpStatusCode.NotFound) return;
+            res.EnsureSuccessStatusCode();
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[AdminApi] Deleted location id={id}");
+#endif
+        }
 
         // ========== DRIVER TRACKING ==========
         /// <summary>

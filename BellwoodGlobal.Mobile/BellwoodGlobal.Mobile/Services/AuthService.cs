@@ -17,6 +17,12 @@ public interface IAuthService
     /// Returns null if not signed in or the claim is absent.
     /// </summary>
     Task<string?> GetEmailFromTokenAsync();
+
+    /// <summary>
+    /// Extracts the userId claim (fallback: uid, then sub) from the stored JWT.
+    /// Returns null if not signed in or no identity claim is present.
+    /// </summary>
+    Task<string?> GetUserIdFromTokenAsync();
 }
 
 public sealed class AuthService : IAuthService
@@ -91,6 +97,20 @@ public sealed class AuthService : IAuthService
         var token = await GetTokenAsync();
         if (string.IsNullOrWhiteSpace(token)) return null;
         return TryGetClaim(token, "email", out var val) ? val : null;
+    }
+
+    public async Task<string?> GetUserIdFromTokenAsync()
+    {
+        var token = await GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        // Check claims in priority order: userId → uid → sub
+        foreach (var claim in new[] { "userId", "uid", "sub" })
+        {
+            if (TryGetClaim(token, claim, out var val) && !string.IsNullOrWhiteSpace(val))
+                return val;
+        }
+        return null;
     }
 
     // ------------- helpers -------------

@@ -589,16 +589,19 @@ public partial class QuotePage : ContentPage
             await DisplayAlert("Passenger", "First and last name are required.", "OK");
             return;
         }
-        var p = new Passenger
+        var phone = (PassengerPhone.Text ?? "").Trim();
+        var email = (PassengerEmail.Text ?? "").Trim();
+        var saved = await _profile.AddSavedPassengerAsync(first, last,
+            string.IsNullOrEmpty(phone) ? null : phone,
+            string.IsNullOrEmpty(email) ? null : email);
+        if (saved is null)
         {
-            FirstName = first,
-            LastName = last,
-            PhoneNumber = (PassengerPhone.Text ?? "").Trim(),
-            EmailAddress = (PassengerEmail.Text ?? "").Trim()
-        };
-        _savedPassengers.Add(p);
+            await DisplayAlert("Error", "Could not save passenger. Please try again.", "OK");
+            return;
+        }
+        _savedPassengers.Add(saved);
         var insertAt = Math.Max(1, PassengerPicker.Items.Count - 1);
-        PassengerPicker.Items.Insert(insertAt, p.ToString());
+        PassengerPicker.Items.Insert(insertAt, saved.ToString());
         PassengerPicker.SelectedIndex = insertAt;
         PassengerNewGrid.IsVisible = false;
         await DisplayAlert("Saved", "Passenger added.", "OK");
@@ -614,24 +617,26 @@ public partial class QuotePage : ContentPage
             return;
         }
         
-        // Create location object, preserving coordinates if from autocomplete
-        var loc = _selectedPickupLocation ?? new Models.Location { Label = label, Address = addr };
-        
-        // Update with current values (in case user edited after autocomplete)
-        loc.Label = label;
-        loc.Address = addr;
-        
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
+        // Preserve coordinates from autocomplete selection if available
+        var qPickupLat = _selectedPickupLocation?.Latitude ?? 0.0;
+        var qPickupLng = _selectedPickupLocation?.Longitude ?? 0.0;
+        var savedPickup = await _profile.AddSavedLocationAsync(label, addr, qPickupLat, qPickupLng, isFavorite: false);
+        if (savedPickup is null)
+        {
+            await DisplayAlert("Error", "Could not save pickup location. Please try again.", "OK");
+            return;
+        }
+        _savedLocations.Add(savedPickup);
+        var display = savedPickup.ToString();
         var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
         PickupLocationPicker.Items.Insert(insertAt, display);
         PickupLocationPicker.SelectedIndex = insertAt;
-        
+
         // Hide both autocomplete and manual entry grids
         PickupAutocompleteGrid.IsVisible = false;
         PickupNewGrid.IsVisible = false;
-        
-        await DisplayAlert("Saved", $"Pickup location added{(_selectedPickupLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+
+        await DisplayAlert("Saved", $"Pickup location added{(qPickupLat != 0 || qPickupLng != 0 ? " (with coordinates)" : "")}.", "OK");
         UpdatePickupStyleAirportUx();
     }
 
@@ -645,24 +650,26 @@ public partial class QuotePage : ContentPage
             return;
         }
         
-        // Create location object, preserving coordinates if from autocomplete
-        var loc = _selectedDropoffLocation ?? new Models.Location { Label = label, Address = addr };
-        
-        // Update with current values (in case user edited after autocomplete)
-        loc.Label = label;
-        loc.Address = addr;
-        
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
+        // Preserve coordinates from autocomplete selection if available
+        var qDropoffLat = _selectedDropoffLocation?.Latitude ?? 0.0;
+        var qDropoffLng = _selectedDropoffLocation?.Longitude ?? 0.0;
+        var savedDropoff = await _profile.AddSavedLocationAsync(label, addr, qDropoffLat, qDropoffLng, isFavorite: false);
+        if (savedDropoff is null)
+        {
+            await DisplayAlert("Error", "Could not save dropoff location. Please try again.", "OK");
+            return;
+        }
+        _savedLocations.Add(savedDropoff);
+        var display = savedDropoff.ToString();
         var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1); // after "As Directed"
         DropoffPicker.Items.Insert(insertAt, display);
         DropoffPicker.SelectedIndex = insertAt;
-        
+
         // Hide both autocomplete and manual entry grids
         DropoffAutocompleteGrid.IsVisible = false;
         DropoffNewGrid.IsVisible = false;
-        
-        await DisplayAlert("Saved", $"Dropoff location added{(_selectedDropoffLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+
+        await DisplayAlert("Saved", $"Dropoff location added{(qDropoffLat != 0 || qDropoffLng != 0 ? " (with coordinates)" : "")}.", "OK");
         UpdateReturnPickupStyleAirportUx();
     }
 
@@ -943,6 +950,13 @@ public partial class QuotePage : ContentPage
         // Ensure booker profile is loaded from AdminAPI and displayed.
         await LoadBookerAsync();
 
+        // Load saved passengers and locations from AdminAPI (with offline cache fallback).
+        await _profile.LoadSavedPassengersAsync();
+        await _profile.LoadSavedLocationsAsync();
+        _savedPassengers = _profile.GetSavedPassengers().ToList();
+        _savedLocations  = _profile.GetSavedLocations().ToList();
+        RefreshPassengerLocationPickers();
+
         // Check for saved form state
         if (_formStateService.HasSavedQuoteForm())
         {
@@ -995,6 +1009,32 @@ public partial class QuotePage : ContentPage
             BookerEmail.Text = "";
             BookerIncompleteLabel.IsVisible = true;
         }
+    }
+
+    /// <summary>
+    /// Rebuilds the passenger and location pickers to reflect the current in-memory lists.
+    /// Called after LoadSavedPassengersAsync / LoadSavedLocationsAsync in OnAppearing.
+    /// </summary>
+    private void RefreshPassengerLocationPickers()
+    {
+        PassengerPicker.SelectedIndexChanged -= OnPassengerChanged;
+        PassengerPicker.Items.Clear();
+        PassengerPicker.Items.Add(PassengerSelf);
+        foreach (var p in _savedPassengers) PassengerPicker.Items.Add(p.ToString());
+        PassengerPicker.Items.Add(PassengerNew);
+        PassengerPicker.SelectedIndex = 0;
+        PassengerPicker.SelectedIndexChanged += OnPassengerChanged;
+
+        PickupLocationPicker.Items.Clear();
+        foreach (var loc in _savedLocations) PickupLocationPicker.Items.Add(loc.ToString());
+        PickupLocationPicker.Items.Add(LocationNew);
+        PickupLocationPicker.SelectedIndex = -1;
+
+        DropoffPicker.Items.Clear();
+        DropoffPicker.Items.Add(AsDirected);
+        foreach (var loc in _savedLocations) DropoffPicker.Items.Add(loc.ToString());
+        DropoffPicker.Items.Add(LocationNew);
+        DropoffPicker.SelectedIndex = 0;
     }
 
     protected override void OnDisappearing()
