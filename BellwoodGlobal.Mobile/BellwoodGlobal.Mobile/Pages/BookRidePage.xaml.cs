@@ -45,7 +45,8 @@ public partial class BookRidePage : ContentPage
     private bool _passengerCountDirty;
     private string? _suggestedVehicleClass;
     private bool _userChoseToKeep;
-    
+    private bool _pickersInitialized;
+
     // NEW: Phase 5 - Flag to prevent auto-save after successful submission
     private bool _submittedSuccessfully = false;
 
@@ -110,24 +111,37 @@ public partial class BookRidePage : ContentPage
 
     private void InitializePickers()
     {
+        // ── Dynamic pickers: always clear + rebuild from current lists ──────────
         // Passenger
+        PassengerPicker.SelectedIndexChanged -= OnPassengerChanged;
+        PassengerPicker.Items.Clear();
         PassengerPicker.Items.Add(PassengerSelf);
         foreach (var p in _savedPassengers) PassengerPicker.Items.Add(p.ToString());
         PassengerPicker.Items.Add(PassengerNew);
         PassengerPicker.SelectedIndexChanged += OnPassengerChanged;
 
-        // Vehicle
-        foreach (var v in new[] { "Sedan", "SUV", "Sprinter", "S-Class" }) VehiclePicker.Items.Add(v);
-        VehiclePicker.SelectedIndex = 0;
-        VehiclePicker.SelectedIndexChanged += OnVehicleChanged;
-
-        // Pickup
+        // Pickup locations
+        PickupLocationPicker.SelectedIndexChanged -= OnPickupLocationChanged;
+        PickupLocationPicker.Items.Clear();
         foreach (var loc in _savedLocations) PickupLocationPicker.Items.Add(loc.ToString());
         PickupLocationPicker.Items.Add(LocationNew);
         PickupLocationPicker.SelectedIndexChanged += OnPickupLocationChanged;
 
-        PickupStylePicker.SelectedIndexChanged += (_, __) => UpdatePickupStyleAirportUx();
-        ReturnPickupStylePicker.SelectedIndexChanged += (_, __) => UpdateReturnPickupStyleAirportUx();
+        // Dropoff locations
+        DropoffPicker.SelectedIndexChanged -= OnDropoffChanged;
+        DropoffPicker.Items.Clear();
+        DropoffPicker.Items.Add(AsDirected);
+        foreach (var loc in _savedLocations) DropoffPicker.Items.Add(loc.ToString());
+        DropoffPicker.Items.Add(LocationNew);
+        DropoffPicker.SelectedIndexChanged += OnDropoffChanged;
+
+        // ── Static pickers: only populate once (constructor call) ────────────
+        if (_pickersInitialized) return;
+
+        // Vehicle
+        foreach (var v in new[] { "Sedan", "SUV", "Sprinter", "S-Class" }) VehiclePicker.Items.Add(v);
+        VehiclePicker.SelectedIndex = 0;
+        VehiclePicker.SelectedIndexChanged += OnVehicleChanged;
 
         // Flight
         FlightInfoPicker.Items.Add(FlightOptionTBD);
@@ -135,12 +149,6 @@ public partial class BookRidePage : ContentPage
         FlightInfoPicker.Items.Add(FlightOptionPrivate);
         FlightInfoPicker.SelectedIndexChanged += OnFlightInfoChanged;
         FlightInfoPicker.SelectedIndex = 0;
-
-        // Dropoff
-        DropoffPicker.Items.Add(AsDirected);
-        foreach (var loc in _savedLocations) DropoffPicker.Items.Add(loc.ToString());
-        DropoffPicker.Items.Add(LocationNew);
-        DropoffPicker.SelectedIndexChanged += OnDropoffChanged;
 
         // Requests
         foreach (var r in new[] { "Child Seats", "Accessible Vehicle", "Other" }) RequestsPicker.Items.Add(r);
@@ -151,10 +159,15 @@ public partial class BookRidePage : ContentPage
             NonAirportMeetGrid.IsVisible = sel == ReqMeetAndGreet;
         };
 
+        PickupStylePicker.SelectedIndexChanged += (_, __) => UpdatePickupStyleAirportUx();
+        ReturnPickupStylePicker.SelectedIndexChanged += (_, __) => UpdateReturnPickupStyleAirportUx();
+
         AdditionalPassengersList.ItemsSource = _additionalPassengers;
 
-        // Payment Source
+        // Payment Source (items managed by LoadPaymentMethodsAsync)
         PaymentPicker.SelectedIndexChanged += OnPaymentPickerChanged;
+
+        _pickersInitialized = true;
     }
 
     private void InitializeDefaults()
@@ -551,16 +564,19 @@ public partial class BookRidePage : ContentPage
             await DisplayAlert("Passenger", "First and last name are required.", "OK");
             return;
         }
-        var p = new Passenger
+        var phone = (PassengerPhone.Text ?? "").Trim();
+        var email = (PassengerEmail.Text ?? "").Trim();
+        var saved = await _profile.AddSavedPassengerAsync(first, last,
+            string.IsNullOrEmpty(phone) ? null : phone,
+            string.IsNullOrEmpty(email) ? null : email);
+        if (saved is null)
         {
-            FirstName = first,
-            LastName = last,
-            PhoneNumber = (PassengerPhone.Text ?? "").Trim(),
-            EmailAddress = (PassengerEmail.Text ?? "").Trim()
-        };
-        _savedPassengers.Add(p);
+            await DisplayAlert("Error", "Could not save passenger. Please try again.", "OK");
+            return;
+        }
+        _savedPassengers.Add(saved);
         var insertAt = Math.Max(1, PassengerPicker.Items.Count - 1);
-        PassengerPicker.Items.Insert(insertAt, p.ToString());
+        PassengerPicker.Items.Insert(insertAt, saved.ToString());
         PassengerPicker.SelectedIndex = insertAt;
         PassengerNewGrid.IsVisible = false;
         await DisplayAlert("Saved", "Passenger added.", "OK");
@@ -576,24 +592,26 @@ public partial class BookRidePage : ContentPage
             return;
         }
         
-        // Create location object, preserving coordinates if from autocomplete
-        var loc = _selectedPickupLocation ?? new Models.Location { Label = label, Address = addr };
-        
-        // Update with current values (in case user edited after autocomplete)
-        loc.Label = label;
-        loc.Address = addr;
-        
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
+        // Preserve coordinates from autocomplete selection if available
+        var pickupLat = _selectedPickupLocation?.Latitude ?? 0.0;
+        var pickupLng = _selectedPickupLocation?.Longitude ?? 0.0;
+        var savedPickup = await _profile.AddSavedLocationAsync(label, addr, pickupLat, pickupLng, isFavorite: false);
+        if (savedPickup is null)
+        {
+            await DisplayAlert("Error", "Could not save pickup location. Please try again.", "OK");
+            return;
+        }
+        _savedLocations.Add(savedPickup);
+        var display = savedPickup.ToString();
         var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
         PickupLocationPicker.Items.Insert(insertAt, display);
         PickupLocationPicker.SelectedIndex = insertAt;
-        
+
         // Hide both autocomplete and manual entry grids
         PickupAutocompleteGrid.IsVisible = false;
         PickupNewGrid.IsVisible = false;
-        
-        await DisplayAlert("Saved", $"Pickup location added{(_selectedPickupLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+
+        await DisplayAlert("Saved", $"Pickup location added{(pickupLat != 0 || pickupLng != 0 ? " (with coordinates)" : "")}.", "OK");
         UpdatePickupStyleAirportUx();
     }
 
@@ -607,24 +625,26 @@ public partial class BookRidePage : ContentPage
             return;
         }
         
-        // Create location object, preserving coordinates if from autocomplete
-        var loc = _selectedDropoffLocation ?? new Models.Location { Label = label, Address = addr };
-        
-        // Update with current values (in case user edited after autocomplete)
-        loc.Label = label;
-        loc.Address = addr;
-        
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
+        // Preserve coordinates from autocomplete selection if available
+        var dropoffLat = _selectedDropoffLocation?.Latitude ?? 0.0;
+        var dropoffLng = _selectedDropoffLocation?.Longitude ?? 0.0;
+        var savedDropoff = await _profile.AddSavedLocationAsync(label, addr, dropoffLat, dropoffLng, isFavorite: false);
+        if (savedDropoff is null)
+        {
+            await DisplayAlert("Error", "Could not save dropoff location. Please try again.", "OK");
+            return;
+        }
+        _savedLocations.Add(savedDropoff);
+        var display = savedDropoff.ToString();
         var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1);
         DropoffPicker.Items.Insert(insertAt, display);
         DropoffPicker.SelectedIndex = insertAt;
-        
+
         // Hide both autocomplete and manual entry grids
         DropoffAutocompleteGrid.IsVisible = false;
         DropoffNewGrid.IsVisible = false;
-        
-        await DisplayAlert("Saved", $"Dropoff location added{(_selectedDropoffLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+
+        await DisplayAlert("Saved", $"Dropoff location added{(dropoffLat != 0 || dropoffLng != 0 ? " (with coordinates)" : "")}.", "OK");
         UpdateReturnPickupStyleAirportUx();
     }
 
@@ -1088,6 +1108,13 @@ public partial class BookRidePage : ContentPage
 
         // Ensure booker profile is loaded from AdminAPI and displayed.
         await LoadBookerAsync();
+
+        // Load saved passengers and locations from AdminAPI (with offline cache fallback).
+        await _profile.LoadSavedPassengersAsync();
+        await _profile.LoadSavedLocationsAsync();
+        _savedPassengers = _profile.GetSavedPassengers().ToList();
+        _savedLocations  = _profile.GetSavedLocations().ToList();
+        InitializePickers();
 
         // Load payment methods FIRST (before checking for draft)
         await LoadPaymentMethodsAsync();

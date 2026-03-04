@@ -12,4 +12,5 @@ public sealed class BookerProfile
     public string? PhoneNumber { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime ModifiedUtc { get; set; }
+    public string? DisplayName { get; set; }
 }
