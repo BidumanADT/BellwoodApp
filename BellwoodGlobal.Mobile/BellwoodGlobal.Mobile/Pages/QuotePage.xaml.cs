@@ -19,7 +19,7 @@ public partial class QuotePage : ContentPage
     private readonly IFormStateService _formStateService; // NEW: Phase 5 form persistence
 
     // --- passenger/location UI constants (avoid string typos) ---
-    private const string PassengerSelf = "Booker (you)";
+    private const string PassengerSelf = "Myself";
     private const string PassengerNew = "New Passenger";
     private const string LocationNew = "New Location";
     private const string AsDirected = "As Directed";
