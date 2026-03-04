@@ -9,6 +9,12 @@ public interface IProfileService
     // ========== Booker ==========
 
     /// <summary>
+    /// Clears all cached state (booker, passengers, locations) and resets cooldown timers.
+    /// Call after logout or before loading a new user's data.
+    /// </summary>
+    void Reset();
+
+    /// <summary>
     /// Fetches the booker profile from GET /profile and caches it.
     /// Idempotent: subsequent calls are no-ops once loaded.
     /// Safe to call from every OnAppearing.

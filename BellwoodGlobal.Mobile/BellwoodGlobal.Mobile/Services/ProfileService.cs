@@ -17,6 +17,9 @@ public class ProfileService : IProfileService
     private Passenger? _cachedBooker;
     private bool _profileLoaded;
 
+    // ---- user identity tracking (detects account switches) ----
+    private string? _lastUserId;
+
     // ---- retry cooldowns ----
     private const int RetryCooldownSeconds = 10;
     private DateTime _lastProfileAttemptUtc = DateTime.MinValue;
@@ -37,12 +40,58 @@ public class ProfileService : IProfileService
         _authService = authService;
     }
 
+    // ========== User-switch detection ==========
+
+    /// <summary>
+    /// Checks whether the active JWT userId has changed since the last load.
+    /// If it has (including null → value or value → different value), resets all cached state
+    /// so a new user never sees a previous user's data.
+    /// </summary>
+    private async Task CheckAndResetForUserAsync()
+    {
+        var currentUserId = await _authService.GetUserIdFromTokenAsync();
+        if (currentUserId != _lastUserId)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(
+                $"[ProfileService] User changed ({_lastUserId} → {currentUserId}). Resetting state.");
+#endif
+            Reset();
+            _lastUserId = currentUserId;
+        }
+    }
+
+    // ========== Reset ==========
+
+    /// <summary>
+    /// Clears all cached profile, passenger, and location state and resets cooldown timers.
+    /// Called automatically when a user switch is detected, and explicitly on logout.
+    /// </summary>
+    public void Reset()
+    {
+        _profileLoaded = false;
+        _cachedBooker = null;
+        _passengers.Clear();
+        _locations.Clear();
+        _lastProfileAttemptUtc = DateTime.MinValue;
+        _lastPassengersAttemptUtc = DateTime.MinValue;
+        _lastLocationsAttemptUtc = DateTime.MinValue;
+        // _lastUserId is NOT cleared here — the caller (CheckAndResetForUserAsync) updates it after Reset().
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("[ProfileService] State reset.");
+#endif
+    }
+
     // ========== Booker ==========
 
     public bool IsProfileLoaded => _profileLoaded;
 
     public async Task LoadProfileAsync()
     {
+        // Must run before the _profileLoaded / cooldown guards so a user switch always reloads.
+        await CheckAndResetForUserAsync();
+
         if (_profileLoaded) return;
 
         if ((DateTime.UtcNow - _lastProfileAttemptUtc).TotalSeconds < RetryCooldownSeconds) return;
@@ -106,6 +155,8 @@ public class ProfileService : IProfileService
 
     public async Task LoadSavedPassengersAsync()
     {
+        await CheckAndResetForUserAsync();
+
         if ((DateTime.UtcNow - _lastPassengersAttemptUtc).TotalSeconds < RetryCooldownSeconds) return;
         _lastPassengersAttemptUtc = DateTime.UtcNow;
 
@@ -228,6 +279,8 @@ public class ProfileService : IProfileService
 
     public async Task LoadSavedLocationsAsync()
     {
+        await CheckAndResetForUserAsync();
+
         if ((DateTime.UtcNow - _lastLocationsAttemptUtc).TotalSeconds < RetryCooldownSeconds) return;
         _lastLocationsAttemptUtc = DateTime.UtcNow;
 

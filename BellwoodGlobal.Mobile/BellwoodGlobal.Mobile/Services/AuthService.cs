@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Storage;
 using System.Text.Json;
+using BellwoodGlobal.Mobile;
 
 namespace BellwoodGlobal.Mobile.Services;
 
@@ -88,6 +89,11 @@ public sealed class AuthService : IAuthService
 #endif
         try { SecureStorage.Remove(TokenKey); } catch { /* ignore */ }
         try { SecureStorage.Remove("user_email"); } catch { /* ignore */ }
+
+        // Clear all cached profile / passenger / location state immediately so the
+        // next user who logs in on this device never sees stale data in memory.
+        ServiceHelper.GetService<IProfileService>()?.Reset();
+
         // if we're already on LoginPage this will no-op
         await Shell.Current.GoToAsync(nameof(LoginPage));
     }
