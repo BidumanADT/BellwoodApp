@@ -97,15 +97,6 @@ public sealed class ConfigurationService : IConfigurationService
         return GetSetting("AuthServerUrl", "Auth Server URL");
     }
     
-    /// <summary>
-    /// Gets the Rides API base URL.
-    /// </summary>
-    public string GetRidesApiUrl()
-    {
-        EnsureInitialized();
-        return GetSetting("RidesApiUrl", "Rides API URL");
-    }
-    
     // ========== PRIVATE HELPERS ==========
     
     private void EnsureInitialized()

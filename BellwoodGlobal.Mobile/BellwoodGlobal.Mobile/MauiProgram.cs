@@ -29,7 +29,6 @@ public static class MauiProgram
         // Pages (DI-friendly even if we now use parameterless ctors)
         builder.Services.AddSingleton<LoginPage>();
         builder.Services.AddTransient<MainPage>();
-        builder.Services.AddTransient<RideHistoryPage>();
         builder.Services.AddTransient<QuotePage>();
         builder.Services.AddTransient<QuoteDashboardPage>();
         builder.Services.AddTransient<SplashPage>();
@@ -43,7 +42,6 @@ public static class MauiProgram
         // Services
         builder.Services.AddSingleton<IConfigurationService, ConfigurationService>(); // PHASE 2: Secure config
         builder.Services.AddSingleton<IAuthService, AuthService>();
-        builder.Services.AddSingleton<IRideService, RideService>();
         builder.Services.AddSingleton<IQuoteService, QuoteService>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
         builder.Services.AddSingleton<IQuoteDraftBuilder, QuoteDraftBuilder>();
@@ -144,31 +142,6 @@ public static class MauiProgram
 #endif
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         })
-#if DEBUG
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            // DEV ONLY: trust local dev certs
-            ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        });
-#else
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler());
-#endif
-
-        // Rides API client (protected)
-        builder.Services.AddHttpClient("rides", (serviceProvider, c) =>
-        {
-            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
-            
-#if ANDROID
-            var baseUrl = configService.GetRidesApiUrl().Replace("localhost", "10.0.2.2");
-            c.BaseAddress = new Uri(baseUrl);
-#else
-            c.BaseAddress = new Uri(configService.GetRidesApiUrl());
-#endif
-            c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        })
-        .AddHttpMessageHandler<AuthHttpHandler>()
 #if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {

@@ -56,9 +56,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private async void OnRideHistory(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync(nameof(RideHistoryPage));  // relative push
-
     private async void OnLogoutClicked(object sender, EventArgs e)
         => await _auth.LogoutAsync(); // clears tokens + routes to //LoginPage per your impl
 
