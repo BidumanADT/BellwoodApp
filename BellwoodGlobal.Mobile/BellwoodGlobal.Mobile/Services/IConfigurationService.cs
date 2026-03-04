@@ -29,8 +29,4 @@ public interface IConfigurationService
     /// </summary>
     string GetAuthServerUrl();
 
-    /// <summary>
-    /// Gets the Rides API base URL.
-    /// </summary>
-    string GetRidesApiUrl();
 }
