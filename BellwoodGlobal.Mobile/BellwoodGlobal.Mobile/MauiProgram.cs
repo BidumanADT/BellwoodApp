@@ -101,16 +101,15 @@ public static class MauiProgram
             c.DefaultRequestHeaders.Add("X-Goog-Api-Key", apiKey);
             
 #if ANDROID
-            // PHASE 1: Add Android-specific headers for API key restrictions
-            // These headers allow Google to verify the app's identity
+            // Add Android-specific headers for Google Places API key restrictions
             try
             {
                 var packageName = Platforms.Android.AndroidPackageHelper.GetPackageName();
                 var certFingerprint = Platforms.Android.AndroidPackageHelper.GetCertificateFingerprint();
-                
+
                 c.DefaultRequestHeaders.Add("X-Android-Package", packageName);
                 c.DefaultRequestHeaders.Add("X-Android-Cert", certFingerprint);
-                
+
 #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Android Package: {packageName}");
                 System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Android Cert: {certFingerprint}");
@@ -122,8 +121,13 @@ public static class MauiProgram
                 System.Diagnostics.Debug.WriteLine($"[PlacesAPI] WARNING: Could not get Android headers: {ex.Message}");
 #endif
                 // Continue without headers - will work if API key has no restrictions
-                // In production, this should be logged to error tracking
             }
+#elif IOS || MACCATALYST
+            // Add iOS/Mac Catalyst bundle ID header for Google Places API key restrictions
+            c.DefaultRequestHeaders.Add("X-Ios-Bundle-Identifier", "com.bellwoodglobal.mobile");
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[PlacesAPI] iOS bundle ID header added: com.bellwoodglobal.mobile");
+#endif
 #endif
             
             c.Timeout = TimeSpan.FromSeconds(10);

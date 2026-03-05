@@ -33,7 +33,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.bellwood.mobile</string>
+				<string>com.bellwoodglobal.mobile</string>
 			</array>
 		</dict>
 	</array>
