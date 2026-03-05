@@ -23,7 +23,7 @@ public partial class BookRidePage : ContentPage
     private List<PaymentMethod> _savedPaymentMethods = new();
     private const string PaymentMethodNew = "Add New Card";
 
-    private const string PassengerSelf = "Booker (you)";
+    private const string PassengerSelf = "Myself";
     private const string PassengerNew = "New Passenger";
     private const string LocationNew = "New Location";
     private const string AsDirected = "As Directed";
