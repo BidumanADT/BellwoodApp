@@ -433,7 +433,7 @@
             </Grid>
 
             <!-- Build JSON -->
-            <Button Text="Build Quote JSON" Clicked="OnBuildJson" />
+            <Button Text="Request Quote" Clicked="OnBuildJson" />
             <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False" x:Name="JsonFrame">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Quote JSON" TextColor="{StaticResource BellwoodGold}" />

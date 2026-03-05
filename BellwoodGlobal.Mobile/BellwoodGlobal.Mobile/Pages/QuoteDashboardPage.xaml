@@ -8,6 +8,7 @@
 
 	<ContentPage.ToolbarItems>
 		<ToolbarItem Text="Back" Priority="0" Order="Primary" Clicked="OnBackClicked" />
+		<ToolbarItem Text="Logout" Priority="1" Order="Primary" Clicked="OnLogoutClicked" />
 	</ContentPage.ToolbarItems>
 
 	<Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="10">

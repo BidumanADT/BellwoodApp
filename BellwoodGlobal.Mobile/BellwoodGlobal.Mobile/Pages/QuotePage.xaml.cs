@@ -19,7 +19,7 @@ public partial class QuotePage : ContentPage
     private readonly IFormStateService _formStateService; // NEW: Phase 5 form persistence
 
     // --- passenger/location UI constants (avoid string typos) ---
-    private const string PassengerSelf = "Booker (you)";
+    private const string PassengerSelf = "Myself";
     private const string PassengerNew = "New Passenger";
     private const string LocationNew = "New Location";
     private const string AsDirected = "As Directed";
@@ -924,7 +924,7 @@ public partial class QuotePage : ContentPage
             return; // Don't show JSON or clear state if submission failed
         }
 
-        // Show JSON
+#if DEBUG
         var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -932,7 +932,13 @@ public partial class QuotePage : ContentPage
         });
         JsonEditor.Text = json;
         JsonFrame.IsVisible = true;
-        await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
+#endif
+
+        await DisplayAlert("Quote Requested",
+            "Your quote request has been submitted! Bellwood will get back to you shortly.", "OK");
+
+        // Navigate to Quote dashboard
+        await Shell.Current.GoToAsync(nameof(QuoteDashboardPage));
     }
 
     private async void OnCopyJson(object? sender, EventArgs e)

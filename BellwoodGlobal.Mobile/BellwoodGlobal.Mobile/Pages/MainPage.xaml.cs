@@ -57,7 +57,10 @@ public partial class MainPage : ContentPage
     }
 
     private async void OnLogoutClicked(object sender, EventArgs e)
-        => await _auth.LogoutAsync(); // clears tokens + routes to //LoginPage per your impl
+    {
+        var confirmed = await DisplayAlert("Log Out", "Are you sure you want to log out?", "Log Out", "Cancel");
+        if (confirmed) await _auth.LogoutAsync();
+    }
 
     private async void OnBookRideClicked(object sender, EventArgs e)
     {
