@@ -22,7 +22,7 @@
 
 		<!-- iOS -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">18.0</TargetPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 
 		<!-- MacCatalyst -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">18.0</TargetPlatformVersion>
@@ -50,7 +50,7 @@
 
 	<ItemGroup>
 		<!-- Use your 1200x1200 PNG as the adaptive icon foreground -->
-		<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon_padded.png" ForegroundFile="Resources\AppIcon\bellwood_elite_icon_padded.png" BackgroundColor="#1C2D5C" />
+		<MauiIcon Include="Resources\AppIcon\appicon.png" BackgroundColor="#1C2D5C" />
 
 		<!-- System splash: solid background + centered image -->
 		<MauiSplashScreen Include="Resources\Images\bellwood_splash.png" Color="#1C2D5C" BaseSize="256,256" />
