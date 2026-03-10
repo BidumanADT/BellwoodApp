@@ -54,7 +54,7 @@ public partial class SplashPage : ContentPage
         {
             // Worst-case: still show the app
             Application.Current!.MainPage = new AppShell();
-            await Shell.Current.GoToAsync("//LoginPage");
+            await Shell.Current.GoToAsync(nameof(LoginPage));
         }
     }
 
