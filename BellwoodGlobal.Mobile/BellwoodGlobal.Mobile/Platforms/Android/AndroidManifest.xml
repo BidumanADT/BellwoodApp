@@ -5,8 +5,8 @@
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<application
     android:label="Bellwood Elite"
-    android:icon="@mipmap/bellwood_elite_icon_padded"
-    android:roundIcon="@mipmap/bellwood_elite_icon_padded">
+    android:icon="@mipmap/appicon"
+    android:roundIcon="@mipmap/appicon">
 		<!-- Google Maps API Key -->
 		<meta-data android:name="com.google.android.geo.API_KEY" 
 		           android:value="AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY" />
