@@ -1,0 +1,65 @@
+name: Android Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-android
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/bellwood-release.jks"
+          test -s "$RUNNER_TEMP/bellwood-release.jks" || { echo "::error::Keystore decode failed or empty"; exit 1; }
+
+      - name: Publish signed APK
+        run: |
+          dotnet publish BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/BellwoodGlobal.Mobile.csproj \
+            -f net9.0-android \
+            -c Release \
+            -p:AndroidPackageFormat=apk \
+            -p:AndroidSigningKeyStore="$RUNNER_TEMP/bellwood-release.jks" \
+            -p:AndroidSigningStorePass="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -p:AndroidSigningKeyAlias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -p:AndroidSigningKeyPass="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Publish signed AAB
+        run: |
+          dotnet publish BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/BellwoodGlobal.Mobile.csproj \
+            -f net9.0-android \
+            -c Release \
+            -p:AndroidPackageFormat=aab \
+            -p:AndroidSigningKeyStore="$RUNNER_TEMP/bellwood-release.jks" \
+            -p:AndroidSigningStorePass="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -p:AndroidSigningKeyAlias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -p:AndroidSigningKeyPass="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/bin/Release/net9.0-android/*-Signed.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/bin/Release/net9.0-android/*-Signed.aab
+
+      - name: Shred keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/bellwood-release.jks"
