@@ -70,7 +70,7 @@
 		
 		<!-- Configuration files (embedded as resources) -->
 		<MauiAsset Include="appsettings.json" />
-		<MauiAsset Include="appsettings.Development.json" />
+		<MauiAsset Include="appsettings.Development.json"  Condition="'$(Configuration)' == 'Debug'" />
 	</ItemGroup>
 
 	<ItemGroup>
