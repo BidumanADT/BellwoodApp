@@ -1,0 +1,321 @@
+# Bellwood Elite — Distribution Readiness Report
+
+**App:** Bellwood Elite (`com.bellwoodglobal.mobile`)  
+**Branch:** `wip/cloud-readiness`  
+**Repo:** `https://github.com/BidumanADT/BellwoodApp`  
+**Target:** Internal Testing — Google Play Internal Track + Apple TestFlight  
+**Report Date:** 2025-07-10  
+**Prepared by:** GitHub Copilot — Workspace Audit  
+
+---
+
+## Executive Summary
+
+The codebase is **functionally ready for internal testing** on Android. The core navigation, authentication, cloud URL configuration, and signing scaffold are all in place. Android is one keystore generation away from a submittable `.aab`.
+
+iOS requires additional out-of-code steps (Apple Developer portal, Mac with Xcode, provisioning profile) before a TestFlight build is possible.
+
+**The app icon situation must be resolved before any store submission.** Both Google Play and the App Store have strict, platform-specific icon requirements and will reject a build that does not meet them. This is flagged as the top priority item.
+
+Six items are **blockers** that must be resolved before submission. Five additional items are **gaps** that should be addressed before or shortly after internal testing begins.
+
+---
+
+## ? What Is Ready
+
+| Area | Status | Notes |
+|---|---|---|
+| App identity | ? Ready | `ApplicationId = com.bellwoodglobal.mobile`, `DisplayVersion = 1.0`, `ApplicationVersion = 1` |
+| Android Debug signing | ? Ready | Wired to local debug keystore; correct for dev builds |
+| Android Release signing scaffold | ? Ready | Conditional on `AndroidSigningKeyStore` being supplied — no MSB4044 risk |
+| Shell navigation | ? Ready | `//LoginPage` absolute-routing bug fixed; all routes use correct patterns |
+| Cloud URLs | ? Ready | `appsettings.json` points to `api.elitebellwood.com` and `auth.elitebellwood.com` |
+| Config race condition | ? Ready | `SplashPage` awaits config before transitioning to Shell |
+| Auth token storage | ? Ready | `SecureStorage` used on both platforms |
+| 401 auto-logout flow | ? Ready | `AuthHttpHandler` triggers `LogoutAsync` on 401 responses |
+| iOS `Info.plist` | ? Ready | Location permission string present, URL scheme registered, orientations declared |
+| MacCatalyst Entitlements | ? Ready | App Sandbox + `network.client` entitlement declared |
+| Android permissions | ? Ready | `INTERNET`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` declared in manifest |
+| Target SDK versions | ? Ready | Android API 35 target / API 21 minimum (~99% of active devices); iOS 18 target / 16.0 minimum |
+| Per-user state isolation | ? Ready | `ProfileService` detects user switches and resets cached data on login change |
+| Retry cooldowns | ? Ready | Profile, passenger, and location loaders have 10-second cooldown guards |
+
+---
+
+## ? Blockers — Must Fix Before Submission
+
+---
+
+### ?? PRIORITY #0 — App Icon and Image Asset Problems
+
+**Affects:** Both platforms — store submission will be rejected without a correct icon  
+**This is the top priority item. Fix this before anything else.**
+
+#### The Icon Situation
+
+A workspace audit of `Resources/AppIcon/` found **two icon files**:
+
+| File | Size | Referenced in csproj? |
+|---|---|---|
+| `appicon.png` | 149 KB | ? Yes — this is the active icon |
+| `bellwood_elite_icon.png` | 155 KB | ? No — completely orphaned |
+
+The csproj currently declares:
+```xml
+<MauiIcon Include="Resources\AppIcon\appicon.png" BackgroundColor="#1C2D5C" />
+```
+
+This means `bellwood_elite_icon.png` — presumably the corrected file you prepared — **is being silently ignored**. The app is shipping with `appicon.png`, not `bellwood_elite_icon.png`.
+
+#### Why the Icon Looks Different Per Platform
+
+.NET MAUI's `<MauiIcon>` with a single PNG and only `BackgroundColor` uses the same image file for both platforms but processes it differently:
+
+- **Android** generates an [Adaptive Icon](https://developer.android.com/develop/ui/views/launch/icon_design_adaptive). MAUI places the full image as the foreground layer on the specified background color. If your image is not designed for adaptive icon safe zones (the inner 66% of the canvas), it will be cropped on Android — producing the "funky" look you described.
+- **iOS/App Store** requires a **1024×1024 px PNG with no transparency, no rounded corners, no alpha channel**. If Apple rejected your icon, the most common reasons are: alpha channel present, image is not exactly 1024×1024, or the image has pre-applied rounded corners (Apple applies its own mask).
+
+#### What Needs to Happen
+
+**Step 1 — Determine which file is correct**
+
+Clarify whether `bellwood_elite_icon.png` is the intended final icon. If it is, it must be wired up:
+
+```xml
+<!-- Option A: Replace appicon.png on disk with your correct file, keep the csproj as-is -->
+
+<!-- Option B: Update the csproj reference to point to the correct file -->
+<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon.png" BackgroundColor="#1C2D5C" />
+```
+
+**Step 2 — Fix the Android adaptive icon**
+
+The single-file approach causes Android cropping. The correct approach is to provide a separate foreground image designed for the adaptive icon safe zone, and use `ForegroundFile`:
+
+```xml
+<MauiIcon Include="Resources\AppIcon\appicon.png"
+          ForegroundFile="Resources\AppIcon\appicon_foreground.png"
+          BackgroundColor="#1C2D5C" />
+```
+
+The `appicon_foreground.png` should be your logo/mark centered within a 108×108dp canvas where the inner 72×72dp is the "safe zone" — nothing important should exist outside that inner area. A 1080×1080 px PNG with the logo in the center 720×720 px area works well.
+
+**Step 3 — Fix the iOS icon**
+
+Prepare a PNG that meets all of Apple's requirements:
+- Exactly **1024×1024 px**
+- **No alpha channel** (flatten to opaque background if needed)
+- **No rounded corners** — Apple applies its own mask; pre-rounded corners create a double-mask effect
+- **No transparency**
+
+If you have Photoshop or Figma: flatten the image, export as PNG-24 (not PNG-32), and verify no alpha channel exists.
+
+**Step 4 — Remove `dotnet_bot.png`**
+
+`Resources/Images/dotnet_bot.png` is the .NET MAUI project template placeholder image. It is packaged into every build and serves no purpose in Bellwood Elite. It should be deleted.
+
+**Step 5 — Audit `noise_2pt.png` and `splash.svg`**
+
+- `Resources/Images/noise_2pt.png` (200 KB) — verify this is actively referenced in XAML. If not, delete it; it adds 200 KB to every build.
+- `Resources/Splash/splash.svg` — there are two splash assets: `bellwood_splash.png` (wired up in csproj) and `splash.svg` (not referenced). The SVG is a template leftover. If `bellwood_splash.png` is the intended splash, delete `splash.svg`.
+
+#### Icon Specification Quick Reference
+
+| Platform | Requirement | Notes |
+|---|---|---|
+| **Google Play** | 512×512 px PNG, ?1 MB | Store listing icon (uploaded separately in Play Console, not from the APK) |
+| **Android adaptive icon (launcher)** | Foreground: 108×108 dp (inner safe zone: 72×72 dp) | MAUI generates this from your source PNG |
+| **iOS App Store** | 1024×1024 px PNG, no alpha, no rounded corners | MAUI generates all other iOS icon sizes from this one source |
+
+---
+
+### 2. Android — No Release Keystore Created
+**Affects:** Google Play submission  
+**Detail:** The csproj signing scaffold is fully in place, but there is no evidence of an actual release `.keystore` file for `com.bellwoodglobal.mobile`. Google Play requires a consistent release key across all builds. **If this key is lost after the first upload, the app can never be updated under the same listing.**
+
+**Action required:**
+1. Generate the keystore (run once, store permanently):
+```powershell
+keytool -genkeypair -v -keystore bellwood-release.keystore `
+  -alias bellwood -keyalg RSA -keysize 2048 -validity 10000
+```
+2. Store the `.keystore` file in a **password manager or encrypted vault** — never commit it to the repo.
+3. Record the alias (`bellwood`), store password, and key password in the same secure location.
+4. For CI/CD: store as a base64-encoded repository secret and decode to disk before the publish step.
+
+---
+
+### 3. iOS — No Provisioning Profile or Distribution Certificate
+**Affects:** TestFlight submission  
+**Detail:** The iOS build requires an Apple Distribution Certificate and an App Store provisioning profile tied to `com.bellwoodglobal.mobile`. Neither exists in the codebase, and the csproj has no iOS Release `CodesignKey` or `CodesignProvision` properties. Without these, `dotnet publish -f net9.0-ios -c Release` will fail at the codesign step.
+
+**Action required:**
+1. In Apple Developer portal ? Identifiers: register App ID `com.bellwoodglobal.mobile`
+2. In Certificates: create an Apple Distribution certificate on a Mac with Xcode
+3. In Profiles: create an App Store provisioning profile linked to that App ID and certificate
+4. Download and install the profile on the Mac used for building
+5. Add iOS Release signing properties to the csproj:
+```xml
+<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-ios|AnyCPU'">
+  <CodesignKey>iPhone Distribution: Bellwood Global LLC</CodesignKey>
+  <CodesignProvision>Bellwood Elite App Store</CodesignProvision>
+</PropertyGroup>
+```
+
+---
+
+### 4. iOS — No `Entitlements.plist` for the iOS Target
+**Affects:** TestFlight submission  
+**Detail:** `MacCatalyst` has an `Entitlements.plist` but iOS does not. `SecureStorage` on iOS uses the system Keychain, which requires the `Keychain Sharing` capability declared in an entitlements file for distribution builds. Without this, secure token storage may fail silently on TestFlight devices.
+
+**Action required:**
+1. Create `Platforms/iOS/Entitlements.plist`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>keychain-access-groups</key>
+  <array>
+    <string>$(AppIdentifierPrefix)com.bellwoodglobal.mobile</string>
+  </array>
+</dict>
+</plist>
+```
+2. Reference it in the csproj iOS Release PropertyGroup:
+```xml
+<CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
+```
+
+---
+
+### 5. Debug Test Pages Are Registered in All Builds Including Release
+**Affects:** Both platforms — code hygiene / attack surface  
+**Detail:** `AppShell.xaml.cs` registers `PlacesTestPage` and `LocationAutocompleteTestPage` with `// DEBUG` comments, but the `Routing.RegisterRoute` calls are **not wrapped in `#if DEBUG`**. These pages are live, navigable routes in production Release builds. While no UI button currently routes to them, they remain reachable via deep-link or shell navigation.
+
+**File:** `BellwoodGlobal.Mobile/AppShell.xaml.cs`
+
+**Action required:** Wrap both registrations:
+```csharp
+#if DEBUG
+Routing.RegisterRoute(nameof(Pages.PlacesTestPage), typeof(Pages.PlacesTestPage));
+Routing.RegisterRoute(nameof(Pages.LocationAutocompleteTestPage), typeof(Pages.LocationAutocompleteTestPage));
+#endif
+```
+Similarly, in `MauiProgram.cs`, the DI registrations for these pages should also be guarded:
+```csharp
+#if DEBUG
+builder.Services.AddTransient<PlacesTestPage>();
+builder.Services.AddTransient<LocationAutocompleteTestPage>();
+#endif
+```
+
+---
+
+### 6. `DangerousAcceptAnyServerCertificateValidator` Active on All DEBUG Builds
+**Affects:** Both platforms — security  
+**Detail:** `MauiProgram.cs` applies `DangerousAcceptAnyServerCertificateValidator` to both the `"admin"` and `"auth"` HttpClients under `#if DEBUG`. This bypasses all TLS certificate validation. Release builds are correctly unaffected. However, if any tester or developer runs a DEBUG build pointed at cloud endpoints (`api.elitebellwood.com`, `auth.elitebellwood.com`), all certificate validation is silently skipped.
+
+**Action required:** No code change needed before internal testing — Release builds are clean. However, **all internal test builds distributed via TestFlight or Play Internal Track must be Release configuration builds**, not Debug. Document this in your team's build process.
+
+---
+
+## ?? Gaps — Address Before or Shortly After Internal Testing
+
+### 7. No Token Refresh / Refresh Token Flow
+**Affects:** Both platforms — user experience  
+**Detail:** `AuthService` has no refresh token logic. There is no `refresh_token` stored in `SecureStorage`. When the access token expires, `AuthHttpHandler` fires a full logout, interrupting the user mid-session without warning. For internal testing this will generate user confusion and unreliable feedback.
+
+**Recommended next step:** Implement a refresh token grant in `AuthService` and update `AuthHttpHandler` to attempt a silent refresh on 401 before triggering logout.
+
+---
+
+### 8. Google Places API Key Is Unrestricted by Release Certificate
+**Affects:** Both platforms — API cost/abuse protection  
+**Detail:** The Places API key (`AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY`) is present in both `appsettings.json` and `AndroidManifest.xml`. The key itself being in the repo is pre-existing and acceptable given Google's restriction model — but the key must be locked to the **release certificate SHA-1 fingerprint** in Google Cloud Console before the app is distributed. The current debug keystore fingerprint and the release keystore fingerprint are different values.
+
+**Action required:**
+1. Generate the release keystore (see Blocker #2)
+2. Extract the release SHA-1: `keytool -list -v -keystore bellwood-release.keystore -alias bellwood`
+3. In Google Cloud Console ? Credentials ? API key ? Application restrictions:
+   - Add Android restriction: package `com.bellwoodglobal.mobile` + release SHA-1
+   - Add iOS restriction: bundle ID `com.bellwoodglobal.mobile`
+   - Restrict API to: Places API (New) only
+
+---
+
+### 9. `ApplicationVersion` Has No Auto-Increment Mechanism
+**Affects:** Both stores — repeated submissions  
+**Detail:** `ApplicationVersion = 1` is correct for the first upload, but Google Play and App Store Connect **reject builds with a version code that has already been uploaded**. There is currently no mechanism to increment this value automatically. Every subsequent build must manually bump this number or the upload will be rejected.
+
+**Recommended next step:** Inject `ApplicationVersion` at build time via CI:
+```powershell
+dotnet publish ... -p:ApplicationVersion=$env:BUILD_NUMBER
+```
+
+---
+
+### 10. `android:allowBackup` Not Declared in AndroidManifest
+**Affects:** Android — data security  
+**Detail:** The Android manifest does not declare `android:allowBackup`. The Android default is `true`, meaning the OS may automatically back up app data (including Preferences cache of passengers and locations) to the user's Google Drive without explicit control. For a transportation/financial app, this behavior should be explicit.
+
+**Action required:** Add to the `<application>` element in `AndroidManifest.xml`:
+```xml
+android:allowBackup="false"
+```
+Or, if backup is desired, add a `backup_rules.xml` to explicitly control which data is backed up.
+
+---
+
+### 11. No `NSLocationAlwaysUsageDescription` Key in iOS `Info.plist`
+**Affects:** iOS — App Store review  
+**Detail:** `NSLocationWhenInUseUsageDescription` is correctly declared. The current code only requests `WhenInUse` location access, which is appropriate. This item is a reminder: if any future code path requests `Always` authorization, a second plist key is required or Apple will reject the build in review. No action needed today, but flag for future location feature work.
+
+---
+
+## Build Commands Reference
+
+### Android — Release AAB (Google Play)
+```powershell
+dotnet publish BellwoodGlobal.Mobile\BellwoodGlobal.Mobile\BellwoodGlobal.Mobile.csproj `
+  -f net9.0-android `
+  -c Release `
+  -p:AndroidPackageFormat=aab `
+  -p:AndroidSigningKeyStore="C:\path\to\bellwood-release.keystore" `
+  -p:AndroidSigningKeyAlias="bellwood" `
+  -p:AndroidSigningKeyPass="your_key_password" `
+  -p:AndroidSigningStorePass="your_store_password"
+```
+
+### iOS — Release IPA (TestFlight) — Must run on a Mac
+```bash
+dotnet publish BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/BellwoodGlobal.Mobile.csproj \
+  -f net9.0-ios \
+  -c Release \
+  -p:ArchiveOnBuild=true \
+  -p:CodesignKey="iPhone Distribution: Bellwood Global LLC" \
+  -p:CodesignProvision="Bellwood Elite App Store"
+```
+
+---
+
+## Next Steps — Ordered by Priority
+
+| Priority | Item | Owner | Platform |
+|---|---|---|---|
+| ?? 0 | **Resolve app icon: wire up correct file, fix Android adaptive icon, fix iOS alpha/size** | Design / Dev | Both |
+| ?? 0 | **Delete `dotnet_bot.png`; audit and clean `noise_2pt.png` and `splash.svg`** | Dev | Both |
+| ?? 1 | Generate and secure release keystore | Dev / DevOps | Android |
+| ?? 2 | Create Apple Distribution cert + provisioning profile | Dev (Mac required) | iOS |
+| ?? 3 | Create `Platforms/iOS/Entitlements.plist` | Dev | iOS |
+| ?? 4 | Wrap debug test page registrations in `#if DEBUG` | Dev | Both |
+| ?? 5 | Confirm all distributed builds are Release config | DevOps / QA | Both |
+| ?? 6 | Lock Places API key to release certificate fingerprint | Dev / GCP Admin | Both |
+| ?? 7 | Implement token refresh flow in `AuthService` | Dev | Both |
+| ?? 8 | Set up `ApplicationVersion` auto-increment in CI | DevOps | Both |
+| ?? 9 | Add `android:allowBackup="false"` to manifest | Dev | Android |
+| ?? 10 | Monitor `NSLocationAlwaysUsageDescription` for future location work | Dev | iOS |
+
+---
+
+*This report was generated from a live codebase audit on branch `wip/cloud-readiness`. Re-run the audit after completing blocker items to confirm readiness for the next distribution milestone.*
