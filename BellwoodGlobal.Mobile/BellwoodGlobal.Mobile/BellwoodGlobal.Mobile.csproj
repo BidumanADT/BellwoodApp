@@ -45,7 +45,7 @@
 
 	<!-- Android Release Signing - values passed via dotnet publish -p: or CI environment -->
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
-	  <AndroidKeyStore>true</AndroidKeyStore>
+	  <AndroidKeyStore Condition="'$(AndroidSigningKeyStore)' != ''">true</AndroidKeyStore>
 	  <AndroidSigningKeyStore>$(AndroidSigningKeyStore)</AndroidSigningKeyStore>
 	  <AndroidSigningStorePass>$(AndroidSigningStorePass)</AndroidSigningStorePass>
 	  <AndroidSigningKeyAlias>$(AndroidSigningKeyAlias)</AndroidSigningKeyAlias>
