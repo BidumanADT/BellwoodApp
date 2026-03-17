@@ -17,7 +17,8 @@ namespace BellwoodGlobal.Mobile.Services
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = false, // Compact storage
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            TypeInfoResolverChain = { BellwoodJsonContext.Default }
         };
 
         // ===== Helper: Get User-Specific Key =====

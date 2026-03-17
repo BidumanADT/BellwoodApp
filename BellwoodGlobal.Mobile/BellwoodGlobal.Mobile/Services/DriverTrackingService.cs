@@ -20,7 +20,8 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter() },
+        TypeInfoResolverChain = { BellwoodJsonContext.Default }
     };
 
     // Average driving speed for ETA estimation (km/h) when no routing API is available

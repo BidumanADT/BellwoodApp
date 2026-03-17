@@ -35,6 +35,9 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
     private const int DebounceDelayMs = 300;
     private const int MinimumSearchLength = 3;
 
+    // Track whether a real search session has started (user typed something)
+    private bool _sessionStarted;
+
     public LocationAutocompleteViewModel(
         IPlacesAutocompleteService placesService,
         IPlacesUsageTracker usageTracker) // NEW: Phase 7
@@ -262,6 +265,13 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Record session start on first real search (not on construction)
+        if (!_sessionStarted)
+        {
+            _usageTracker.RecordSessionStart();
+            _sessionStarted = true;
+        }
+
         // Debounce: wait before searching
         _searchCts = new CancellationTokenSource();
         var ct = _searchCts.Token;
@@ -408,8 +418,8 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
     {
         SessionToken = _placesService.GenerateSessionToken();
         
-        // NEW: Phase 7 - Record session start
-        _usageTracker.RecordSessionStart();
+        // Reset so the next actual search will record a new session start
+        _sessionStarted = false;
         
 #if DEBUG
         Debug.WriteLine($"[LocationAutocompleteViewModel] New session token: {SessionToken[..8]}...");
