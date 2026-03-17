@@ -463,7 +463,19 @@ public sealed class PlacesAutocompleteService : IPlacesAutocompleteService
                 break;
 
             case HttpStatusCode.Forbidden: // 403
-                LogError(endpoint, "Forbidden", "API key restrictions or quota issue");
+                // Parse the reason out of the error body so the log is actionable
+                var forbiddenReason = "Unknown";
+                if (errorBody.Contains("BILLING_DISABLED"))
+                    forbiddenReason = "Billing is not enabled on the GCP project. Visit the console URL in the error body to enable it.";
+                else if (errorBody.Contains("API_KEY_ANDROID_APP_BLOCKED"))
+                    forbiddenReason = "Android app restriction mismatch — the X-Android-Cert SHA-1 is not registered in GCP for this key.";
+                else if (errorBody.Contains("API_KEY_HTTP_REFERRER_BLOCKED"))
+                    forbiddenReason = "HTTP referrer restriction is blocking this request. Remove or adjust referrer restrictions in GCP.";
+                else if (errorBody.Contains("SERVICE_DISABLED"))
+                    forbiddenReason = "Places API is not enabled on this GCP project. Enable it in the API Library.";
+                else if (!string.IsNullOrWhiteSpace(errorBody))
+                    forbiddenReason = errorBody;
+                LogError(endpoint, "Forbidden", forbiddenReason);
                 break;
 
             case (HttpStatusCode)429: // Too Many Requests

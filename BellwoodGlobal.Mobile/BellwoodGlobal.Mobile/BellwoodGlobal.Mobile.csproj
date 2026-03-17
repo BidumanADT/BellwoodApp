@@ -33,7 +33,8 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
-	<!-- Android Debug Signing - Use the debug keystore we created -->
+	<!-- Android Debug Signing - keyed to %USERPROFILE%\.android\debug.keystore whose
+	     SHA-1 is registered in Google Cloud Console for the Places API key restriction -->
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
 	  <AndroidKeyStore>True</AndroidKeyStore>
 	  <AndroidSigningKeyStore Condition=" '$(OS)' == 'Windows_NT' ">$(USERPROFILE)\.android\debug.keystore</AndroidSigningKeyStore>
