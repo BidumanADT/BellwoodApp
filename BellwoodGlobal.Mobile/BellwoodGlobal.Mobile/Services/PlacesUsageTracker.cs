@@ -26,6 +26,26 @@ public sealed class PlacesUsageTracker : IPlacesUsageTracker
     // Rate limiting tracking (in-memory, resets on app restart)
     private readonly Queue<DateTime> _recentAutocompleteRequests = new();
     private readonly Queue<DateTime> _recentDetailsRequests = new();
+
+    public PlacesUsageTracker()
+    {
+        // One-time recovery: clear any stale IsDisabled flag that was set by the
+        // old session-count-based logic.  Only Place Details calls should trigger
+        // the disable, and the actual details count is almost certainly well below
+        // the threshold.  Re-evaluating on construction ensures a fresh start.
+        var stats = LoadTodayStats();
+        if (stats.IsDisabled && stats.PlaceDetailsCalls < MaxDetailsPerDay * DisableThresholdPercent)
+        {
+            stats.IsDisabled = false;
+            stats.QuotaExceededAt = null;
+            SaveStats(stats);
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(
+                $"[PlacesUsageTracker] Cleared stale IsDisabled flag " +
+                $"(details={stats.PlaceDetailsCalls}, threshold={MaxDetailsPerDay * DisableThresholdPercent})");
+#endif
+        }
+    }
     
     public void RecordSessionStart()
     {
@@ -107,14 +127,14 @@ public sealed class PlacesUsageTracker : IPlacesUsageTracker
             return true;
         }
         
-        // Check if we've hit session or details limit
-        var sessionLimit = stats.AutocompleteSessions >= MaxSessionsPerDay * DisableThresholdPercent;
+        // Check if we've hit the actual API request limit (not session count).
+        // Sessions are a billing grouping mechanism, not a quota limit.
         var detailsLimit = stats.PlaceDetailsCalls >= MaxDetailsPerDay * DisableThresholdPercent;
         
-        if (sessionLimit || detailsLimit)
+        if (detailsLimit)
         {
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[PlacesUsageTracker] Autocomplete DISABLED: Sessions={stats.AutocompleteSessions}/{MaxSessionsPerDay}, Details={stats.PlaceDetailsCalls}/{MaxDetailsPerDay}");
+            System.Diagnostics.Debug.WriteLine($"[PlacesUsageTracker] Autocomplete DISABLED: Details={stats.PlaceDetailsCalls}/{MaxDetailsPerDay}");
 #endif
             
             // Auto-disable
@@ -131,10 +151,9 @@ public sealed class PlacesUsageTracker : IPlacesUsageTracker
     {
         var stats = LoadTodayStats();
         
-        var sessionWarning = stats.AutocompleteSessions >= MaxSessionsPerDay * WarningThresholdPercent;
         var detailsWarning = stats.PlaceDetailsCalls >= MaxDetailsPerDay * WarningThresholdPercent;
         
-        return sessionWarning || detailsWarning;
+        return detailsWarning;
     }
     
     public bool IsRateLimited()

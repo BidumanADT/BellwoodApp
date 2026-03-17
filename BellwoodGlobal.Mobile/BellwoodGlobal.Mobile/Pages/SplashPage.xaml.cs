@@ -23,16 +23,18 @@ public partial class SplashPage : ContentPage
 
         try
         {
-            // PERFORMANCE FIX: Start config loading in background, but DON'T WAIT FOR IT
-            // Config is only needed when HTTP clients are first used (after login)
-            _ = _config.InitializeAsync(); // Fire and forget
+            // Run config initialization and splash animation concurrently.
+            // Config must be fully loaded before any HTTP client is used, so we
+            // await both tasks together. The animation already takes ~800ms, which
+            // is more than enough time for the file I/O to complete.
+            await Task.WhenAll(
+                _config.InitializeAsync(),
+                AnimateSplashAsync()
+            );
 
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine("[SplashPage] Config initialization started in background (not blocking)");
+            System.Diagnostics.Debug.WriteLine("[SplashPage] Config initialization complete before navigation");
 #endif
-
-            // Show splash animation WITHOUT waiting for config
-            await AnimateSplashAsync();
 
             // Create Shell as the new root
             Application.Current!.MainPage = new AppShell();
