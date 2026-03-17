@@ -151,7 +151,7 @@ public sealed class ConfigurationService : IConfigurationService
             {
                 using var reader = new StreamReader(stream);
                 var json = await reader.ReadToEndAsync().ConfigureAwait(false);
-                var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                var loaded = JsonSerializer.Deserialize(json, BellwoodJsonContext.Default.DictionaryStringString);
                 
                 if (loaded != null)
                 {

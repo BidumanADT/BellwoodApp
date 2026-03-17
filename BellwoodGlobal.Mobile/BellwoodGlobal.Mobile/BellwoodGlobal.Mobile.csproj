@@ -70,7 +70,7 @@
 		
 		<!-- Configuration files (embedded as resources) -->
 		<MauiAsset Include="appsettings.json" />
-		<MauiAsset Include="appsettings.Development.json"  Condition="'$(Configuration)' == 'Debug'" />
+		<MauiAsset Include="appsettings.Development.json" Condition="'$(Configuration)' == 'Debug'" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -137,6 +137,10 @@
 	  <MauiXaml Update="Resources\Styles\Gradients.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="build-archive\android-old\2026-03-15-pre-rebuild\" />
 	</ItemGroup>
 
 </Project>

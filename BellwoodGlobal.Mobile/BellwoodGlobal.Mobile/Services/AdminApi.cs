@@ -17,7 +17,8 @@ namespace BellwoodGlobal.Mobile.Services
             new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
-                Converters = { new JsonStringEnumConverter() }
+                Converters = { new JsonStringEnumConverter() },
+                TypeInfoResolverChain = { BellwoodJsonContext.Default }
             };
 
         public AdminApi(IHttpClientFactory httpFactory)

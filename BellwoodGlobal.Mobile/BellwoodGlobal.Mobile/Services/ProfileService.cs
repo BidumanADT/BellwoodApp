@@ -11,7 +11,11 @@ public class ProfileService : IProfileService
     private readonly IAdminApi _adminApi;
     private readonly IAuthService _authService;
 
-    private static readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions _json = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        TypeInfoResolverChain = { BellwoodJsonContext.Default }
+    };
 
     // ---- booker cache ----
     private Passenger? _cachedBooker;

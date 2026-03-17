@@ -42,8 +42,16 @@
         </Style>
 
         <Style TargetType="Picker" BasedOn="{StaticResource BasePickerStyle}" />
-        <Style TargetType="DatePicker" BasedOn="{StaticResource BasePickerStyle}" />
-        <Style TargetType="TimePicker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="DatePicker">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style TargetType="TimePicker">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
 
         <Style TargetType="Label">
             <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
