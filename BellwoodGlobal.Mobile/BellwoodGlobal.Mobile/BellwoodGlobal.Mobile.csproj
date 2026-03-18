@@ -67,6 +67,8 @@
 		<MauiFont Include="Resources/Fonts/Montserrat-Regular.ttf" Alias="Montserrat" />
 		<MauiFont Include="Resources/Fonts/Montserrat-SemiBold.ttf" Alias="MontserratSemibold" />
 		<MauiFont Include="Resources/Fonts/PlayfairDisplay-SemiBold.ttf" Alias="Playfair" />
+		<MauiFont Include="Resources/Fonts/OpenSans-Regular.ttf" Alias="OpenSansRegular" />
+		<MauiFont Include="Resources/Fonts/OpenSans-Semibold.ttf" Alias="OpenSansSemibold" />
 		<MauiAsset Include="Resources/Raw/**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 		
 		<!-- Configuration files (embedded as resources) -->
