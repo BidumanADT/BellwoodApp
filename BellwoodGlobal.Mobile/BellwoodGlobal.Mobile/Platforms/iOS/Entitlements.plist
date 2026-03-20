@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+    iOS Entitlements for BellwoodGlobal.Mobile
+    ============================================
+    Only add an entitlement here AFTER enabling the matching capability in
+    your App ID on developer.apple.com — the two must stay in sync or Xcode
+    will reject the codesign.
+
+    PUSH NOTIFICATIONS (APS Environment)
+    Uncomment the block below and change "development" → "production" for
+    a distribution/TestFlight/App Store build.  The iOS workflow passes this
+    file via -p:CodesignEntitlements only for Release builds, so development
+    builds pick up the Simulator default (no APS entry needed for sim).
+
+        <key>aps-environment</key>
+        <string>production</string>
+
+    SIGN IN WITH APPLE
+    Requires the "Sign In with Apple" capability enabled on the App ID.
+
+        <key>com.apple.developer.applesignin</key>
+        <array>
+            <string>Default</string>
+        </array>
+
+    ASSOCIATED DOMAINS (Universal Links / Shared Web Credentials)
+    One entry per domain; prefix must be "applinks:" or "webcredentials:" etc.
+
+        <key>com.apple.developer.associated-domains</key>
+        <array>
+            <string>applinks:bellwoodglobal.com</string>
+        </array>
+
+    BACKGROUND MODES (if you need background fetch / remote-notification wakeup)
+
+        <key>UIBackgroundModes</key>
+        <array>
+            <string>remote-notification</string>
+        </array>
+-->
+<dict>
+    <!-- No active entitlements yet. Uncomment sections above as capabilities are enabled. -->
+</dict>
+</plist>

@@ -1,0 +1,197 @@
+name: iOS TestFlight (Internal)
+
+# Triggers match the Android workflow: version tags + manual dispatch.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "9.0.x"
+  PROJECT_PATH: BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/BellwoodGlobal.Mobile.csproj
+  TARGET_FRAMEWORK: net9.0-ios
+  # After `dotnet publish -p:ArchiveOnBuild=true` the IPA lands at:
+  #   BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/bin/Release/net9.0-ios/publish/BellwoodGlobal.Mobile.ipa
+  # We discover the exact path at runtime with `find` in case the intermediate
+  # directory contains the RID segment (e.g. ios-arm64/publish/) in future SDK versions.
+  IPA_SEARCH_ROOT: BellwoodGlobal.Mobile/BellwoodGlobal.Mobile/bin/Release/net9.0-ios
+
+jobs:
+  build-and-upload:
+    runs-on: macos-latest
+
+    steps:
+      # ── Source ───────────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+
+      # ── .NET 9 + MAUI iOS workload ────────────────────────────────────────
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install MAUI iOS workload
+        run: dotnet workload install maui-ios
+
+      # ── Apple Distribution certificate ────────────────────────────────────
+      # A short-lived keychain isolated from the user's login keychain is used
+      # so the certificate is automatically gone when the runner is recycled.
+      - name: Import Apple Distribution certificate
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/ios-build.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 20)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          # Prevent the keychain from locking during the build (6 h timeout, no sleep lock)
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Decode p12 and import; -A allows any app to use the key without prompting
+          echo "${{ secrets.IOS_DIST_P12_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" \
+            -P "${{ secrets.IOS_DIST_P12_PASSWORD }}" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          rm -f "$RUNNER_TEMP/dist.p12"
+
+          # Prepend our keychain to the search list so codesign finds the cert
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          # Allow codesign to access the private key without a UI prompt on macOS 12+
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Capture the cert CN (e.g. "iPhone Distribution: Bellwood Global Inc (XXXXXXXXXX)")
+          CODESIGN_ID=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+                        | grep -E "iPhone Distribution|Apple Distribution" | head -1 \
+                        | sed 's/.*"\(.*\)"/\1/')
+          if [ -z "$CODESIGN_ID" ]; then
+            echo "::error::No distribution certificate found after import."
+            exit 1
+          fi
+          echo "CODESIGN_ID=$CODESIGN_ID" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+      # ── App Store provisioning profile ────────────────────────────────────
+      # macOS/Xcode looks up profiles by UUID filename under
+      # ~/Library/MobileDevice/Provisioning Profiles/
+      - name: Install App Store provisioning profile
+        run: |
+          PROFILE_PATH="$RUNNER_TEMP/app_store.mobileprovision"
+          echo "${{ secrets.IOS_APPSTORE_PROFILE_BASE64 }}" | base64 --decode > "$PROFILE_PATH"
+
+          # Extract the UUID embedded in the signed profile CMS payload
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          if [ -z "$PROFILE_UUID" ]; then
+            echo "::error::Could not read UUID from provisioning profile."
+            exit 1
+          fi
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PROFILE_PATH" \
+            ~/Library/MobileDevice/Provisioning\ Profiles/"$PROFILE_UUID".mobileprovision
+
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+
+      # ── Build number ──────────────────────────────────────────────────────
+      # For tag pushes (v1.2.3) strip the dots to get an integer (123).
+      # For workflow_dispatch fall back to GITHUB_RUN_NUMBER.
+      - name: Derive build number
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            BUILD=$(echo "$TAG" | tr -d '.')
+          else
+            BUILD="${GITHUB_RUN_NUMBER}"
+          fi
+          echo "BUILD_NUMBER=$BUILD" >> "$GITHUB_ENV"
+          echo "Resolved ApplicationVersion → $BUILD"
+
+      # ── Build IPA ─────────────────────────────────────────────────────────
+      # ArchiveOnBuild=true tells MSBuild/Xcode to produce an .xcarchive and
+      # then export it to an IPA in the publish directory.
+      # RuntimeIdentifier=ios-arm64 targets physical devices (required for
+      # distribution builds; the simulator RID ios-x64 cannot be submitted).
+      - name: Build and archive IPA
+        run: |
+          dotnet publish "${{ env.PROJECT_PATH }}" \
+            -f "${{ env.TARGET_FRAMEWORK }}" \
+            -c Release \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:ArchiveOnBuild=true \
+            -p:ApplicationVersion="${{ env.BUILD_NUMBER }}" \
+            -p:CodesignKey="${{ env.CODESIGN_ID }}" \
+            -p:CodesignProvision="${{ env.PROFILE_UUID }}"
+
+          # ── Locate the IPA ─────────────────────────────────────────────────
+          # Expected canonical path (SDK 9.x):
+          #   $IPA_SEARCH_ROOT/publish/BellwoodGlobal.Mobile.ipa
+          # Some SDK versions insert the RID segment:
+          #   $IPA_SEARCH_ROOT/ios-arm64/publish/BellwoodGlobal.Mobile.ipa
+          IPA_PATH=$(find "${{ env.IPA_SEARCH_ROOT }}" -name "*.ipa" 2>/dev/null | head -1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::IPA not found under ${{ env.IPA_SEARCH_ROOT }}"
+            echo "Listing build output for diagnostics:"
+            find "$(dirname "${{ env.PROJECT_PATH }}")/bin/Release" -type f | sort
+            exit 1
+          fi
+          echo "Found IPA: $IPA_PATH"
+          echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
+
+      # ── Upload IPA as artifact (for debugging / re-runs) ──────────────────
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-b${{ env.BUILD_NUMBER }}
+          path: ${{ env.IPA_PATH }}
+          retention-days: 14
+
+      # ── App Store Connect API key ─────────────────────────────────────────
+      # fastlane pilot accepts a JSON file with the three ASC API key fields.
+      # jq --rawfile reads the P8 file verbatim (preserving newlines) so the
+      # key string is JSON-encoded correctly without manual escaping.
+      - name: Prepare App Store Connect API key
+        run: |
+          echo "${{ secrets.ASC_KEY_P8_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/asc_key.p8"
+          jq -n \
+            --arg key_id    "${{ secrets.ASC_KEY_ID }}" \
+            --arg issuer_id "${{ secrets.ASC_ISSUER_ID }}" \
+            --rawfile key   "$RUNNER_TEMP/asc_key.p8" \
+            '{"key_id": $key_id, "issuer_id": $issuer_id, "key": $key, "in_house": false}' \
+            > "$RUNNER_TEMP/asc_key.json"
+          rm -f "$RUNNER_TEMP/asc_key.p8"
+
+      # ── TestFlight upload via fastlane pilot ──────────────────────────────
+      # --skip_waiting_for_build_processing  → don't block the runner waiting
+      #   for Apple to process the build (can take 10–30 min).
+      # --skip_submission → upload only; do not add to any group automatically.
+      #   Promote to Internal Testing manually in App Store Connect, or remove
+      #   this flag and add --distribute_external false to auto-add to internal.
+      - name: Upload to TestFlight
+        run: |
+          gem install fastlane --no-document --quiet
+          fastlane pilot upload \
+            --api_key_path "$RUNNER_TEMP/asc_key.json" \
+            --ipa          "${{ env.IPA_PATH }}" \
+            --skip_waiting_for_build_processing true \
+            --skip_submission true
+
+      # ── Cleanup all secrets material ──────────────────────────────────────
+      # Runs even on failure so secrets never persist on the runner.
+      - name: Cleanup signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/dist.p12" \
+                "$RUNNER_TEMP/app_store.mobileprovision" \
+                "$RUNNER_TEMP/asc_key.p8" \
+                "$RUNNER_TEMP/asc_key.json"
+
+          # Delete the ephemeral keychain so the cert is fully removed
+          security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+
+          # Restore default keychain search list
+          security list-keychain -d user -s login.keychain-db 2>/dev/null || true
