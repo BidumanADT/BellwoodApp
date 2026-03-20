@@ -144,6 +144,12 @@
 
 	<ItemGroup>
 	  <Folder Include="build-archive\android-old\2026-03-15-pre-rebuild\" />
+	  <Folder Include="Platforms\iOS\Resources\" />
+	</ItemGroup>
+
+	<!-- iOS Privacy Manifest — must land at the app bundle root, not in a subdirectory -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+	  <BundleResource Include="Platforms\iOS\PrivacyInfo.xcprivacy" LogicalName="PrivacyInfo.xcprivacy" />
 	</ItemGroup>
 
 </Project>
