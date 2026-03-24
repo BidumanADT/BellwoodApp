@@ -873,10 +873,13 @@ public partial class BookRidePage : ContentPage
             return;
         }
 
-        var pickupDT = PickupDate.Date + PickupTime.Time;
+        var localPickup = PickupDate.Date + PickupTime.Time;        // Kind=Unspecified (device local)
+        var pickupDT = TimeZoneInfo.ConvertTimeToUtc(
+            DateTime.SpecifyKind(localPickup, DateTimeKind.Unspecified),
+            TimeZoneInfo.Local);                                         // Kind=Utc
         var isAsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected;
 
-        if (pickupDT <= DateTime.Now.AddMinutes(15))
+        if (pickupDT <= DateTime.UtcNow.AddMinutes(15))
         {
             await DisplayAlert("Pickup time", "Pickup should be at least 15 minutes from now.", "OK");
             return;
@@ -885,7 +888,10 @@ public partial class BookRidePage : ContentPage
         DateTime? retDT = null;
         if (!isAsDirected && RoundTripGrid.IsVisible && RoundTripCheck.IsChecked)
         {
-            retDT = ReturnDatePicker.Date + ReturnTimePicker.Time;
+            var localRet = ReturnDatePicker.Date + ReturnTimePicker.Time;
+            retDT = TimeZoneInfo.ConvertTimeToUtc(
+                DateTime.SpecifyKind(localRet, DateTimeKind.Unspecified),
+                TimeZoneInfo.Local);
             if (retDT <= pickupDT)
             {
                 await DisplayAlert("Return time", "Return must be after pickup. Please adjust the date/time.", "OK");
