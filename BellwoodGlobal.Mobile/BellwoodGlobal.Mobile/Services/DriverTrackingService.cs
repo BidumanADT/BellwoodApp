@@ -24,8 +24,8 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
         TypeInfoResolverChain = { BellwoodJsonContext.Default }
     };
 
-    // Average driving speed for ETA estimation (km/h) when no routing API is available
-    private const double AverageSpeedKmh = 35.0;
+    // Average driving speed for ETA estimation (mph) when no routing API is available
+    private const double AverageSpeedMph = 22.0;
 
     public event EventHandler<DriverLocation>? LocationUpdated;
     public event EventHandler<TrackingState>? StateChanged;
@@ -208,25 +208,25 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
     public EtaResult CalculateEta(DriverLocation driverLocation, double pickupLatitude, double pickupLongitude)
     {
         // Calculate distance using Haversine formula
-        var distanceKm = CalculateDistanceKm(
+        var distanceMiles = CalculateDistanceMiles(
             driverLocation.Latitude, driverLocation.Longitude,
             pickupLatitude, pickupLongitude);
 
         // Use driver's actual speed if available, otherwise use average
-        var speedKmh = driverLocation.SpeedKmh > 0 ? driverLocation.SpeedKmh.Value : AverageSpeedKmh;
+        var speedMph = driverLocation.SpeedMph > 0 ? driverLocation.SpeedMph.Value : AverageSpeedMph;
 
         // Calculate ETA in minutes
-        var etaMinutes = (int)Math.Ceiling((distanceKm / speedKmh) * 60);
+        var etaMinutes = (int)Math.Ceiling((distanceMiles / speedMph) * 60);
 
         // Minimum 1 minute if not arrived
-        if (etaMinutes < 1 && distanceKm > 0.1)
+        if (etaMinutes < 1 && distanceMiles > 0.1)
             etaMinutes = 1;
 
         return new EtaResult
         {
             EstimatedMinutes = etaMinutes,
-            DistanceKm = distanceKm,
-            IsEstimate = driverLocation.SpeedKmh == null // Mark as estimate if no actual speed
+            DistanceMiles = distanceMiles,
+            IsEstimate = driverLocation.SpeedMph == null // Mark as estimate if no actual speed
         };
     }
 
@@ -269,7 +269,7 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
 #if DEBUG
                     System.Diagnostics.Debug.WriteLine(
-                        $"[DriverTrackingService] ETA: {eta.DisplayText}, Distance: {eta.DistanceKm:F2} km");
+                        $"[DriverTrackingService] ETA: {eta.DisplayText}, Distance: {eta.DistanceMiles:F2} mi");
 #endif
                 }
                 else if (firstFetch)
@@ -359,9 +359,9 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
     /// <summary>
     /// Calculates the distance between two GPS coordinates using the Haversine formula.
     /// </summary>
-    private static double CalculateDistanceKm(double lat1, double lon1, double lat2, double lon2)
+    private static double CalculateDistanceMiles(double lat1, double lon1, double lat2, double lon2)
     {
-        const double EarthRadiusKm = 6371.0;
+        const double EarthRadiusMiles = 3958.8;
 
         var dLat = ToRadians(lat2 - lat1);
         var dLon = ToRadians(lon2 - lon1);
@@ -372,7 +372,7 @@ public sealed class DriverTrackingService : IDriverTrackingService, IDisposable
 
         var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
-        return EarthRadiusKm * c;
+        return EarthRadiusMiles * c;
     }
 
     private static double ToRadians(double degrees) => degrees * Math.PI / 180.0;
