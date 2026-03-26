@@ -212,17 +212,10 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
             return;
         }
 
-        var draft = _currentBooking.Draft;
-
-        // Get pickup coordinates from the draft if available
-        // Default to NYC coordinates if not available (fallback for demo)
-        double pickupLat = draft?.PickupLatitude ?? 0.0;
-        double pickupLng = draft?.PickupLongitude ?? 0.0;
-
         var pickupAddress = Uri.EscapeDataString(_currentBooking.PickupLocation ?? "Pickup");
 
         // Navigate to tracking page with parameters
-        var route = $"{nameof(DriverTrackingPage)}?rideId={Uri.EscapeDataString(Id)}&pickupLat={pickupLat}&pickupLng={pickupLng}&pickupAddress={pickupAddress}";
+        var route = $"{nameof(DriverTrackingPage)}?rideId={Uri.EscapeDataString(Id)}&pickupAddress={pickupAddress}";
 
 #if DEBUG
         System.Diagnostics.Debug.WriteLine($"[BookingDetailPage] Navigating to tracking: {route}");

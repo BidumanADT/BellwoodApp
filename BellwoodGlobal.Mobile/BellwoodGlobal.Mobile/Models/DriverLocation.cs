@@ -36,9 +36,9 @@ public sealed class DriverLocation
     public double? Heading { get; set; }
 
     /// <summary>
-    /// Driver's speed in km/h, if available.
+    /// Driver's speed in mph, if available.
     /// </summary>
-    public double? SpeedKmh { get; set; }
+    public double? SpeedMph { get; set; }
 
     /// <summary>
     /// Indicates if location data is considered stale (older than expected).
@@ -118,7 +118,7 @@ public sealed class PassengerLocationResponse
             TimestampUtc = Timestamp.Value,
             AgeSeconds = (int)(AgeSeconds ?? 0),
             Heading = Heading,
-            SpeedKmh = Speed,
+            SpeedMph = Speed * 2.23694,  // API sends m/s; convert to mph
             DriverUid = DriverUid,
             DriverName = DriverName
         };
@@ -136,9 +136,9 @@ public sealed class EtaResult
     public int EstimatedMinutes { get; set; }
 
     /// <summary>
-    /// Distance remaining in kilometers.
+    /// Distance remaining in miles.
     /// </summary>
-    public double DistanceKm { get; set; }
+    public double DistanceMiles { get; set; }
 
     /// <summary>
     /// Human-readable ETA text (e.g., "8 minutes away").

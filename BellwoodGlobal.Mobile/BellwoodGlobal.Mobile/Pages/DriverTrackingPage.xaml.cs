@@ -37,22 +37,16 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        // Expected parameters: rideId, pickupLat, pickupLng, pickupAddress
+        // Expected parameters: rideId, pickupAddress
         if (query.TryGetValue("rideId", out var rideIdObj))
             _rideId = rideIdObj?.ToString();
-
-        if (query.TryGetValue("pickupLat", out var latObj) && double.TryParse(latObj?.ToString(), out var lat))
-            _pickupLatitude = lat;
-
-        if (query.TryGetValue("pickupLng", out var lngObj) && double.TryParse(lngObj?.ToString(), out var lng))
-            _pickupLongitude = lng;
 
         if (query.TryGetValue("pickupAddress", out var addrObj))
             _pickupAddress = Uri.UnescapeDataString(addrObj?.ToString() ?? string.Empty);
 
 #if DEBUG
         System.Diagnostics.Debug.WriteLine(
-            $"[DriverTrackingPage] Params: RideId={_rideId}, Pickup=({_pickupLatitude:F6}, {_pickupLongitude:F6}), Address={_pickupAddress}");
+            $"[DriverTrackingPage] Params: RideId={_rideId}, Address={_pickupAddress}");
 #endif
     }
 
@@ -64,7 +58,6 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
         System.Diagnostics.Debug.WriteLine($"???????????????????????????????????????????????????");
         System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] OnAppearing called");
         System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] RideId: {_rideId ?? "NULL"}");
-        System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Pickup: ({_pickupLatitude:F6}, {_pickupLongitude:F6})");
         System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Address: {_pickupAddress ?? "NULL"}");
         System.Diagnostics.Debug.WriteLine($"???????????????????????????????????????????????????");
 #endif
@@ -82,7 +75,29 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
         // Set pickup address label
         PickupAddressLabel.Text = string.IsNullOrWhiteSpace(_pickupAddress) ? "Pickup location" : _pickupAddress;
 
-        // Initialize map with pickup location
+        // Resolve pickup coordinates (geocode if not provided via query params)
+        if ((_pickupLatitude == 0 || _pickupLongitude == 0) && !string.IsNullOrWhiteSpace(_pickupAddress))
+        {
+            try
+            {
+                var locations = await Microsoft.Maui.Devices.Sensors.Geocoding.GetLocationsAsync(_pickupAddress);
+                var loc = locations?.FirstOrDefault();
+                if (loc != null)
+                {
+                    _pickupLatitude = loc.Latitude;
+                    _pickupLongitude = loc.Longitude;
+#if DEBUG
+                    System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Geocoded pickup: ({_pickupLatitude:F6}, {_pickupLongitude:F6})");
+#endif
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Geocoding failed: {ex.Message}");
+            }
+        }
+
+        // Initialize map with (now-resolved) pickup location
         InitializeMap();
 
 #if DEBUG
@@ -103,45 +118,23 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
         _trackingService.StopTracking();
     }
 
-    private async void InitializeMap()
+    private void InitializeMap()
     {
-        double lat = _pickupLatitude;
-        double lng = _pickupLongitude;
+        if (_pickupLatitude == 0 || _pickupLongitude == 0)
+            return;
 
-        // Geocode the address when stored coordinates are unavailable
-        if ((lat == 0 || lng == 0) && !string.IsNullOrWhiteSpace(_pickupAddress))
+        var pickupLocation = new GeoLocation(_pickupLatitude, _pickupLongitude);
+
+        _pickupPin = new Pin
         {
-            try
-            {
-                var locations = await Microsoft.Maui.Devices.Sensors.Geocoding.GetLocationsAsync(_pickupAddress);
-                var loc = locations?.FirstOrDefault();
-                if (loc != null)
-                {
-                    lat = loc.Latitude;
-                    lng = loc.Longitude;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Geocoding failed: {ex.Message}");
-            }
-        }
+            Label = "Pickup",
+            Address = _pickupAddress ?? "Your pickup location",
+            Type = PinType.Place,
+            Location = pickupLocation
+        };
+        TrackingMap.Pins.Add(_pickupPin);
 
-        if (lat != 0 && lng != 0)
-        {
-            var pickupLocation = new GeoLocation(lat, lng);
-
-            _pickupPin = new Pin
-            {
-                Label = "Pickup",
-                Address = _pickupAddress ?? "Your pickup location",
-                Type = PinType.Place,
-                Location = pickupLocation
-            };
-            TrackingMap.Pins.Add(_pickupPin);
-
-            TrackingMap.MoveToRegion(MapSpan.FromCenterAndRadius(pickupLocation, Distance.FromKilometers(2)));
-        }
+        TrackingMap.MoveToRegion(MapSpan.FromCenterAndRadius(pickupLocation, Distance.FromMiles(1.25)));
     }
 
     private void OnLocationUpdated(object? sender, DriverLocation location)
@@ -209,10 +202,10 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
             var center = new GeoLocation(centerLat, centerLng);
 
             // Calculate distance to determine zoom level
-            var distanceKm = CalculateDistanceKm(location.Latitude, location.Longitude, _pickupLatitude, _pickupLongitude);
+            var distanceMiles = CalculateDistanceMiles(location.Latitude, location.Longitude, _pickupLatitude, _pickupLongitude);
 
             // Add some padding to the view
-            var radius = Distance.FromKilometers(Math.Max(distanceKm * 0.7, 0.5));
+            var radius = Distance.FromMiles(Math.Max(distanceMiles * 0.7, 0.5));
 
             TrackingMap.MoveToRegion(MapSpan.FromCenterAndRadius(center, radius));
         }
@@ -222,9 +215,9 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
     {
         EtaLabel.Text = eta.DisplayText;
 
-        var distanceText = eta.DistanceKm < 1
-            ? $"{(eta.DistanceKm * 1000):F0} meters away"
-            : $"{eta.DistanceKm:F1} km away";
+        var distanceText = eta.DistanceMiles < 0.1
+            ? $"{(eta.DistanceMiles * 5280):F0} ft away"
+            : $"{eta.DistanceMiles:F1} mi away";
 
         if (eta.IsEstimate)
             distanceText += " (est.)";
@@ -329,9 +322,9 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
         }
     }
 
-    private static double CalculateDistanceKm(double lat1, double lon1, double lat2, double lon2)
+    private static double CalculateDistanceMiles(double lat1, double lon1, double lat2, double lon2)
     {
-        const double EarthRadiusKm = 6371.0;
+        const double EarthRadiusMiles = 3958.8;
 
         var dLat = ToRadians(lat2 - lat1);
         var dLon = ToRadians(lon2 - lon1);
@@ -342,7 +335,7 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
 
         var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
-        return EarthRadiusKm * c;
+        return EarthRadiusMiles * c;
     }
 
     private static double ToRadians(double degrees) => degrees * Math.PI / 180.0;
