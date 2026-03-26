@@ -48,7 +48,7 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
             _pickupLongitude = lng;
 
         if (query.TryGetValue("pickupAddress", out var addrObj))
-            _pickupAddress = addrObj?.ToString();
+            _pickupAddress = Uri.UnescapeDataString(addrObj?.ToString() ?? string.Empty);
 
 #if DEBUG
         System.Diagnostics.Debug.WriteLine(
@@ -103,14 +103,34 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
         _trackingService.StopTracking();
     }
 
-    private void InitializeMap()
+    private async void InitializeMap()
     {
-        // Set initial map region centered on pickup
-        if (_pickupLatitude != 0 && _pickupLongitude != 0)
-        {
-            var pickupLocation = new GeoLocation(_pickupLatitude, _pickupLongitude);
+        double lat = _pickupLatitude;
+        double lng = _pickupLongitude;
 
-            // Add pickup pin
+        // Geocode the address when stored coordinates are unavailable
+        if ((lat == 0 || lng == 0) && !string.IsNullOrWhiteSpace(_pickupAddress))
+        {
+            try
+            {
+                var locations = await Microsoft.Maui.Devices.Sensors.Geocoding.GetLocationsAsync(_pickupAddress);
+                var loc = locations?.FirstOrDefault();
+                if (loc != null)
+                {
+                    lat = loc.Latitude;
+                    lng = loc.Longitude;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DriverTrackingPage] Geocoding failed: {ex.Message}");
+            }
+        }
+
+        if (lat != 0 && lng != 0)
+        {
+            var pickupLocation = new GeoLocation(lat, lng);
+
             _pickupPin = new Pin
             {
                 Label = "Pickup",
@@ -120,7 +140,6 @@ public partial class DriverTrackingPage : ContentPage, IQueryAttributable, IDisp
             };
             TrackingMap.Pins.Add(_pickupPin);
 
-            // Center map on pickup with reasonable zoom
             TrackingMap.MoveToRegion(MapSpan.FromCenterAndRadius(pickupLocation, Distance.FromKilometers(2)));
         }
     }

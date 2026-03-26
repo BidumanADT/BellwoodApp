@@ -216,8 +216,8 @@ public partial class BookingDetailPage : ContentPage, IQueryAttributable
 
         // Get pickup coordinates from the draft if available
         // Default to NYC coordinates if not available (fallback for demo)
-        double pickupLat = draft?.PickupLatitude ?? 40.7128;
-        double pickupLng = draft?.PickupLongitude ?? -74.0060;
+        double pickupLat = draft?.PickupLatitude ?? 0.0;
+        double pickupLng = draft?.PickupLongitude ?? 0.0;
 
         var pickupAddress = Uri.EscapeDataString(_currentBooking.PickupLocation ?? "Pickup");
 
