@@ -39,7 +39,7 @@ public static class DateTimeHelper
     public static string FormatFriendly(DateTime dateTime)
     {
         var displayTime = dateTime.Kind == DateTimeKind.Utc
-            ? DateTime.SpecifyKind(dateTime, DateTimeKind.Local)
+            ? dateTime.ToLocalTime()
             : dateTime;
 
         var now = DateTime.Now;
