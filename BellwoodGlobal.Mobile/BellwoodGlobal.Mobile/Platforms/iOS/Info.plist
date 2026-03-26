@@ -33,10 +33,14 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.bellwood.mobile</string>
+				<string>com.bellwoodglobal.mobile</string>
 			</array>
 		</dict>
 	</array>
+
+	<!-- Location permission: required for pickup/dropoff address suggestions and search biasing -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bellwood uses your location to suggest nearby pickup and dropoff addresses and to improve address search results.</string>
 
 </dict>
 </plist>

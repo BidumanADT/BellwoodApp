@@ -8,15 +8,16 @@
 
 	<ContentPage.ToolbarItems>
 		<ToolbarItem Text="Back" Priority="0" Order="Primary" Clicked="OnBackClicked" />
+		<ToolbarItem Text="Logout" Priority="1" Order="Primary" Clicked="OnLogoutClicked" />
 	</ContentPage.ToolbarItems>
 
-	<Grid RowDefinitions="Auto,Auto,*" Padding="16" RowSpacing="10">
+	<Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="10">
 		<!-- Filter buttons -->
 		<HorizontalStackLayout Grid.Row="0" Spacing="8">
 			<Button x:Name="AllBtn" Text="All" Clicked="OnFilterClicked" />
-			<Button x:Name="PendingBtn" Text="Pending" Clicked="OnFilterClicked" />
-			<Button x:Name="PricedBtn" Text="Priced" Clicked="OnFilterClicked" />
-			<Button x:Name="DeclinedBtn" Text="Declined" Clicked="OnFilterClicked" />
+			<Button x:Name="AwaitingBtn" Text="Awaiting Response" Clicked="OnFilterClicked" />
+			<Button x:Name="RespondedBtn" Text="Response Received" Clicked="OnFilterClicked" />
+			<Button x:Name="CancelledBtn" Text="Cancelled" Clicked="OnFilterClicked" />
 		</HorizontalStackLayout>
 
 		<!-- Search -->
@@ -30,8 +31,42 @@
                    TextChanged="OnSearchChanged"/>
 		</Grid>
 
+		<!-- Phase Alpha: Status Change Notification Banner -->
+		<Frame x:Name="NotificationBanner"
+		       Grid.Row="2"
+		       Padding="12,8"
+		       CornerRadius="8"
+		       BackgroundColor="{StaticResource BellwoodGold}"
+		       IsVisible="False"
+		       Margin="0,0,0,4">
+			<Grid ColumnDefinitions="Auto,*,Auto">
+				<Label Grid.Column="0"
+				       Text="✓"
+				       FontSize="18"
+				       FontAttributes="Bold"
+				       TextColor="{StaticResource BellwoodInk}"
+				       VerticalOptions="Center"
+				       Margin="0,0,8,0" />
+				<Label x:Name="NotificationMessage"
+				       Grid.Column="1"
+				       Text="Quote status updated"
+				       TextColor="{StaticResource BellwoodInk}"
+				       FontAttributes="Bold"
+				       VerticalOptions="Center" />
+				<Label Grid.Column="2"
+				       Text="✕"
+				       FontSize="16"
+				       TextColor="{StaticResource BellwoodInk}"
+				       VerticalOptions="Center">
+					<Label.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnDismissNotification" />
+					</Label.GestureRecognizers>
+				</Label>
+			</Grid>
+		</Frame>
+
 		<!-- List -->
-		<RefreshView Grid.Row="2" x:Name="Refresh" Refreshing="OnRefresh">
+		<RefreshView Grid.Row="3" x:Name="Refresh" Refreshing="OnRefresh">
 			<CollectionView x:Name="List"
                             SelectionMode="Single"
                             SelectionChanged="OnSelectionChanged"

@@ -29,7 +29,6 @@ public static class MauiProgram
         // Pages (DI-friendly even if we now use parameterless ctors)
         builder.Services.AddSingleton<LoginPage>();
         builder.Services.AddTransient<MainPage>();
-        builder.Services.AddTransient<RideHistoryPage>();
         builder.Services.AddTransient<QuotePage>();
         builder.Services.AddTransient<QuoteDashboardPage>();
         builder.Services.AddTransient<SplashPage>();
@@ -41,8 +40,8 @@ public static class MauiProgram
         builder.Services.AddTransient<LocationAutocompleteTestPage>(); // Phase 2 test page
 
         // Services
+        builder.Services.AddSingleton<IConfigurationService, ConfigurationService>(); // PHASE 2: Secure config
         builder.Services.AddSingleton<IAuthService, AuthService>();
-        builder.Services.AddSingleton<IRideService, RideService>();
         builder.Services.AddSingleton<IQuoteService, QuoteService>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
         builder.Services.AddSingleton<IQuoteDraftBuilder, QuoteDraftBuilder>();
@@ -52,16 +51,23 @@ public static class MauiProgram
         builder.Services.AddSingleton<IDriverTrackingService, DriverTrackingService>();
         builder.Services.AddSingleton<IRideStatusService, RideStatusService>();
         builder.Services.AddSingleton<IPlacesAutocompleteService, PlacesAutocompleteService>();
+        builder.Services.AddSingleton<IPlacesUsageTracker, PlacesUsageTracker>(); // NEW: Phase 7 usage tracking
+        builder.Services.AddSingleton<IFormStateService, FormStateService>(); // Phase 5 form persistence
 
         // Auth handler for protected API calls
         builder.Services.AddTransient<AuthHttpHandler>();
 
-        builder.Services.AddHttpClient("admin", c =>
+        builder.Services.AddHttpClient("admin", (serviceProvider, c) =>
         {
+            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+            
 #if ANDROID
-            c.BaseAddress = new Uri("https://10.0.2.2:5206");
+            // Android emulator uses 10.0.2.2 to reach host machine
+            // In production, this should be the actual API URL
+            var baseUrl = configService.GetAdminApiUrl().Replace("localhost", "10.0.2.2");
+            c.BaseAddress = new Uri(baseUrl);
 #else
-            c.BaseAddress = new Uri("https://localhost:5206");
+            c.BaseAddress = new Uri(configService.GetAdminApiUrl());
 #endif
             c.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
@@ -83,47 +89,63 @@ public static class MauiProgram
         // -------- HttpClients --------
 
         // Google Places API (New) client
-        builder.Services.AddHttpClient("places", c =>
+        builder.Services.AddHttpClient("places", (serviceProvider, c) =>
         {
             c.BaseAddress = new Uri("https://places.googleapis.com/");
             c.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
-            c.DefaultRequestHeaders.Add("X-Goog-Api-Key", "AIzaSyCDu1jdljMdXvcl9tG7O6cJBw8f2h0sUIY");
+            
+            // PHASE 2: Get API key from secure configuration service
+            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+            var apiKey = configService.GetPlacesApiKey();
+            c.DefaultRequestHeaders.Add("X-Goog-Api-Key", apiKey);
+            
+#if ANDROID
+            // Add Android-specific headers for Google Places API key restrictions
+            try
+            {
+                var packageName = Platforms.Android.AndroidPackageHelper.GetPackageName();
+                var certFingerprint = Platforms.Android.AndroidPackageHelper.GetCertificateFingerprint();
+
+                c.DefaultRequestHeaders.Add("X-Android-Package", packageName);
+                c.DefaultRequestHeaders.Add("X-Android-Cert", certFingerprint);
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Android Package: {packageName}");
+                System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Android Cert: {certFingerprint}");
+#endif
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[PlacesAPI] WARNING: Could not get Android headers: {ex.Message}");
+#endif
+                // Continue without headers - will work if API key has no restrictions
+            }
+#elif IOS || MACCATALYST
+            // Add iOS/Mac Catalyst bundle ID header for Google Places API key restrictions
+            c.DefaultRequestHeaders.Add("X-Ios-Bundle-Identifier", "com.bellwoodglobal.mobile");
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[PlacesAPI] iOS bundle ID header added: com.bellwoodglobal.mobile");
+#endif
+#endif
+            
             c.Timeout = TimeSpan.FromSeconds(10);
         });
 
         // Auth Server client
-        builder.Services.AddHttpClient("auth", c =>
+        builder.Services.AddHttpClient("auth", (serviceProvider, c) =>
         {
+            var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+            
 #if ANDROID
-            c.BaseAddress = new Uri("https://10.0.2.2:5001");
+            var baseUrl = configService.GetAuthServerUrl().Replace("localhost", "10.0.2.2");
+            c.BaseAddress = new Uri(baseUrl);
 #else
-            c.BaseAddress = new Uri("https://localhost:5001");
+            c.BaseAddress = new Uri(configService.GetAuthServerUrl());
 #endif
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         })
-#if DEBUG
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            // DEV ONLY: trust local dev certs
-            ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        });
-#else
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler());
-#endif
-
-        // Rides API client (protected)
-        builder.Services.AddHttpClient("rides", c =>
-        {
-#if ANDROID
-            c.BaseAddress = new Uri("https://10.0.2.2:5005");
-#else
-            c.BaseAddress = new Uri("https://localhost:5005");
-#endif
-            c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        })
-        .AddHttpMessageHandler<AuthHttpHandler>()
 #if DEBUG
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {

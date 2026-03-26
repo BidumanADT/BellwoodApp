@@ -16,6 +16,7 @@ namespace BellwoodGlobal.Mobile.ViewModels;
 public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
 {
     private readonly IPlacesAutocompleteService _placesService;
+    private readonly IPlacesUsageTracker _usageTracker; // NEW: Phase 7
     private CancellationTokenSource? _searchCts;
     
     // Backing fields
@@ -27,13 +28,22 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
     // Session management
     private string _sessionToken = string.Empty;
     
+    // NEW: Phase 7 - Track if warning shown today
+    private bool _hasShownWarningToday;
+    
     // Debounce settings
     private const int DebounceDelayMs = 300;
     private const int MinimumSearchLength = 3;
 
-    public LocationAutocompleteViewModel(IPlacesAutocompleteService placesService)
+    // Track whether a real search session has started (user typed something)
+    private bool _sessionStarted;
+
+    public LocationAutocompleteViewModel(
+        IPlacesAutocompleteService placesService,
+        IPlacesUsageTracker usageTracker) // NEW: Phase 7
     {
         _placesService = placesService;
+        _usageTracker = usageTracker; // NEW: Phase 7
         Predictions = new ObservableCollection<AutocompletePrediction>();
         
         // Initialize session token
@@ -43,7 +53,7 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
         ClearCommand = new Command(OnClear);
         
 #if DEBUG
-        Debug.WriteLine("[LocationAutocompleteViewModel] Initialized");
+        Debug.WriteLine("[LocationAutocompleteViewModel] Initialized with usage tracking");
 #endif
     }
 
@@ -255,6 +265,13 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Record session start on first real search (not on construction)
+        if (!_sessionStarted)
+        {
+            _usageTracker.RecordSessionStart();
+            _sessionStarted = true;
+        }
+
         // Debounce: wait before searching
         _searchCts = new CancellationTokenSource();
         var ct = _searchCts.Token;
@@ -276,6 +293,45 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
     private async Task SearchAsync(string query, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(query)) return;
+
+        // NEW: Phase 7 - Check if quota exceeded
+        if (_usageTracker.IsAutocompleteDisabled())
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                ErrorMessage = "Address autocomplete is temporarily unavailable. Please add address manually.";
+                HasPredictions = false;
+                Predictions.Clear();
+            });
+            
+#if DEBUG
+            Debug.WriteLine("[LocationAutocompleteViewModel] Search blocked - quota exceeded");
+#endif
+            return;
+        }
+
+        // NEW: Phase 7 - Show warning if approaching limit (once per day)
+        if (!_hasShownWarningToday && _usageTracker.ShouldShowWarning())
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                ErrorMessage = "Address search is experiencing high demand. Manual entry recommended.";
+            });
+            
+            _hasShownWarningToday = true;
+            
+#if DEBUG
+            Debug.WriteLine("[LocationAutocompleteViewModel] Warning shown - approaching quota limit");
+#endif
+            
+            // Show warning for 2 seconds, then continue with search
+            await Task.Delay(2000, ct);
+            
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                ErrorMessage = string.Empty;
+            });
+        }
 
 #if DEBUG
         Debug.WriteLine($"[LocationAutocompleteViewModel] Searching for: '{query}'");
@@ -311,7 +367,16 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
                 else
                 {
                     HasPredictions = false;
-                    ErrorMessage = "No suggestions found. Try a different address.";
+                    
+                    // Check if it was disabled during the request
+                    if (_usageTracker.IsAutocompleteDisabled())
+                    {
+                        ErrorMessage = "Address autocomplete is temporarily unavailable. Please add address manually.";
+                    }
+                    else
+                    {
+                        ErrorMessage = "No suggestions found. Try a different address.";
+                    }
                     
 #if DEBUG
                     Debug.WriteLine("[LocationAutocompleteViewModel] No predictions found");
@@ -352,6 +417,9 @@ public sealed class LocationAutocompleteViewModel : INotifyPropertyChanged
     private void RegenerateSessionToken()
     {
         SessionToken = _placesService.GenerateSessionToken();
+        
+        // Reset so the next actual search will record a new session start
+        _sessionStarted = false;
         
 #if DEBUG
         Debug.WriteLine($"[LocationAutocompleteViewModel] New session token: {SessionToken[..8]}...");

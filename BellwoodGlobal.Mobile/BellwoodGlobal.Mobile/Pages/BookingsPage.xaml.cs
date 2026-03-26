@@ -8,6 +8,7 @@ namespace BellwoodGlobal.Mobile.Pages;
 public partial class BookingsPage : ContentPage
 {
     private readonly IAdminApi _admin;
+    private readonly IAuthService _auth;
     private readonly ObservableCollection<RowVm> _rows = new();
     private string _filter = "All";
     private string _search = "";
@@ -16,6 +17,7 @@ public partial class BookingsPage : ContentPage
     {
         InitializeComponent();
         _admin = ServiceHelper.GetRequiredService<IAdminApi>();
+        _auth = ServiceHelper.GetRequiredService<IAuthService>();
         List.ItemsSource = _rows;
 
         // Set initial filter button states
@@ -191,6 +193,12 @@ public partial class BookingsPage : ContentPage
             await Shell.Current.GoToAsync("..");
         else
             await Shell.Current.GoToAsync("//MainPage");
+    }
+
+    private async void OnLogoutClicked(object? sender, EventArgs e)
+    {
+        var confirmed = await DisplayAlert("Log Out", "Are you sure you want to log out?", "Log Out", "Cancel");
+        if (confirmed) await _auth.LogoutAsync();
     }
 
     // --- Lightweight row VM ---

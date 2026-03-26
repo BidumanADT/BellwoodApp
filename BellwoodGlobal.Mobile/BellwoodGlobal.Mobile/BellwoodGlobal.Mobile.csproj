@@ -13,8 +13,8 @@
 
 		<ApplicationTitle>Bellwood Elite</ApplicationTitle>
 		<ApplicationId>com.bellwoodglobal.mobile</ApplicationId>
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.4</ApplicationDisplayVersion>
+		<ApplicationVersion>5</ApplicationVersion>
 
 		<!-- Android -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">35.0</TargetPlatformVersion>
@@ -22,7 +22,7 @@
 
 		<!-- iOS -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">18.0</TargetPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 
 		<!-- MacCatalyst -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">18.0</TargetPlatformVersion>
@@ -33,7 +33,8 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
-	<!-- Android Debug Signing - Use the debug keystore we created -->
+	<!-- Android Debug Signing - keyed to %USERPROFILE%\.android\debug.keystore whose
+	     SHA-1 is registered in Google Cloud Console for the Places API key restriction -->
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
 	  <AndroidKeyStore>True</AndroidKeyStore>
 	  <AndroidSigningKeyStore Condition=" '$(OS)' == 'Windows_NT' ">$(USERPROFILE)\.android\debug.keystore</AndroidSigningKeyStore>
@@ -43,14 +44,18 @@
 	  <AndroidSigningKeyPass>android</AndroidSigningKeyPass>
 	</PropertyGroup>
 
-	<!-- Android Release Signing - Keep disabled for now -->
+	<!-- Android Release Signing - values passed via dotnet publish -p: or CI environment -->
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
-	  <AndroidKeyStore>False</AndroidKeyStore>
+	  <AndroidKeyStore Condition="'$(AndroidSigningKeyStore)' != ''">true</AndroidKeyStore>
+	  <AndroidSigningKeyStore>$(AndroidSigningKeyStore)</AndroidSigningKeyStore>
+	  <AndroidSigningStorePass>$(AndroidSigningStorePass)</AndroidSigningStorePass>
+	  <AndroidSigningKeyAlias>$(AndroidSigningKeyAlias)</AndroidSigningKeyAlias>
+	  <AndroidSigningKeyPass>$(AndroidSigningKeyPass)</AndroidSigningKeyPass>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<!-- Use your 1200x1200 PNG as the adaptive icon foreground -->
-		<MauiIcon Include="Resources\AppIcon\bellwood_elite_icon_padded.png" ForegroundFile="Resources\AppIcon\bellwood_elite_icon_padded.png" BackgroundColor="#1C2D5C" />
+		<MauiIcon Include="Resources\AppIcon\appicon.png" BackgroundColor="#1C2D5C" />
 
 		<!-- System splash: solid background + centered image -->
 		<MauiSplashScreen Include="Resources\Images\bellwood_splash.png" Color="#1C2D5C" BaseSize="256,256" />
@@ -62,7 +67,13 @@
 		<MauiFont Include="Resources/Fonts/Montserrat-Regular.ttf" Alias="Montserrat" />
 		<MauiFont Include="Resources/Fonts/Montserrat-SemiBold.ttf" Alias="MontserratSemibold" />
 		<MauiFont Include="Resources/Fonts/PlayfairDisplay-SemiBold.ttf" Alias="Playfair" />
+		<MauiFont Include="Resources/Fonts/OpenSans-Regular.ttf" Alias="OpenSansRegular" />
+		<MauiFont Include="Resources/Fonts/OpenSans-Semibold.ttf" Alias="OpenSansSemibold" />
 		<MauiAsset Include="Resources/Raw/**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+		
+		<!-- Configuration files (embedded as resources) -->
+		<MauiAsset Include="appsettings.json" />
+		<MauiAsset Include="appsettings.Development.json" Condition="'$(Configuration)' == 'Debug'" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -129,6 +140,25 @@
 	  <MauiXaml Update="Resources\Styles\Gradients.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="build-archive\android-old\2026-03-15-pre-rebuild\" />
+	  <Folder Include="Platforms\iOS\Resources\" />
+	</ItemGroup>
+
+	<!-- iOS entitlements — Release only (distribution/TestFlight/App Store).
+	     Debug and Simulator builds intentionally omit CodesignEntitlements so
+	     they codesign with the default ad-hoc entitlements and run on-device
+	     without a provisioning profile that matches every capability. -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'
+	               And '$(Configuration)' == 'Release'">
+	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
+	</PropertyGroup>
+
+	<!-- iOS Privacy Manifest — must land at the app bundle root, not in a subdirectory -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+	  <BundleResource Include="Platforms\iOS\PrivacyInfo.xcprivacy" LogicalName="PrivacyInfo.xcprivacy" />
 	</ItemGroup>
 
 </Project>

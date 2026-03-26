@@ -16,9 +16,10 @@ public partial class QuotePage : ContentPage
     private readonly IQuoteDraftBuilder _draftBuilder;
     private readonly IAdminApi _adminApi;
     private readonly ILocationPickerService _locationPicker;
+    private readonly IFormStateService _formStateService; // NEW: Phase 5 form persistence
 
     // --- passenger/location UI constants (avoid string typos) ---
-    private const string PassengerSelf = "Booker (you)";
+    private const string PassengerSelf = "Myself";
     private const string PassengerNew = "New Passenger";
     private const string LocationNew = "New Location";
     private const string AsDirected = "As Directed";
@@ -41,6 +42,9 @@ public partial class QuotePage : ContentPage
     private bool _allowReturnTailChange;     // private only
     private bool _requestsHasMeetOption;
     private bool _passengerCountDirty;
+    
+    // NEW: Phase 5 - Flag to prevent auto-save after successful submission
+    private bool _submittedSuccessfully = false;
 
     // --- capacity evaluation ----
     private string? _suggestedVehicleClass;   // what we propose (e.g., "SUV")
@@ -141,13 +145,9 @@ public partial class QuotePage : ContentPage
         _draftBuilder = ServiceHelper.GetRequiredService<IQuoteDraftBuilder>();
         _adminApi = ServiceHelper.GetRequiredService<IAdminApi>();
         _locationPicker = ServiceHelper.GetRequiredService<ILocationPickerService>();
+        _formStateService = ServiceHelper.GetRequiredService<IFormStateService>(); // NEW: Phase 5
 
-        // Booker
-        var booker = _profile.GetBooker();
-        BookerFirst.Text = booker.FirstName;
-        BookerLast.Text = booker.LastName;
-        BookerPhone.Text = booker.PhoneNumber;
-        BookerEmail.Text = booker.EmailAddress;
+        // Booker fields are populated asynchronously from OnAppearing → LoadBookerAsync().
 
         // Data
         _savedPassengers = _profile.GetSavedPassengers().ToList();
@@ -589,16 +589,19 @@ public partial class QuotePage : ContentPage
             await DisplayAlert("Passenger", "First and last name are required.", "OK");
             return;
         }
-        var p = new Passenger
+        var phone = (PassengerPhone.Text ?? "").Trim();
+        var email = (PassengerEmail.Text ?? "").Trim();
+        var saved = await _profile.AddSavedPassengerAsync(first, last,
+            string.IsNullOrEmpty(phone) ? null : phone,
+            string.IsNullOrEmpty(email) ? null : email);
+        if (saved is null)
         {
-            FirstName = first,
-            LastName = last,
-            PhoneNumber = (PassengerPhone.Text ?? "").Trim(),
-            EmailAddress = (PassengerEmail.Text ?? "").Trim()
-        };
-        _savedPassengers.Add(p);
+            await DisplayAlert("Error", "Could not save passenger. Please try again.", "OK");
+            return;
+        }
+        _savedPassengers.Add(saved);
         var insertAt = Math.Max(1, PassengerPicker.Items.Count - 1);
-        PassengerPicker.Items.Insert(insertAt, p.ToString());
+        PassengerPicker.Items.Insert(insertAt, saved.ToString());
         PassengerPicker.SelectedIndex = insertAt;
         PassengerNewGrid.IsVisible = false;
         await DisplayAlert("Saved", "Passenger added.", "OK");
@@ -614,24 +617,26 @@ public partial class QuotePage : ContentPage
             return;
         }
         
-        // Create location object, preserving coordinates if from autocomplete
-        var loc = _selectedPickupLocation ?? new Models.Location { Label = label, Address = addr };
-        
-        // Update with current values (in case user edited after autocomplete)
-        loc.Label = label;
-        loc.Address = addr;
-        
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
+        // Preserve coordinates from autocomplete selection if available
+        var qPickupLat = _selectedPickupLocation?.Latitude ?? 0.0;
+        var qPickupLng = _selectedPickupLocation?.Longitude ?? 0.0;
+        var savedPickup = await _profile.AddSavedLocationAsync(label, addr, qPickupLat, qPickupLng, isFavorite: false);
+        if (savedPickup is null)
+        {
+            await DisplayAlert("Error", "Could not save pickup location. Please try again.", "OK");
+            return;
+        }
+        _savedLocations.Add(savedPickup);
+        var display = savedPickup.ToString();
         var insertAt = Math.Max(0, PickupLocationPicker.Items.Count - 1);
         PickupLocationPicker.Items.Insert(insertAt, display);
         PickupLocationPicker.SelectedIndex = insertAt;
-        
+
         // Hide both autocomplete and manual entry grids
         PickupAutocompleteGrid.IsVisible = false;
         PickupNewGrid.IsVisible = false;
-        
-        await DisplayAlert("Saved", $"Pickup location added{(_selectedPickupLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+
+        await DisplayAlert("Saved", $"Pickup location added{(qPickupLat != 0 || qPickupLng != 0 ? " (with coordinates)" : "")}.", "OK");
         UpdatePickupStyleAirportUx();
     }
 
@@ -645,96 +650,27 @@ public partial class QuotePage : ContentPage
             return;
         }
         
-        // Create location object, preserving coordinates if from autocomplete
-        var loc = _selectedDropoffLocation ?? new Models.Location { Label = label, Address = addr };
-        
-        // Update with current values (in case user edited after autocomplete)
-        loc.Label = label;
-        loc.Address = addr;
-        
-        _savedLocations.Add(loc);
-        var display = loc.ToString();
+        // Preserve coordinates from autocomplete selection if available
+        var qDropoffLat = _selectedDropoffLocation?.Latitude ?? 0.0;
+        var qDropoffLng = _selectedDropoffLocation?.Longitude ?? 0.0;
+        var savedDropoff = await _profile.AddSavedLocationAsync(label, addr, qDropoffLat, qDropoffLng, isFavorite: false);
+        if (savedDropoff is null)
+        {
+            await DisplayAlert("Error", "Could not save dropoff location. Please try again.", "OK");
+            return;
+        }
+        _savedLocations.Add(savedDropoff);
+        var display = savedDropoff.ToString();
         var insertAt = Math.Max(1, DropoffPicker.Items.Count - 1); // after "As Directed"
         DropoffPicker.Items.Insert(insertAt, display);
         DropoffPicker.SelectedIndex = insertAt;
-        
+
         // Hide both autocomplete and manual entry grids
         DropoffAutocompleteGrid.IsVisible = false;
         DropoffNewGrid.IsVisible = false;
-        
-        await DisplayAlert("Saved", $"Dropoff location added{(_selectedDropoffLocation?.HasCoordinates == true ? " (with coordinates)" : "")}.", "OK");
+
+        await DisplayAlert("Saved", $"Dropoff location added{(qDropoffLat != 0 || qDropoffLng != 0 ? " (with coordinates)" : "")}.", "OK");
         UpdateReturnPickupStyleAirportUx();
-    }
-
-    // UPDATED: "Pick from Maps" becomes "View in Maps" (optional, view-only)
-    private async void OnPickPickupFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location
-        if (_selectedPickupLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedPickupLocation);
-            return;
-        }
-        
-        // Otherwise, fallback to old behavior (pick from maps + manual entry)
-        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
-        {
-            Title = "Select Pickup Location",
-            SuggestedLabel = (PickupNewLabel.Text ?? "").Trim(),
-            InitialAddress = (PickupNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = true
-        });
-
-        if (result.Success && result.Location is not null)
-        {
-            _selectedPickupLocation = result.Location;
-            PickupNewLabel.Text = result.Location.Label;
-            PickupNewAddress.Text = result.Location.Address;
-            
-#if DEBUG
-            if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[QuotePage] Pickup coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
-#endif
-        }
-        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
-        }
-    }
-
-    private async void OnPickDropoffFromMaps(object? sender, EventArgs e)
-    {
-        // If we have coordinates from autocomplete, open maps to that location
-        if (_selectedDropoffLocation?.HasCoordinates == true)
-        {
-            await _locationPicker.OpenInMapsAsync(_selectedDropoffLocation);
-            return;
-        }
-        
-        // Otherwise, fallback to old behavior (pick from maps + manual entry)
-        var result = await _locationPicker.PickLocationAsync(new LocationPickerOptions
-        {
-            Title = "Select Dropoff Location",
-            SuggestedLabel = (DropoffNewLabel.Text ?? "").Trim(),
-            InitialAddress = (DropoffNewAddress.Text ?? "").Trim(),
-            UseCurrentLocation = false
-        });
-
-        if (result.Success && result.Location is not null)
-        {
-            _selectedDropoffLocation = result.Location;
-            DropoffNewLabel.Text = result.Location.Label;
-            DropoffNewAddress.Text = result.Location.Address;
-            
-#if DEBUG
-            if (result.Location.HasCoordinates)
-                System.Diagnostics.Debug.WriteLine($"[QuotePage] Dropoff coordinates from maps: {result.Location.Latitude}, {result.Location.Longitude}");
-#endif
-        }
-        else if (!result.WasCancelled && !string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            await DisplayAlert("Location Error", result.ErrorMessage, "OK");
-        }
     }
 
     private void OnAcceptCapacitySuggestion(object? sender, EventArgs e)
@@ -974,13 +910,21 @@ public partial class QuotePage : ContentPage
         try
         {
             await _adminApi.SubmitQuoteAsync(draft);
+            
+            // NEW: Set flag to prevent auto-save and clear saved form state
+            _submittedSuccessfully = true;
+            await _formStateService.ClearQuoteFormStateAsync();
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[QuotePage] Form state cleared after successful submission");
+#endif
         }
         catch (Exception ex)
         {
             await DisplayAlert("Network", $"Could not submit to Admin: {ex.Message}", "OK");
+            return; // Don't show JSON or clear state if submission failed
         }
 
-        // Show JSON
+#if DEBUG
         var json = JsonSerializer.Serialize(draft, new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -988,13 +932,374 @@ public partial class QuotePage : ContentPage
         });
         JsonEditor.Text = json;
         JsonFrame.IsVisible = true;
-        await DisplayAlert("Quote Ready", "The JSON has been built below.", "OK");
+#endif
+
+        await DisplayAlert("Quote Requested",
+            "Your quote request has been submitted! Bellwood will get back to you shortly.", "OK");
+
+        // Navigate to Quote dashboard
+        await Shell.Current.GoToAsync(nameof(QuoteDashboardPage));
     }
 
     private async void OnCopyJson(object? sender, EventArgs e)
     {
         await Clipboard.SetTextAsync(JsonEditor.Text ?? "");
         await DisplayAlert("Copied", "Quote JSON copied to clipboard.", "OK");
+    }
+
+    // ===== PHASE 5: FORM STATE PERSISTENCE =====
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        // Ensure booker profile is loaded from AdminAPI and displayed.
+        await LoadBookerAsync();
+
+        // Load saved passengers and locations from AdminAPI (with offline cache fallback).
+        await _profile.LoadSavedPassengersAsync();
+        await _profile.LoadSavedLocationsAsync();
+        _savedPassengers = _profile.GetSavedPassengers().ToList();
+        _savedLocations  = _profile.GetSavedLocations().ToList();
+        RefreshPassengerLocationPickers();
+
+        // Check for saved form state
+        if (_formStateService.HasSavedQuoteForm())
+        {
+            var shouldRestore = await DisplayAlert(
+                "Restore Draft?",
+                "You have an unsaved quote. Would you like to continue where you left off?",
+                "Yes, Restore",
+                "No, Start Fresh"
+            );
+
+            if (shouldRestore)
+            {
+                await RestoreFormStateAsync();
+            }
+            else
+            {
+                await _formStateService.ClearQuoteFormStateAsync();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Ensures the booker profile is fetched (if not already cached) and
+    /// populates the read-only booker fields.  Shows an advisory label when
+    /// the profile is missing or incomplete.
+    /// </summary>
+    private async Task LoadBookerAsync()
+    {
+        if (!_profile.IsProfileLoaded)
+            await _profile.LoadProfileAsync();
+
+        var booker = _profile.GetBooker();
+        var hasProfile = booker is not null
+            && (!string.IsNullOrWhiteSpace(booker.FirstName)
+                || !string.IsNullOrWhiteSpace(booker.EmailAddress));
+
+        if (hasProfile)
+        {
+            BookerFirst.Text = booker!.FirstName;
+            BookerLast.Text  = booker.LastName;
+            BookerPhone.Text = booker.PhoneNumber ?? "";
+            BookerEmail.Text = booker.EmailAddress ?? "";
+            BookerIncompleteLabel.IsVisible = false;
+        }
+        else
+        {
+            BookerFirst.Text = "";
+            BookerLast.Text  = "";
+            BookerPhone.Text = "";
+            BookerEmail.Text = "";
+            BookerIncompleteLabel.IsVisible = true;
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds the passenger and location pickers to reflect the current in-memory lists.
+    /// Called after LoadSavedPassengersAsync / LoadSavedLocationsAsync in OnAppearing.
+    /// </summary>
+    private void RefreshPassengerLocationPickers()
+    {
+        PassengerPicker.SelectedIndexChanged -= OnPassengerChanged;
+        PassengerPicker.Items.Clear();
+        PassengerPicker.Items.Add(PassengerSelf);
+        foreach (var p in _savedPassengers) PassengerPicker.Items.Add(p.ToString());
+        PassengerPicker.Items.Add(PassengerNew);
+        PassengerPicker.SelectedIndex = 0;
+        PassengerPicker.SelectedIndexChanged += OnPassengerChanged;
+
+        PickupLocationPicker.Items.Clear();
+        foreach (var loc in _savedLocations) PickupLocationPicker.Items.Add(loc.ToString());
+        PickupLocationPicker.Items.Add(LocationNew);
+        PickupLocationPicker.SelectedIndex = -1;
+
+        DropoffPicker.Items.Clear();
+        DropoffPicker.Items.Add(AsDirected);
+        foreach (var loc in _savedLocations) DropoffPicker.Items.Add(loc.ToString());
+        DropoffPicker.Items.Add(LocationNew);
+        DropoffPicker.SelectedIndex = 0;
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+
+        // NEW: Phase 5 - Don't save if form was successfully submitted
+        if (_submittedSuccessfully)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[QuotePage] Skipping auto-save (form was successfully submitted)");
+#endif
+            return;
+        }
+
+        // Auto-save form state (fire and forget)
+        _ = SaveFormStateAsync();
+    }
+
+    private async Task SaveFormStateAsync()
+    {
+        try
+        {
+            var state = new QuotePageState
+            {
+                // Pickup Location
+                PickupLocationIndex = PickupLocationPicker.SelectedIndex >= 0 ? PickupLocationPicker.SelectedIndex : null,
+                PickupNewLabel = PickupNewLabel.Text,
+                PickupNewAddress = PickupNewAddress.Text,
+                PickupLatitude = _selectedPickupLocation?.Latitude,
+                PickupLongitude = _selectedPickupLocation?.Longitude,
+                PickupPlaceId = _selectedPickupLocation?.PlaceId,
+
+                // Dropoff Location
+                DropoffSelection = DropoffPicker.SelectedItem?.ToString(),
+                DropoffLocationIndex = DropoffPicker.SelectedIndex >= 0 ? DropoffPicker.SelectedIndex : null,
+                DropoffNewLabel = DropoffNewLabel.Text,
+                DropoffNewAddress = DropoffNewAddress.Text,
+                DropoffLatitude = _selectedDropoffLocation?.Latitude,
+                DropoffLongitude = _selectedDropoffLocation?.Longitude,
+                DropoffPlaceId = _selectedDropoffLocation?.PlaceId,
+
+                // Date/Time
+                PickupDate = PickupDate.Date,
+                PickupTime = PickupTime.Time,
+                ReturnDate = ReturnDatePicker.Date,
+                ReturnTime = ReturnTimePicker.Time,
+
+                // Vehicle & Passenger
+                VehiclePickerIndex = VehiclePicker.SelectedIndex >= 0 ? VehiclePicker.SelectedIndex : null,
+                PassengerPickerIndex = PassengerPicker.SelectedIndex >= 0 ? PassengerPicker.SelectedIndex : null,
+                PassengerFirstName = PassengerFirst.Text,
+                PassengerLastName = PassengerLast.Text,
+                PassengerPhone = PassengerPhone.Text,
+                PassengerEmail = PassengerEmail.Text,
+
+                // Additional Passengers
+                AdditionalPassengers = _additionalPassengers.ToList(),
+
+                // Round Trip
+                RoundTrip = RoundTripCheck.IsChecked,
+
+                // Luggage
+                PassengerCount = (int)PassengerCountStepper.Value,
+                CheckedBags = (int)CheckedBagsStepper.Value,
+                CarryOnBags = (int)CarryOnBagsStepper.Value,
+
+                // As Directed
+                AsDirected = DropoffPicker.SelectedItem?.ToString() == AsDirected,
+                Hours = (int)HoursStepper.Value,
+
+                // Flight Info
+                FlightInfoPickerIndex = FlightInfoPicker.SelectedIndex >= 0 ? FlightInfoPicker.SelectedIndex : null,
+                FlightInfoEntry = FlightInfoEntry.Text,
+                ReturnFlightEntry = ReturnFlightEntry.Text,
+                AllowReturnTailChange = _allowReturnTailChange,
+
+                // Pickup Style & Sign
+                PickupStylePickerIndex = PickupStylePicker.SelectedIndex >= 0 ? PickupStylePicker.SelectedIndex : null,
+                PickupSignEntry = PickupSignEntry.Text,
+                ReturnPickupStylePickerIndex = ReturnPickupStylePicker.SelectedIndex >= 0 ? ReturnPickupStylePicker.SelectedIndex : null,
+                ReturnPickupSignEntry = ReturnPickupSignEntry.Text,
+
+                // Requests
+                RequestsPickerIndex = RequestsPicker.SelectedIndex >= 0 ? RequestsPicker.SelectedIndex : null,
+                RequestOtherEntry = RequestOtherEntry.Text,
+                NonAirportMeetSignEntry = NonAirportMeetSignEntry.Text,
+
+                // Autocomplete in-progress text
+                AutocompleteSearchText_Pickup = PickupAutocomplete.SearchText,
+                AutocompleteSearchText_Dropoff = DropoffAutocomplete.SearchText,
+
+                LastModified = DateTime.UtcNow
+            };
+
+            await _formStateService.SaveQuoteFormStateAsync(state);
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine("[QuotePage] Form state saved");
+#endif
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuotePage] Error saving form state: {ex.Message}");
+#endif
+        }
+    }
+
+    private async Task RestoreFormStateAsync()
+    {
+        try
+        {
+            var state = await _formStateService.LoadQuoteFormStateAsync();
+            if (state == null) return;
+
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuotePage] Restoring form state from {state.LastModified}");
+#endif
+
+            // Restore pickers
+            if (state.PickupLocationIndex.HasValue && state.PickupLocationIndex.Value < PickupLocationPicker.Items.Count)
+                PickupLocationPicker.SelectedIndex = state.PickupLocationIndex.Value;
+
+            if (state.VehiclePickerIndex.HasValue && state.VehiclePickerIndex.Value < VehiclePicker.Items.Count)
+                VehiclePicker.SelectedIndex = state.VehiclePickerIndex.Value;
+
+            if (state.PassengerPickerIndex.HasValue && state.PassengerPickerIndex.Value < PassengerPicker.Items.Count)
+                PassengerPicker.SelectedIndex = state.PassengerPickerIndex.Value;
+
+            if (state.FlightInfoPickerIndex.HasValue && state.FlightInfoPickerIndex.Value < FlightInfoPicker.Items.Count)
+                FlightInfoPicker.SelectedIndex = state.FlightInfoPickerIndex.Value;
+
+            if (state.RequestsPickerIndex.HasValue && state.RequestsPickerIndex.Value < RequestsPicker.Items.Count)
+                RequestsPicker.SelectedIndex = state.RequestsPickerIndex.Value;
+
+            // Restore Dropoff picker (handle As Directed and location indices)
+            if (!string.IsNullOrWhiteSpace(state.DropoffSelection))
+            {
+                var dropoffIndex = DropoffPicker.Items.IndexOf(state.DropoffSelection);
+                if (dropoffIndex >= 0)
+                    DropoffPicker.SelectedIndex = dropoffIndex;
+            }
+            else if (state.DropoffLocationIndex.HasValue && state.DropoffLocationIndex.Value < DropoffPicker.Items.Count)
+            {
+                DropoffPicker.SelectedIndex = state.DropoffLocationIndex.Value;
+            }
+
+            // Restore text fields
+            PickupNewLabel.Text = state.PickupNewLabel;
+            PickupNewAddress.Text = state.PickupNewAddress;
+            DropoffNewLabel.Text = state.DropoffNewLabel;
+            DropoffNewAddress.Text = state.DropoffNewAddress;
+
+            PassengerFirst.Text = state.PassengerFirstName;
+            PassengerLast.Text = state.PassengerLastName;
+            PassengerPhone.Text = state.PassengerPhone;
+            PassengerEmail.Text = state.PassengerEmail;
+
+            FlightInfoEntry.Text = state.FlightInfoEntry;
+            ReturnFlightEntry.Text = state.ReturnFlightEntry;
+            PickupSignEntry.Text = state.PickupSignEntry;
+            ReturnPickupSignEntry.Text = state.ReturnPickupSignEntry;
+            RequestOtherEntry.Text = state.RequestOtherEntry;
+            NonAirportMeetSignEntry.Text = state.NonAirportMeetSignEntry;
+
+            // Restore coordinates
+            if (state.PickupLatitude.HasValue && state.PickupLongitude.HasValue)
+            {
+                _selectedPickupLocation = new Models.Location
+                {
+                    Label = state.PickupNewLabel ?? "",
+                    Address = state.PickupNewAddress ?? "",
+                    Latitude = state.PickupLatitude.Value,
+                    Longitude = state.PickupLongitude.Value,
+                    PlaceId = state.PickupPlaceId,
+                    IsVerified = true
+                };
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Restored pickup coordinates: {_selectedPickupLocation.Latitude}, {_selectedPickupLocation.Longitude}");
+#endif
+            }
+
+            if (state.DropoffLatitude.HasValue && state.DropoffLongitude.HasValue)
+            {
+                _selectedDropoffLocation = new Models.Location
+                {
+                    Label = state.DropoffNewLabel ?? "",
+                    Address = state.DropoffNewAddress ?? "",
+                    Latitude = state.DropoffLatitude.Value,
+                    Longitude = state.DropoffLongitude.Value,
+                    PlaceId = state.DropoffPlaceId,
+                    IsVerified = true
+                };
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[QuotePage] Restored dropoff coordinates: {_selectedDropoffLocation.Latitude}, {_selectedDropoffLocation.Longitude}");
+#endif
+            }
+
+            // Restore date/time
+            if (state.PickupDate.HasValue)
+                PickupDate.Date = state.PickupDate.Value;
+            if (state.PickupTime.HasValue)
+                PickupTime.Time = state.PickupTime.Value;
+            if (state.ReturnDate.HasValue)
+                ReturnDatePicker.Date = state.ReturnDate.Value;
+            if (state.ReturnTime.HasValue)
+                ReturnTimePicker.Time = state.ReturnTime.Value;
+
+            // Restore checkboxes/switches
+            RoundTripCheck.IsChecked = state.RoundTrip;
+            ReturnTailChangeSwitch.IsToggled = state.AllowReturnTailChange;
+
+            // Restore steppers
+            _suppressPassengerCountEvents = true;
+            PassengerCountStepper.Value = state.PassengerCount;
+            CheckedBagsStepper.Value = state.CheckedBags;
+            CarryOnBagsStepper.Value = state.CarryOnBags;
+            HoursStepper.Value = state.Hours;
+            _suppressPassengerCountEvents = false;
+
+            // Update labels
+            PassengerCountValueLabel.Text = state.PassengerCount.ToString();
+            CheckedBagsValueLabel.Text = state.CheckedBags.ToString();
+            CarryOnBagsValueLabel.Text = state.CarryOnBags.ToString();
+            HoursValueLabel.Text = state.Hours.ToString();
+
+            // Restore additional passengers
+            _additionalPassengers.Clear();
+            if (state.AdditionalPassengers != null)
+            {
+                foreach (var pax in state.AdditionalPassengers)
+                    _additionalPassengers.Add(pax);
+            }
+
+            // Restore pickup style pickers
+            if (state.PickupStylePickerIndex.HasValue && state.PickupStylePickerIndex.Value < PickupStylePicker.Items.Count)
+                PickupStylePicker.SelectedIndex = state.PickupStylePickerIndex.Value;
+
+            if (state.ReturnPickupStylePickerIndex.HasValue && state.ReturnPickupStylePickerIndex.Value < ReturnPickupStylePicker.Items.Count)
+                ReturnPickupStylePicker.SelectedIndex = state.ReturnPickupStylePickerIndex.Value;
+
+            // Update UI based on restored state
+            UpdatePickupStyleAirportUx();
+            UpdateReturnPickupStyleAirportUx();
+            UpdateReturnFlightUx();
+            ReevaluateCapacityAndMaybeShowBanner();
+
+            await DisplayAlert("Draft Restored", "Your quote has been restored.", "OK");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[QuotePage] Error restoring form state: {ex.Message}");
+#endif
+            await DisplayAlert("Restore Failed", "Could not restore your draft. Starting fresh.", "OK");
+        }
     }
 
     private static string ResolveLocation(Picker picker, Entry label, Entry address)

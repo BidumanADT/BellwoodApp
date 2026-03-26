@@ -9,20 +9,23 @@ namespace BellwoodGlobal.Mobile
     {
         private readonly IHttpClientFactory _factory;
         private readonly IAuthService _auth;
+        private readonly IProfileService _profile;
 
-        public LoginPage(IHttpClientFactory factory, IAuthService auth)
+        public LoginPage(IHttpClientFactory factory, IAuthService auth, IProfileService profile)
         {
             InitializeComponent();
             _factory = factory;
             _auth = auth;
+            _profile = profile;
 
             // Make sure nav bar stays hidden on this page
             Shell.SetNavBarIsVisible(this, false);
         }
 
         public LoginPage() : this(
-        ServiceHelper.GetRequiredService<IHttpClientFactory>(),
-        ServiceHelper.GetRequiredService<IAuthService>())
+            ServiceHelper.GetRequiredService<IHttpClientFactory>(),
+            ServiceHelper.GetRequiredService<IAuthService>(),
+            ServiceHelper.GetRequiredService<IProfileService>())
         { }
 
         protected override async void OnAppearing()
@@ -67,6 +70,16 @@ namespace BellwoodGlobal.Mobile
                 }
 
                 await _auth.SetTokenAsync(body.Token);
+
+                // Store user_email so FormStateService can scope drafts per-user.
+                var email = await _auth.GetEmailFromTokenAsync();
+                if (!string.IsNullOrWhiteSpace(email))
+                    await SecureStorage.SetAsync("user_email", email);
+
+                // Pre-fetch booker profile in the background so it is ready when
+                // the quote/booking pages open.  OnAppearing will load it if this
+                // completes after the user navigates there.
+                _ = _profile.LoadProfileAsync();
 
                 // navigate to main shell route
                 await Shell.Current.GoToAsync("//MainPage");

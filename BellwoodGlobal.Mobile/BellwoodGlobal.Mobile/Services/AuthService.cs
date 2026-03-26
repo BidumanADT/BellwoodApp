@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Storage;
 using System.Text.Json;
+using BellwoodGlobal.Mobile;
 
 namespace BellwoodGlobal.Mobile.Services;
 
@@ -11,6 +12,18 @@ public interface IAuthService
     Task<string?> GetValidTokenAsync();
     Task RequireSignInAsync(); // navigates to Login if not signed in / expired
     Task LogoutAsync();
+
+    /// <summary>
+    /// Extracts the email claim from the stored JWT.
+    /// Returns null if not signed in or the claim is absent.
+    /// </summary>
+    Task<string?> GetEmailFromTokenAsync();
+
+    /// <summary>
+    /// Extracts the userId claim (fallback: uid, then sub) from the stored JWT.
+    /// Returns null if not signed in or no identity claim is present.
+    /// </summary>
+    Task<string?> GetUserIdFromTokenAsync();
 }
 
 public sealed class AuthService : IAuthService
@@ -75,8 +88,35 @@ public sealed class AuthService : IAuthService
         System.Diagnostics.Debug.WriteLine($"[AuthService] LogoutAsync: Clearing token and navigating to login");
 #endif
         try { SecureStorage.Remove(TokenKey); } catch { /* ignore */ }
+        try { SecureStorage.Remove("user_email"); } catch { /* ignore */ }
+
+        // Clear all cached profile / passenger / location state immediately so the
+        // next user who logs in on this device never sees stale data in memory.
+        ServiceHelper.GetService<IProfileService>()?.Reset();
+
         // if we're already on LoginPage this will no-op
         await Shell.Current.GoToAsync(nameof(LoginPage));
+    }
+
+    public async Task<string?> GetEmailFromTokenAsync()
+    {
+        var token = await GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token)) return null;
+        return TryGetClaim(token, "email", out var val) ? val : null;
+    }
+
+    public async Task<string?> GetUserIdFromTokenAsync()
+    {
+        var token = await GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        // Check claims in priority order: userId → uid → sub
+        foreach (var claim in new[] { "userId", "uid", "sub" })
+        {
+            if (TryGetClaim(token, claim, out var val) && !string.IsNullOrWhiteSpace(val))
+                return val;
+        }
+        return null;
     }
 
     // ------------- helpers -------------
@@ -115,6 +155,23 @@ public sealed class AuthService : IAuthService
 
             exp = DateTimeOffset.FromUnixTimeSeconds(seconds);
             return true;
+        }
+        catch { return false; }
+    }
+
+    private static bool TryGetClaim(string jwt, string claimName, out string? value)
+    {
+        value = null;
+        var parts = jwt.Split('.');
+        if (parts.Length < 2) return false;
+
+        try
+        {
+            var payloadJson = Base64UrlDecode(parts[1]);
+            using var doc = JsonDocument.Parse(payloadJson);
+            if (!doc.RootElement.TryGetProperty(claimName, out var prop)) return false;
+            value = prop.GetString();
+            return value != null;
         }
         catch { return false; }
     }

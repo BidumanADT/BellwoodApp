@@ -42,8 +42,16 @@
         </Style>
 
         <Style TargetType="Picker" BasedOn="{StaticResource BasePickerStyle}" />
-        <Style TargetType="DatePicker" BasedOn="{StaticResource BasePickerStyle}" />
-        <Style TargetType="TimePicker" BasedOn="{StaticResource BasePickerStyle}" />
+        <Style TargetType="DatePicker">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style TargetType="TimePicker">
+            <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource BellwoodCharcoal}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
 
         <Style TargetType="Label">
             <Setter Property="TextColor" Value="{StaticResource BellwoodCream}" />
@@ -71,7 +79,7 @@
 
             <!-- Booker (read only) -->
             <Label Text="Booker" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" 
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"
                   RowDefinitions="Auto,Auto,Auto,Auto" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12">
                 <Label Text="First Name" Grid.Row="0" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="BookerFirst" Grid.Row="0" Grid.Column="1" IsReadOnly="True" TextColor="{StaticResource BellwoodCream}" />
@@ -82,6 +90,12 @@
                 <Label Text="Email" Grid.Row="3" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" />
                 <Entry x:Name="BookerEmail" Grid.Row="3" Grid.Column="1" IsReadOnly="True" TextColor="{StaticResource BellwoodCream}" />
             </Grid>
+            <Label x:Name="BookerIncompleteLabel"
+                   Text="Profile incomplete — set your name and phone in the Admin Portal."
+                   TextColor="{StaticResource BellwoodGold}"
+                   FontSize="12"
+                   IsVisible="False"
+                   Margin="0,2,0,4" />
 
             <!-- Passenger selection -->
             <Label Text="Passenger" TextColor="{StaticResource BellwoodGold}" FontSize="20" />
@@ -193,15 +207,12 @@
                 </VerticalStackLayout>
             </Grid>
             
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" RowSpacing="8">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" IsVisible="False" x:Name="PickupNewGrid" BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" RowSpacing="8">
                 <Label Text="New pickup label" Grid.Column="0" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="PickupNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New pickup address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="PickupNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="🗺️ View in Maps" Clicked="OnPickPickupFromMaps" 
-                        BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodGold}" 
-                        BorderColor="{StaticResource BellwoodGold}" BorderWidth="1" />
-                <Button Grid.Row="3" Grid.ColumnSpan="2" Text="Save Pickup Location" Clicked="OnSaveNewPickup"/>
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Pickup Location" Clicked="OnSaveNewPickup"/>
             </Grid>
             
             <!-- Airport pickup style -->
@@ -276,10 +287,7 @@
                 <Entry x:Name="DropoffNewLabel" Grid.Column="1" TextColor="{StaticResource BellwoodCream}" />
                 <Label Text="New dropoff address" Grid.Column="0" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" VerticalOptions="Center" />
                 <Entry x:Name="DropoffNewAddress" Grid.Column="1" Grid.Row="1" TextColor="{StaticResource BellwoodCream}" />
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="🗺️ View in Maps" Clicked="OnPickDropoffFromMaps" 
-                        BackgroundColor="{StaticResource BellwoodCharcoal}" TextColor="{StaticResource BellwoodGold}" 
-                        BorderColor="{StaticResource BellwoodGold}" BorderWidth="1" />
-                <Button Grid.Row="3" Grid.ColumnSpan="2" Text="Save Dropoff Location" Clicked="OnSaveNewDropoff"/>
+                <Button Grid.Row="2" Grid.ColumnSpan="2" Text="Save Dropoff Location" Clicked="OnSaveNewDropoff"/>
             </Grid>
 
             <!-- Round Trip toggle -->
@@ -433,7 +441,7 @@
             </Grid>
 
             <!-- Build JSON -->
-            <Button Text="Build Quote JSON" Clicked="OnBuildJson" />
+            <Button Text="Request Quote" Clicked="OnBuildJson" />
             <Frame BackgroundColor="{StaticResource BellwoodCharcoal}" Padding="12" IsVisible="False" x:Name="JsonFrame">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Quote JSON" TextColor="{StaticResource BellwoodGold}" />

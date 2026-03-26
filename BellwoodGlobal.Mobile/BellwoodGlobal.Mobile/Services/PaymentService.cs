@@ -7,7 +7,7 @@ public sealed class PaymentService : IPaymentService
 {
     private readonly HttpClient _http;
 
-    // MOCK DATA (remove when LimoAnywhere API is ready)
+    // MOCK DATA (remove when LimoAnywhere/Stripe API is ready)
     private static readonly List<PaymentMethod> _mockPaymentMethods = new()
     {
         new PaymentMethod
@@ -33,33 +33,33 @@ public sealed class PaymentService : IPaymentService
 
     public async Task<IReadOnlyList<PaymentMethod>> GetStoredPaymentMethodsAsync()
     {
-#if DEBUG
-        // Return mock data in DEBUG mode (no API call)
+        // TODO: Replace with real API call once payment endpoints are deployed.
+        // The /api/payments/methods endpoint does not exist yet; calling it in
+        // Release crashed the app. Use mock data for all configurations until
+        // the backend is ready.
         await Task.Delay(300); // Simulate network delay
+#if DEBUG
         System.Diagnostics.Debug.WriteLine($"[PaymentService] Returning {_mockPaymentMethods.Count} mock payment methods");
-        return _mockPaymentMethods;
-#else
-        // Production: Call real API
-        var methods = await _http.GetFromJsonAsync<List<PaymentMethod>>("/api/payments/methods");
-        return methods ?? new List<PaymentMethod>();
 #endif
+        return _mockPaymentMethods;
     }
 
     public async Task<string> TokenizeCardAsync(string cardNumber, int expiryMonth, int expiryYear, string cvc)
     {
+        // TODO: Integrate Stripe SDK for production card tokenization.
+        // Until then, return a mock token in all configurations so the
+        // booking flow does not crash in Release.
 #if DEBUG
         System.Diagnostics.Debug.WriteLine($"[PaymentService] MOCK Tokenization: Card ending {cardNumber[^4..]}");
+#endif
         await Task.Delay(500); // Simulate network delay
         return $"tok_{Guid.NewGuid():N}"; // Mock token
-#else
-        throw new NotImplementedException("Stripe SDK integration required for production");
-#endif
     }
 
     public async Task<PaymentMethod> SubmitPaymentMethodAsync(NewCardRequest request)
     {
-#if DEBUG
-        // MOCK: Generate a new payment method locally
+        // TODO: Submit token to real API once payment endpoints are deployed.
+        // Until then, create a mock payment method locally in all configurations.
         await Task.Delay(500); // Simulate network delay
 
         var newMethod = new PaymentMethod
@@ -72,15 +72,10 @@ public sealed class PaymentService : IPaymentService
         };
 
         _mockPaymentMethods.Add(newMethod);
+#if DEBUG
         System.Diagnostics.Debug.WriteLine($"[PaymentService] Added mock payment method: {newMethod.DisplayName}");
+#endif
 
         return newMethod;
-#else
-        // Production: Call real API
-        var response = await _http.PostAsJsonAsync("/api/payments/methods", request);
-        response.EnsureSuccessStatusCode();
-        var newMethod = await response.Content.ReadFromJsonAsync<PaymentMethod>();
-        return newMethod ?? throw new InvalidOperationException("Failed to add payment method");
-#endif
     }
 }
