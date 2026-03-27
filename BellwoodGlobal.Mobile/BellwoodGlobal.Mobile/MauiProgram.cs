@@ -95,9 +95,17 @@ public static class MauiProgram
             c.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
             
-            // PHASE 2: Get API key from secure configuration service
+            // PHASE 2: Get platform-specific API key from secure configuration service
             var configService = serviceProvider.GetRequiredService<IConfigurationService>();
-            var apiKey = configService.GetPlacesApiKey();
+
+#if ANDROID
+            var apiKey = configService.GetPlacesApiKey(); // Android-restricted key
+#elif IOS || MACCATALYST
+            var apiKey = configService.GetPlacesApiKeyIos(); // iOS-restricted key
+#else
+            var apiKey = configService.GetPlacesApiKey(); // Fallback (Windows, etc.)
+#endif
+
             c.DefaultRequestHeaders.Add("X-Goog-Api-Key", apiKey);
             
 #if ANDROID
@@ -113,6 +121,7 @@ public static class MauiProgram
 #if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Android Package: {packageName}");
                 System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Android Cert: {certFingerprint}");
+                System.Diagnostics.Debug.WriteLine($"[PlacesAPI] Using ANDROID Places API key");
 #endif
             }
             catch (Exception ex)
@@ -127,6 +136,7 @@ public static class MauiProgram
             c.DefaultRequestHeaders.Add("X-Ios-Bundle-Identifier", "com.bellwoodglobal.mobile");
 #if DEBUG
             System.Diagnostics.Debug.WriteLine("[PlacesAPI] iOS bundle ID header added: com.bellwoodglobal.mobile");
+            System.Diagnostics.Debug.WriteLine("[PlacesAPI] Using iOS Places API key");
 #endif
 #endif
             
