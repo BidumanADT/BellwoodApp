@@ -69,14 +69,25 @@ public sealed class ConfigurationService : IConfigurationService
     }
     
     /// <summary>
-    /// Gets the Google Places API key.
+    /// Gets the Google Places API key (Android).
     /// </summary>
     /// <returns>API key string</returns>
     /// <exception cref="InvalidOperationException">If key not found or service not initialized</exception>
     public string GetPlacesApiKey()
     {
         EnsureInitialized();
-        return GetSetting("GooglePlacesApiKey", "Google Places API key");
+        return GetSetting("GooglePlacesApiKey", "Google Places API key (Android)");
+    }
+
+    /// <summary>
+    /// Gets the Google Places API key (iOS).
+    /// </summary>
+    /// <returns>API key string</returns>
+    /// <exception cref="InvalidOperationException">If key not found or service not initialized</exception>
+    public string GetPlacesApiKeyIos()
+    {
+        EnsureInitialized();
+        return GetSetting("GooglePlacesApiKeyIos", "Google Places API key (iOS)");
     }
     
     /// <summary>
