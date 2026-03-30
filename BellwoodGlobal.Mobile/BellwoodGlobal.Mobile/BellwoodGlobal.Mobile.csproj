@@ -13,8 +13,8 @@
 
 		<ApplicationTitle>Bellwood Elite</ApplicationTitle>
 		<ApplicationId>com.bellwoodglobal.mobile</ApplicationId>
-		<ApplicationDisplayVersion>1.0.7</ApplicationDisplayVersion>
-		<ApplicationVersion>8</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.8</ApplicationDisplayVersion>
+		<ApplicationVersion>9</ApplicationVersion>
 
 		<!-- Android -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">35.0</TargetPlatformVersion>
