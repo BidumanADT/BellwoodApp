@@ -26,6 +26,19 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
+        // ── Early configuration initialization ──────────────────────────
+        // ConfigurationService MUST be fully loaded before builder.Build()
+        // because HttpClient factory delegates (admin, places, auth) call
+        // Get*() methods at client-creation time.  If any singleton that
+        // depends on IHttpClientFactory is resolved during Build(), those
+        // delegates fire immediately — and they will throw
+        // InvalidOperationException if config is still uninitialised.
+        // Blocking here is intentional: the cost is ~250 ms of file I/O
+        // and it only runs once, before any UI is shown.
+        var configService = new ConfigurationService();
+        configService.InitializeAsync().GetAwaiter().GetResult();
+        builder.Services.AddSingleton<IConfigurationService>(configService);
+
         // Pages (DI-friendly even if we now use parameterless ctors)
         builder.Services.AddSingleton<LoginPage>();
         builder.Services.AddTransient<MainPage>();
@@ -40,7 +53,7 @@ public static class MauiProgram
         builder.Services.AddTransient<LocationAutocompleteTestPage>(); // Phase 2 test page
 
         // Services
-        builder.Services.AddSingleton<IConfigurationService, ConfigurationService>(); // PHASE 2: Secure config
+        // NOTE: IConfigurationService already registered above — do NOT re-register.
         builder.Services.AddSingleton<IAuthService, AuthService>();
         builder.Services.AddSingleton<IQuoteService, QuoteService>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
