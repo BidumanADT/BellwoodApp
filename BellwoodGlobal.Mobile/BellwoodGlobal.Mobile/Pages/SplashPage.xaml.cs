@@ -8,13 +8,13 @@ namespace BellwoodGlobal.Mobile.Pages;
 public partial class SplashPage : ContentPage
 {
     private readonly IAuthService _auth;
-    private readonly IConfigurationService _config;
 
     public SplashPage(IAuthService auth, IConfigurationService config)
     {
         InitializeComponent();
         _auth = auth;
-        _config = config;
+        // config is accepted for DI compatibility but no longer used here;
+        // initialization is now performed eagerly in MauiProgram.CreateMauiApp().
     }
 
     protected override async void OnAppearing()
@@ -23,17 +23,13 @@ public partial class SplashPage : ContentPage
 
         try
         {
-            // Run config initialization and splash animation concurrently.
-            // Config must be fully loaded before any HTTP client is used, so we
-            // await both tasks together. The animation already takes ~800ms, which
-            // is more than enough time for the file I/O to complete.
-            await Task.WhenAll(
-                _config.InitializeAsync(),
-                AnimateSplashAsync()
-            );
+            // Splash animation while the UI renders.
+            // Configuration is already loaded (MauiProgram), so no need to
+            // await InitializeAsync() here.
+            await AnimateSplashAsync();
 
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine("[SplashPage] Config initialization complete before navigation");
+            System.Diagnostics.Debug.WriteLine("[SplashPage] Splash complete, navigating...");
 #endif
 
             // Create Shell as the new root
