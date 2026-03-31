@@ -4,43 +4,38 @@
 <!--
     iOS Entitlements for BellwoodGlobal.Mobile
     ============================================
-    Only add an entitlement here AFTER enabling the matching capability in
-    your App ID on developer.apple.com — the two must stay in sync or Xcode
-    will reject the codesign.
+    These entitlements MUST match the capabilities enabled on the App ID
+    (com.bellwoodglobal.mobile) in Apple Developer and the provisioning
+    profile used for distribution (BWEliteAppStoreProfile).
 
-    PUSH NOTIFICATIONS (APS Environment)
-    Uncomment the block below and change "development" → "production" for
-    a distribution/TestFlight/App Store build.  The iOS workflow passes this
-    file via -p:CodesignEntitlements only for Release builds, so development
-    builds pick up the Simulator default (no APS entry needed for sim).
+    If the entitlements here do not align with the provisioning profile,
+    codesign produces an invalid entitlements blob and iOS will terminate
+    the app immediately on launch — with NO crash log.
 
-        <key>aps-environment</key>
-        <string>production</string>
-
-    SIGN IN WITH APPLE
-    Requires the "Sign In with Apple" capability enabled on the App ID.
-
-        <key>com.apple.developer.applesignin</key>
-        <array>
-            <string>Default</string>
-        </array>
-
-    ASSOCIATED DOMAINS (Universal Links / Shared Web Credentials)
-    One entry per domain; prefix must be "applinks:" or "webcredentials:" etc.
-
-        <key>com.apple.developer.associated-domains</key>
-        <array>
-            <string>applinks:bellwoodglobal.com</string>
-        </array>
-
-    BACKGROUND MODES (if you need background fetch / remote-notification wakeup)
-
-        <key>UIBackgroundModes</key>
-        <array>
-            <string>remote-notification</string>
-        </array>
+    This file is only used for Release builds (see CodesignEntitlements
+    in the .csproj).  Debug/Simulator builds omit it intentionally.
 -->
 <dict>
-    <!-- No active entitlements yet. Uncomment sections above as capabilities are enabled. -->
+    <!-- Push Notifications (APNs) — matches aps-environment in provisioning profile.
+         Use "production" for TestFlight and App Store distribution. -->
+    <key>aps-environment</key>
+    <string>production</string>
+
+    <!-- Location Push Service — enabled on the App ID / provisioning profile.
+         Required even if not yet used by app code; omitting it when the profile
+         declares it causes an entitlement mismatch at launch. -->
+    <key>com.apple.developer.location.push</key>
+    <true/>
+
+    <!-- Keychain Access Groups — required for MAUI SecureStorage (iOS Keychain).
+         The $(AppIdentifierPrefix) token is replaced at build time with the
+         Team ID prefix (MRN263A5QW.). The wildcard entry covers the app's
+         default keychain group.  com.apple.token is the system token group
+         included in the provisioning profile. -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)com.bellwoodglobal.mobile</string>
+        <string>com.apple.token</string>
+    </array>
 </dict>
 </plist>
