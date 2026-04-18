@@ -147,14 +147,19 @@
 	  <Folder Include="Platforms\iOS\Resources\" />
 	</ItemGroup>
 
-	<!-- iOS entitlements — Release only (distribution/TestFlight/App Store).
-	     Debug and Simulator builds intentionally omit CodesignEntitlements so
-	     they codesign with the default ad-hoc entitlements and run on-device
-	     without a provisioning profile that matches every capability. -->
+	<!-- iOS entitlements — TEMPORARILY DISABLED to diagnose TestFlight launch crash.
+	     When CodesignEntitlements points to a plist whose entitlements don't exactly
+	     match the provisioning profile, codesign can produce an invalid entitlements
+	     blob that causes iOS to kill the app at launch with no crash log.
+	     Removing this property lets codesign derive entitlements from the provisioning
+	     profile automatically — matching the behavior of every build before be2198b.
+	     TODO: Re-enable once the correct entitlements are confirmed working. -->
+	<!--
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'
 	               And '$(Configuration)' == 'Release'">
 	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
+	-->
 
 	<!-- iOS Privacy Manifest — must land at the app bundle root, not in a subdirectory -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
