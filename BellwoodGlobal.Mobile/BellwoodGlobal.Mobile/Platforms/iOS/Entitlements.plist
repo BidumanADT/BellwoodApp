@@ -21,12 +21,6 @@
     <key>aps-environment</key>
     <string>production</string>
 
-    <!-- Location Push Service — enabled on the App ID / provisioning profile.
-         Required even if not yet used by app code; omitting it when the profile
-         declares it causes an entitlement mismatch at launch. -->
-    <key>com.apple.developer.location.push</key>
-    <true/>
-
     <!-- Keychain Access Groups — required for MAUI SecureStorage (iOS Keychain).
          The $(AppIdentifierPrefix) token is replaced at build time with the
          Team ID prefix (MRN263A5QW.). The wildcard entry covers the app's
