@@ -13,8 +13,8 @@
 
 		<ApplicationTitle>Bellwood Elite</ApplicationTitle>
 		<ApplicationId>com.bellwoodglobal.mobile</ApplicationId>
-		<ApplicationDisplayVersion>1.0.10</ApplicationDisplayVersion>
-		<ApplicationVersion>11</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.11</ApplicationDisplayVersion>
+		<ApplicationVersion>12</ApplicationVersion>
 
 		<!-- Android -->
 		<TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">35.0</TargetPlatformVersion>
@@ -147,19 +147,11 @@
 	  <Folder Include="Platforms\iOS\Resources\" />
 	</ItemGroup>
 
-	<!-- iOS entitlements — TEMPORARILY DISABLED to diagnose TestFlight launch crash.
-	     When CodesignEntitlements points to a plist whose entitlements don't exactly
-	     match the provisioning profile, codesign can produce an invalid entitlements
-	     blob that causes iOS to kill the app at launch with no crash log.
-	     Removing this property lets codesign derive entitlements from the provisioning
-	     profile automatically — matching the behavior of every build before be2198b.
-	     TODO: Re-enable once the correct entitlements are confirmed working. -->
-	<!--
+	<!-- iOS entitlements — explicit file ensures deterministic signing for Release/TestFlight builds. -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'
 	               And '$(Configuration)' == 'Release'">
-	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
+	  <CodesignEntitlements>Platforms/iOS/Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
-	-->
 
 	<!-- iOS Privacy Manifest — must land at the app bundle root, not in a subdirectory -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">

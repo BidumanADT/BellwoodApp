@@ -36,7 +36,13 @@ public static class MauiProgram
         // Blocking here is intentional: the cost is ~250 ms of file I/O
         // and it only runs once, before any UI is shown.
         var configService = new ConfigurationService();
-        configService.InitializeAsync().GetAwaiter().GetResult();
+        try { configService.InitializeAsync().GetAwaiter().GetResult(); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[MauiProgram] Config init failed: {ex.Message}");
+#endif
+        }
         builder.Services.AddSingleton<IConfigurationService>(configService);
 
         // Pages (DI-friendly even if we now use parameterless ctors)
